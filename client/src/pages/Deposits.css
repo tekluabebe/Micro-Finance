@@ -1,0 +1,145 @@
+.deposit-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 90vh;
+  background: #f0f2f5;
+  padding: 20px;
+}
+
+.deposit-card {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 650px;
+  border-top: 5px solid #3498db;
+}
+
+.form-title {
+  color: #2c3e50;
+  margin-bottom: 25px;
+  text-align: center;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.selection-section {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.input-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-bottom: 15px;
+}
+
+.input-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7f8c8d;
+  margin-bottom: 5px;
+  margin-left: 5px;
+}
+
+.input-group input, .input-group select {
+  padding: 12px;
+  border: 1.5px solid #dcdde1;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.input-group input:focus, .input-group select:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+}
+
+.deposit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.highlight input {
+  background-color: #fff9e6;
+  border-color: #f1c40f;
+}
+
+.alert-box {
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.warning {
+  background: #fff3cd;
+  color: #856404;
+  border-left: 5px solid #ffc107;
+}
+
+.error-border {
+  border-color: #e74c3c !important;
+  color: #e74c3c;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+  background: #2980b9;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 500px) {
+  .deposit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.error-banner {
+  background-color: #ff4d4d;
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  text-align: center;
+  font-weight: bold;
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+.error-border {
+  border: 2px solid red !important;
+}

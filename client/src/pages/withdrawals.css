@@ -1,0 +1,105 @@
+/* Container */
+.withdraw-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: #f4f7fb;
+  padding: 20px;
+}
+
+/* Card */
+.withdraw-card {
+  background: #fff;
+  padding: 30px;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+
+/* Title */
+.withdraw-card h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+/* Top bar */
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+/* View Button */
+.view-btn {
+  padding: 8px 12px;
+  background: #2ecc71;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.view-btn:hover {
+  background: #27ae60;
+}
+
+/* Inputs */
+.withdraw-card input,
+.withdraw-card select,
+.withdraw-card textarea {
+  width: 100%;
+  padding: 11px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+/* Focus */
+.withdraw-card input:focus,
+.withdraw-card select:focus,
+.withdraw-card textarea:focus {
+  border-color: #8e44ad;
+  box-shadow: 0 0 5px rgba(142,68,173,0.3);
+  outline: none;
+}
+
+/* Readonly */
+.readonly {
+  background: #f1f1f1;
+}
+
+/* Info box */
+.info {
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.info.success {
+  background: #eafaf6;
+  color: #1abc9c;
+}
+
+/* Button */
+.withdraw-btn {
+  width: 100%;
+  padding: 12px;
+  background: #8e44ad;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.withdraw-btn:hover {
+  background: #732d91;
+}

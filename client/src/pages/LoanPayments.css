@@ -1,0 +1,159 @@
+/* Container Background */
+.loan-payment-container {
+  min-height: 100vh;
+
+  background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Card Styling */
+.loan-payment-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 40px;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.loan-payment-title {
+  text-align: center;
+  color: #1a2a6c;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 30px;
+  letter-spacing: -0.5px;
+}
+
+/* Selection Section */
+.loan-selection-box {
+  background: #f8faff;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.loan-input-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+.loan-input-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.loan-input-group select, 
+.loan-input-group input {
+  padding: 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+}
+
+.loan-input-group select:focus, 
+.loan-input-group input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* Status Panel */
+.loan-status-panel {
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 25px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.highlight-row {
+  padding-top: 10px;
+  border-top: 1px solid #334155;
+  margin-top: 10px;
+}
+
+.badge-green {
+  background: #059669;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.status-item label {
+  font-size: 11px;
+  color: #94a3b8;
+  display: block;
+}
+
+.status-item p {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #3b82f6;
+}
+
+/* Action Section */
+.main-payment-input {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  font-size: 18px !important;
+  font-weight: 700;
+  color: #166534;
+}
+
+.penalty-input.active {
+  border-color: #fecaca !important;
+  background: #fef2f2 !important;
+  color: #991b1b;
+}
+
+/* Submit Button */
+.loan-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.loan-submit-btn:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.text-danger { color: #ef4444; }
+.text-success { color: #10b981; }

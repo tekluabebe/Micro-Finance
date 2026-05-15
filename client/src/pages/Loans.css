@@ -1,0 +1,110 @@
+.loan-container {
+  min-height: 100vh;
+  background: #f4f7f9;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.loan-card {
+  background: #ffffff;
+  padding: 35px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+  border-top: 6px solid #3498db;
+}
+
+.loan-card h2 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  font-weight: 700;
+}
+
+/* Form Elements */
+.loan-card select, .loan-card input {
+  width: 100%;
+  padding: 14px;
+  margin-bottom: 15px;
+  border: 1.5px solid #e1e8ed;
+  border-radius: 10px;
+  font-size: 15px;
+  transition: all 0.3s ease;
+}
+
+.loan-card select:focus, .loan-card input:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+  outline: none;
+}
+
+/* Info Boxes */
+.info {
+  padding: 12px 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.info.success {
+  background: #ebf9f1;
+  color: #1e7e34;
+  border-left: 4px solid #28a745;
+}
+
+.info.warning {
+  background: #fff9e6;
+  color: #856404;
+  border-left: 4px solid #ffc107;
+}
+
+.info.danger {
+  background: #fdf2f2;
+  color: #c82333;
+  border-left: 4px solid #dc3545;
+}
+
+/* Guarantor List Styling */
+.guarantor-list {
+  background: #ffffff;
+  border: 1px dashed #cbd5e0;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.guarantor-item {
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+}
+
+/* Button */
+.loan-btn {
+  width: 100%;
+  padding: 16px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 10px;
+}
+
+.loan-btn:hover:not(:disabled) {
+  background: #2980b9;
+  transform: translateY(-2px);
+}
+
+.loan-btn:disabled {
+  background: #cbd5e0;
+  cursor: not-allowed;
+}
