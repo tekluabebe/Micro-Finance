@@ -1,19 +1,19 @@
 {
   "files": {
     "main.css": "/Micro-Finance/static/css/main.1ec431ac.css",
-    "main.js": "/Micro-Finance/static/js/main.0e546ceb.js",
+    "main.js": "/Micro-Finance/static/js/main.54ff6097.js",
     "static/js/239.5cad9e84.chunk.js": "/Micro-Finance/static/js/239.5cad9e84.chunk.js",
     "static/js/977.7202b29e.chunk.js": "/Micro-Finance/static/js/977.7202b29e.chunk.js",
     "static/js/732.bf11e4ff.chunk.js": "/Micro-Finance/static/js/732.bf11e4ff.chunk.js",
     "index.html": "/Micro-Finance/index.html",
     "main.1ec431ac.css.map": "/Micro-Finance/static/css/main.1ec431ac.css.map",
-    "main.0e546ceb.js.map": "/Micro-Finance/static/js/main.0e546ceb.js.map",
+    "main.54ff6097.js.map": "/Micro-Finance/static/js/main.54ff6097.js.map",
     "239.5cad9e84.chunk.js.map": "/Micro-Finance/static/js/239.5cad9e84.chunk.js.map",
     "977.7202b29e.chunk.js.map": "/Micro-Finance/static/js/977.7202b29e.chunk.js.map",
     "732.bf11e4ff.chunk.js.map": "/Micro-Finance/static/js/732.bf11e4ff.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1ec431ac.css",
-    "static/js/main.0e546ceb.js"
+    "static/js/main.54ff6097.js"
   ]
 }
