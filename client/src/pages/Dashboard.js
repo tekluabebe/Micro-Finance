@@ -10,7 +10,7 @@ export default function Dashboard() {
   const [openWithdrawals, setOpenWithdrawals] = useState(false);
   const [openLoans, setOpenLoans] = useState(false);
 
-  const audioRef = useRef(null);
+  //const audioRef = useRef(null);
 
   // =========================
   // FILTERS
@@ -406,10 +406,7 @@ export default function Dashboard() {
 
     <div style={{ padding: 20 }}>
 
-      <audio
-        ref={audioRef}
-        src="/notification.mp3"
-      />
+     
 
       {/* ================= HEADER ================= */}
       <div style={styles.headerRight}>

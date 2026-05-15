@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import TerminatedEmployees from "./pages/TerminatedEmployees";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import HelpPage from "./pages/HelpPage";
 import SettingsPage from "./pages/SettingsPage";
+//import TerminatedEmployees from "./pages/TerminatedEmployees";
 
 function App() {
   // 1. ቶክኑን ከ localStorage እናነባለን (ሁልጊዜ true መሆኑ ይቅር)
@@ -30,7 +31,7 @@ function App() {
   const isAuthenticated = true;
 
   return (
-    <BrowserRouter>
+    <HashRouter>
       {isAuthenticated && <Navbar />}
 
       <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -70,7 +71,7 @@ function App() {
           </Routes>
         </div>
       </div>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
