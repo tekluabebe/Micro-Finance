@@ -1,3 +1,6 @@
+require("dotenv").config(); // .env ፋይልን ለማንበብ
+
+// ... ሌሎቹ እንዳሉ ሆነው
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -11,6 +14,7 @@ app.use(express.json());
 // =======================
 // CONNECT TO MONGODB
 // =======================
+<<<<<<< HEAD
 // =======================
 // CONNECT TO MONGODB ATLAS
 // =======================
@@ -18,6 +22,15 @@ app.use(express.json());
 const ATLAS_URI = "mongodb+srv://myproject:%25TGBnhy6@cluster0.kzx9prr.mongodb.net/microfinance?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(ATLAS_URI)
 .then(() => console.log("MongoDB Atlas Connected ✅"))
+=======
+const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/microfinance";
+
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("MongoDB Connected ✅"))
+>>>>>>> 8a96bfd (final backend setup with Atlas and bcrypt)
 .catch((err) => console.error("MongoDB Connection Error ❌:", err));
 
 // =======================
@@ -288,15 +301,27 @@ app.get("/api/employees", async (req, res) => {
   res.json(employees);
 });
 
+const bcrypt = require("bcryptjs");
+
 app.post("/api/employees", async (req, res) => {
+  try {
+    const { password, ...otherData } = req.body;
 
-  const emp = new Employee(req.body);
+    // ፓስወርዱን መደበቅ (Hashing)
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  await emp.save();
+    const emp = new Employee({
+      ...otherData,
+      password: hashedPassword // የተደበቀው ፓስወርድ ሴቭ ይሆናል
+    });
 
-  res.json(emp);
+    await emp.save();
+    res.json({ message: "Employee registered successfully ✅", id: emp._id });
+  } catch (err) {
+    res.status(500).json({ message: "Registration failed ❌" });
+  }
 });
-
 app.put("/api/employees/:id", async (req, res) => {
 
   const emp = await Employee.findByIdAndUpdate(
@@ -1594,12 +1619,7 @@ app.delete("/api/terminated/:id", async (req, res) => {
 // =======================
 // START SERVER
 // =======================
-const PORT = 5000;
-
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-
-  console.log(
-    `Server running on port ${PORT} 🚀`
-  );
-
+  console.log(`Server is running on port ${PORT} 🚀`);
 });
