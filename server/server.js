@@ -14,7 +14,7 @@ app.use(express.json());
 // =======================
 // CONNECT TO MONGODB
 // =======================
-<<<<<<< HEAD
+
 // =======================
 // CONNECT TO MONGODB ATLAS
 // =======================
@@ -22,7 +22,7 @@ app.use(express.json());
 const ATLAS_URI = "mongodb+srv://myproject:%25TGBnhy6@cluster0.kzx9prr.mongodb.net/microfinance?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(ATLAS_URI)
 .then(() => console.log("MongoDB Atlas Connected ✅"))
-=======
+
 const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/microfinance";
 
 mongoose.connect(mongoURI, {
@@ -30,7 +30,7 @@ mongoose.connect(mongoURI, {
   useUnifiedTopology: true,
 })
 .then(() => console.log("MongoDB Connected ✅"))
->>>>>>> 8a96bfd (final backend setup with Atlas and bcrypt)
+ 
 .catch((err) => console.error("MongoDB Connection Error ❌:", err));
 
 // =======================
