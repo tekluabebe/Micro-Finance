@@ -1,5 +1,8 @@
 import axios from "axios";
 
-export default axios.create({ 
-  baseURL: "https://micro-finance-90cq.onrender.com/api" 
+const API = axios.create({
+  // እዚህ ጋር ያንተን የ Render Backend URL መተካት አለብህ
+  baseURL: "https://micro-finance-backend.onrender.com/api", 
 });
+
+export default API;
