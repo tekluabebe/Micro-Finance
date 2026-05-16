@@ -19,18 +19,22 @@ app.use(express.json());
 // CONNECT TO MONGODB ATLAS
 // =======================
 // <db_password> በሚለው ቦታ የአንተን ዳታቤዝ ፓስወርድ መተካት እንዳትረሳ!
+// 1. የቆየውን ሁለት የ mongoose.connect ኮድ አጥፋና ይህንን ብቻ ተጠቀም
 const ATLAS_URI = "mongodb+srv://myproject:%25TGBnhy6@cluster0.kzx9prr.mongodb.net/microfinance?retryWrites=true&w=majority&appName=Cluster0";
-mongoose.connect(ATLAS_URI)
-.then(() => console.log("MongoDB Atlas Connected ✅"))
 
-const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/microfinance";
+// በ .env ፋይል ውስጥ ካለ እሱን ይወስዳል፣ ካለበለዚያ Atlasን ይጠቀማል
+const mongoURI = process.env.MONGO_URI || ATLAS_URI;
 
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-.then(() => console.log("MongoDB Connected ✅"))
- 
+.then(() => {
+  console.log("MongoDB Connected ✅");
+  // የትኛው ዳታቤዝ እንደሆነ ለማወቅ
+  const dbType = mongoURI.includes("mongodb.net") ? "Cloud (Atlas)" : "Local";
+  console.log(`Connection Type: ${dbType}`);
+})
 .catch((err) => console.error("MongoDB Connection Error ❌:", err));
 
 // =======================
