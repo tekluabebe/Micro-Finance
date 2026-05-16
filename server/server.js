@@ -11,12 +11,14 @@ app.use(express.json());
 // =======================
 // CONNECT TO MONGODB
 // =======================
-mongoose.connect("mongodb://127.0.0.1:27017/microfinance", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("MongoDB Connected ✅"))
-.catch((err) => console.error(err));
+// =======================
+// CONNECT TO MONGODB ATLAS
+// =======================
+// <db_password> በሚለው ቦታ የአንተን ዳታቤዝ ፓስወርድ መተካት እንዳትረሳ!
+const ATLAS_URI = "mongodb+srv://myproject:%25TGBnhy6@cluster0.kzx9prr.mongodb.net/microfinance?retryWrites=true&w=majority&appName=Cluster0";
+mongoose.connect(ATLAS_URI)
+.then(() => console.log("MongoDB Atlas Connected ✅"))
+.catch((err) => console.error("MongoDB Connection Error ❌:", err));
 
 // =======================
 // EMPLOYEE SCHEMA
@@ -1128,117 +1130,95 @@ app.get("/api/reports/individual-annual", async (req, res) => {
 // TOTAL MEMBERS REPORT
 // =========================================
 app.get("/api/reports/total-members", async (req, res) => {
-
   try {
+    const { month, year, type } = req.query;
 
-    const { month, year, type } =
-      req.query;
-
+    // 1. የሰነዶች ፊልተር (Deposits Query)
     let depositQuery = { year };
-
     if (type === "monthly") {
-
       depositQuery.month = month;
     }
+    const deposits = await Deposit.find(depositQuery);
 
-    const deposits =
-      await Deposit.find(depositQuery);
+    // 2. የብድር ክፍያ ፊልተር (Loan Payments Filtering Logic)
+    // ይህ ክፍል ነው ያንን የተሳሳተ ትልቅ ቁጥር የሚያስተካክለው
+    let paymentQuery = {};
+    if (type === "monthly") {
+      // ለወር ከሆነ፡ የወሩ መጀመሪያ እና መጨረሻ ቀን
+      const startDate = new Date(`${year}-${month}-01T00:00:00Z`);
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1);
+      paymentQuery.createdAt = { $gte: startDate, $lt: endDate };
+    } else {
+      // ለአመት ከሆነ፡ የአመቱ መጀመሪያ እና መጨረሻ ቀን
+      const startDate = new Date(`${year}-01-01T00:00:00Z`);
+      const endDate = new Date(`${year}-12-31T23:59:59Z`);
+      paymentQuery.createdAt = { $gte: startDate, $lte: endDate };
+    }
 
-    const loans =
-      await Loan.find({
-        status: "approved"
-      });
+    const payments = await LoanPayment.find(paymentQuery);
+    const loans = await Loan.find({ status: "approved" });
 
-    const payments =
-      await LoanPayment.find();
+    // 3. ስሌቶች (Calculations)
+    const totalSavings = deposits.reduce(
+      (sum, d) => sum + (d.normalSaving || 0) + (d.voluntarySaving || 0),
+      0
+    );
 
-    const totalSavings =
-      deposits.reduce(
-        (sum, d) =>
-          sum +
-          (d.normalSaving || 0) +
-          (d.voluntarySaving || 0),
-        0
-      );
+    const totalShares = deposits.reduce(
+      (sum, d) => sum + (d.sharedPurchase || 0),
+      0
+    );
 
-    const totalShares =
-      deposits.reduce(
-        (sum, d) =>
-          sum + (d.sharedPurchase || 0),
-        0
-      );
+    const totalRegistrationFees = deposits.reduce(
+      (sum, d) => sum + (d.registrationFee || 0),
+      0
+    );
 
-    const totalRegistrationFees =
-      deposits.reduce(
-        (sum, d) =>
-          sum + (d.registrationFee || 0),
-        0
-      );
+    const totalDepositPenalties = deposits.reduce(
+      (sum, d) => sum + (d.latePenalty || 0),
+      0
+    );
 
-    const totalDepositPenalties =
-      deposits.reduce(
-        (sum, d) =>
-          sum + (d.latePenalty || 0),
-        0
-      );
+    const totalLoanAmount = loans.reduce(
+      (sum, l) => sum + (l.principalAmount || 0),
+      0
+    );
 
-    const totalLoanAmount =
-      loans.reduce(
-        (sum, l) =>
-          sum + (l.principalAmount || 0),
-        0
-      );
+    const totalRemainingLoan = loans.reduce(
+      (sum, l) => sum + (l.remainingAmount || 0),
+      0
+    );
 
-    const totalRemainingLoan =
-      loans.reduce(
-        (sum, l) =>
-          sum + (l.remainingAmount || 0),
-        0
-      );
+    // አሁን ፊልተር የተደረገውን ብቻ ይደምራል
+    const totalLoanPaid = payments.reduce(
+      (sum, p) => sum + (p.amountPaid || 0),
+      0
+    );
 
-    const totalLoanPaid =
-      payments.reduce(
-        (sum, p) =>
-          sum + (p.amountPaid || 0),
-        0
-      );
+    const totalLoanPenalties = payments.reduce(
+      (sum, p) => sum + (p.penalty || 0),
+      0
+    );
 
-    const totalLoanPenalties =
-      payments.reduce(
-        (sum, p) =>
-          sum + (p.penalty || 0),
-        0
-      );
-
+    // 4. ውጤቱን መላክ
     res.json({
-
-      totalMembers:
-        await Employee.countDocuments(),
-
+      totalMembers: await Employee.countDocuments(),
       totalSavings,
-
       totalShares,
-
       totalRegistrationFees,
-
       totalDepositPenalties,
-
       totalLoanAmount,
-
       totalRemainingLoan,
-
-      totalLoanPaid,
-
+      totalLoanPaid, // አሁን 0 ይሆናል (በዚያ ወር ዳታ ከሌለ)
       totalLoanPenalties
     });
 
   } catch (err) {
-
     console.error(err);
-
     res.status(500).json({
-      message:
-        "Total members report failed"
+      message: "Total members report failed",
+      error: err.message
     });
   }
 });
