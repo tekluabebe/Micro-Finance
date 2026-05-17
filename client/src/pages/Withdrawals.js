@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import "./withdrawals.css";
+import { useNavigate } from "react-router-dom"; // ይህንን ጨምር
 
 export default function Withdrawals() {
   const [employees, setEmployees] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loans, setLoans] = useState([]); // ✅ ADDED
+  const navigate = useNavigate();
 
   const [data, setData] = useState({
     employeeId: "",
@@ -64,6 +66,8 @@ export default function Withdrawals() {
 
     return total;
   };
+
+
 
   // =======================
   // HANDLE CHANGE
@@ -156,11 +160,11 @@ export default function Withdrawals() {
 
         <div className="top-bar">
           <button
-            onClick={() => (window.location.href = "/terminated")}
-            className="view-btn"
-          >
-            View Terminated
-          </button>
+  onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
+  className="view-btn"
+>
+  View Terminated
+</button>
         </div>
 
         <h2>Member Withdrawal</h2>
