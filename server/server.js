@@ -1,6 +1,3 @@
-require("dotenv").config(); // .env ፋይልን ለማንበብ
-
-// ... ሌሎቹ እንዳሉ ሆነው
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -14,27 +11,14 @@ app.use(express.json());
 // =======================
 // CONNECT TO MONGODB
 // =======================
-
 // =======================
 // CONNECT TO MONGODB ATLAS
 // =======================
 // <db_password> በሚለው ቦታ የአንተን ዳታቤዝ ፓስወርድ መተካት እንዳትረሳ!
-// 1. የቆየውን ሁለት የ mongoose.connect ኮድ አጥፋና ይህንን ብቻ ተጠቀም
 const ATLAS_URI = "mongodb+srv://myproject:%25TGBnhy6@cluster0.kzx9prr.mongodb.net/microfinance?retryWrites=true&w=majority&appName=Cluster0";
 
-// በ .env ፋይል ውስጥ ካለ እሱን ይወስዳል፣ ካለበለዚያ Atlasን ይጠቀማል
-const mongoURI = process.env.MONGO_URI || ATLAS_URI;
-
-mongoose.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log("MongoDB Connected ✅");
-  // የትኛው ዳታቤዝ እንደሆነ ለማወቅ
-  const dbType = mongoURI.includes("mongodb.net") ? "Cloud (Atlas)" : "Local";
-  console.log(`Connection Type: ${dbType}`);
-})
+mongoose.connect(ATLAS_URI)
+.then(() => console.log("MongoDB Atlas Connected ✅"))
 .catch((err) => console.error("MongoDB Connection Error ❌:", err));
 
 // =======================
@@ -305,27 +289,15 @@ app.get("/api/employees", async (req, res) => {
   res.json(employees);
 });
 
-const bcrypt = require("bcryptjs");
-
 app.post("/api/employees", async (req, res) => {
-  try {
-    const { password, ...otherData } = req.body;
 
-    // ፓስወርዱን መደበቅ (Hashing)
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+  const emp = new Employee(req.body);
 
-    const emp = new Employee({
-      ...otherData,
-      password: hashedPassword // የተደበቀው ፓስወርድ ሴቭ ይሆናል
-    });
+  await emp.save();
 
-    await emp.save();
-    res.json({ message: "Employee registered successfully ✅", id: emp._id });
-  } catch (err) {
-    res.status(500).json({ message: "Registration failed ❌" });
-  }
+  res.json(emp);
 });
+
 app.put("/api/employees/:id", async (req, res) => {
 
   const emp = await Employee.findByIdAndUpdate(
@@ -1623,7 +1595,12 @@ app.delete("/api/terminated/:id", async (req, res) => {
 // =======================
 // START SERVER
 // =======================
-const PORT = process.env.PORT || 5000;
+const PORT = 5000;
+
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT} 🚀`);
+
+  console.log(
+    `Server running on port ${PORT} 🚀`
+  );
+
 });

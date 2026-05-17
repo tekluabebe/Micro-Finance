@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 // axiosን በ API ሰርቪስህ ቀይረነዋል
-//import API from "../services/api"; 
+import API from "../services/api"; 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -17,9 +17,7 @@ import "./Reports.css";
 import axios from "axios";
 
 // ከ API ሰርቪሱ ፋንታ በቀጥታ እዚህ ጋር መግለጽ
-const API = axios.create({
-  baseURL: "https://micro-finance-backend.onrender.com/api",
-});
+
 
 const Reports = () => {
   const [employees, setEmployees] = useState([]);
