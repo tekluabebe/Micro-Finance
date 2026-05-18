@@ -92,12 +92,11 @@ export default function SettingsPage() {
 
   const t = texts[language];
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userRole");
-    window.dispatchEvent(new Event("storage"));
-    window.location.href = "/login";
-  };
+ const handleLogout = () => {
+  localStorage.clear(); // ሁሉንም በአንዴ ያጠፋል (ቀላል ነው)
+  window.dispatchEvent(new Event("storage"));
+  window.location.href = "/login";
+};
 
   const currentContainerStyle = {
     ...styles.container,
