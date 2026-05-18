@@ -279,6 +279,87 @@ const LoanPayment = mongoose.model(
   loanPaymentSchema
 );
 
+
+
+// =======================
+// AUTH ROUTES (ይህንን ጨምር)
+// =======================
+// =======================
+// AUTH ROUTES (የተስተካከለ ስሪት - Case Insensitive)
+// =======================
+// =======================
+// AUTH LOGIN
+// =======================
+app.post("/api/auth/login", async (req, res) => {
+  try {
+
+    let { memberId, password, role } = req.body;
+
+    // Clean input
+    memberId = memberId.trim();
+    role = role.trim().toLowerCase();
+
+    console.log("LOGIN DATA:", {
+      memberId,
+      password,
+      role
+    });
+
+    // Find user
+    const user = await Employee.findOne({
+      memberId: memberId
+    });
+
+    console.log("FOUND USER:", user);
+
+    // User not found
+    if (!user) {
+      return res.status(401).json({
+        message: "Member ID not found ❌"
+      });
+    }
+
+    // Password check
+    if (String(user.password).trim() !== String(password).trim()) {
+      return res.status(401).json({
+        message: "Incorrect password ❌"
+      });
+    }
+
+    // Role check
+    if (
+      String(user.role).trim().toLowerCase() !== role
+    ) {
+      return res.status(401).json({
+        message: `You are not registered as ${role} ❌`
+      });
+    }
+
+    // Success
+    res.json({
+      success: true,
+
+      token: "fake-token-" + user._id,
+
+      user: {
+        id: user._id,
+        memberId: user.memberId,
+        fullName:
+          user.firstName + " " + user.lastName,
+        role: user.role
+      }
+    });
+
+  } catch (err) {
+
+    console.error("LOGIN ERROR:", err);
+
+    res.status(500).json({
+      message: "Server error ❌"
+    });
+  }
+});
+
 // =======================
 // EMPLOYEE ROUTES
 // =======================
@@ -290,12 +371,20 @@ app.get("/api/employees", async (req, res) => {
 });
 
 app.post("/api/employees", async (req, res) => {
+  try {
+    // አዲስ ሰው ሲመዘገብ memberId እና password መኖሩን እናረጋግጣለን
+    const { memberId, password, firstName, lastName, role } = req.body;
+    
+    if(!memberId || !password) {
+      return res.status(400).json({ message: "መታወቂያ እና የይለፍ ቃል ያስፈልጋል!" });
+    }
 
-  const emp = new Employee(req.body);
-
-  await emp.save();
-
-  res.json(emp);
+    const newEmp = new Employee(req.body);
+    await newEmp.save();
+    res.status(201).json(newEmp);
+  } catch (err) {
+    res.status(400).json({ message: "ምዝገባው አልተሳካም፡ " + err.message });
+  }
 });
 
 app.put("/api/employees/:id", async (req, res) => {
@@ -1595,12 +1684,5 @@ app.delete("/api/terminated/:id", async (req, res) => {
 // =======================
 // START SERVER
 // =======================
-const PORT = 5000;
-
-app.listen(PORT, () => {
-
-  console.log(
-    `Server running on port ${PORT} 🚀`
-  );
-
-});
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

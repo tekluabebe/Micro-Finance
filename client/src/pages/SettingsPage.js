@@ -47,46 +47,8 @@ export default function SettingsPage() {
       missionText: "Providing efficient financial management systems for micro-finance associations.",
       version: "System Version",
       devInfo: "Developer Info",
-      developer: "Teklu Abebe",
+      developer: "Teklu Aebe",
       pro: "Full-stack IT Specialist"
-    },
-    Oromiffa: {
-      title: "Sajoo Sirnaa",
-      finance: "Sajoo Faayinaansii",
-      penaltyLabel: "Adabbii Turtee Ji'aa (ETB)",
-      penaltyHint: "* Gatiin kun adabbii turtee ji'aan herregamu bakka bu'a.",
-      appearance: "Sajoo Bifa Sirnaa",
-      darkMode: "Haala Dukkanaa (Dark Mode)",
-      langLabel: "Affaan Filadhu",
-      security: "Nageenya",
-      changePass: "Jecha Darbii Jijjiiri",
-      logout: "Sirna gadi lakkisi",
-      about: "Waa'ee Keenya",
-      mission: "Ergama Keenya",
-      missionText: "Waldaalee xixiqqoodhaaf sirna bulchiinsa faayinaansii si'aawaa dhiyeessuu.",
-      version: "Maxxansa Sirnaa",
-      devInfo: "Oduu Omishitootaa",
-      developer: "Teklu Abebe",
-      pro: "Ogeessa Sooftiweerii fi IT"
-    },
-    Tigrigna: {
-      title: "ቅንብራት ስርዓት",
-      finance: "ቅንብራት ፋይናንስ",
-      penaltyLabel: "ቅጽዓት ወርሓዊ ውዝፍ (ብር)",
-      penaltyHint: "* እዚ ዋጋ እዚ ወርሓዊ ዝሕሰብ ናይ ውዝፍ ቅጽዓት እዩ።",
-      appearance: "ቅንብራት መልክዕ",
-      darkMode: "ጸሊም መልክዕ (Dark Mode)",
-      langLabel: "ቋንቋ ምረጽ",
-      security: "ደህንነት",
-      changePass: "ፓስዎርድ ቀይር",
-      logout: "ካብ ስርዓት ውጻእ",
-      about: "ብዛዕባናን ስርዓትን",
-      mission: "ዕላማና",
-      missionText: "ንናእሽቱን ማእከለዎትን ማሕበራት ስሉጥ ዝኾነ ናይ ፋይናንስ ምሕደራ ስርዓት ምቕራብ።",
-      version: "ሕታም ስርዓት",
-      devInfo: "ሓበሬታ ኣማዕባሊ",
-      developer: "ተክሉ አበበ",
-      pro: "ኪኢላ ሶፍትዌርን አይቲን"
     }
   };
 
@@ -150,8 +112,6 @@ export default function SettingsPage() {
             >
               <option value="Amharic">አማርኛ</option>
               <option value="English">English</option>
-              <option value="Oromiffa">Afaan Oromoo</option>
-              <option value="Tigrigna">ትግርኛ</option>
             </select>
           </div>
         </div>
@@ -187,6 +147,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Hover እና Dynamic Effects በ CSS */}
       <style>
         {`
           .settings-card {

@@ -4,10 +4,11 @@
   "private": true,
   "homepage": "https://tekluabebe.github.io/Micro-Finance",
   "dependencies": {
+    "dotenv": "^17.4.2",
+    "gh-pages": "^6.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1",
-    "gh-pages": "^6.1.1"
+    "react-scripts": "5.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -17,12 +18,7 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
+ 
   "browserslist": {
     "production": [
       ">0.2%",

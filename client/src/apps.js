@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import TerminatedEmployees from "./pages/TerminatedEmployees";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -15,46 +15,43 @@ import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import HelpPage from "./pages/HelpPage";
 import SettingsPage from "./pages/SettingsPage";
-import Logout from "./pages/Logout";
 
 function App() {
-  // 1. መጀመሪያ ቶክን በ localStorage ውስጥ መኖሩን ቼክ እናደርጋለን
+  // 1. ቶክኑን ከ localStorage እናነባለን (ሁልጊዜ true መሆኑ ይቅር)
   const [token, setToken] = useState(localStorage.getItem("token"));
 
-  // ቶክኑ ሲቀየር (Login ሲደረግ ወይም Logout ሲደረግ) አፑን ለማደስ
+  // ቶክኑ ሲቀየር አፑ እንዲያውቀው (ለምሳሌ Login ወይም Logout ሲደረግ)
   useEffect(() => {
-    const handleStorageChange = () => {
-      setToken(localStorage.getItem("token"));
-    };
+    const handleStorageChange = () => setToken(localStorage.getItem("token"));
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // 2. ቶክን ካለ ገብቷል (true) ካልሆነ ግን አልገባም (false)
-  const isAuthenticated = !!token; 
+  const isAuthenticated = !!token;
 
   return (
-    <HashRouter>
-      {/* ተጠቃሚው ከገባ ብቻ Navbar እና Sidebar ይታያሉ */}
+    <BrowserRouter>
       {isAuthenticated && <Navbar />}
 
       <div style={{ display: "flex", minHeight: "100vh" }}>
         {isAuthenticated && <Sidebar />}
 
         <div style={{ 
-          padding: isAuthenticated ? "20px" : "0px", 
+          padding: "20px", 
           flexGrow: 1,
           width: "100%",
-          background: isAuthenticated ? "#f4f7fe" : "#ffffff" 
+          // marginLeft ን እዚህ ጋር አስተካክለነዋል
+          marginLeft: isAuthenticated ? "0px" : "0px", 
+          background: "#f4f7fe" 
         }}>
           <Routes>
-            {/* ተጠቃሚው ካልገባ (Login ካላደረገ) ሁልጊዜ ወደ /login ይላካል */}
+            {/* ተጠቃሚው ከገባ ወደ Login መሄድ የለበትም፣ ካልገባ ግን Login ገጽ ይቆያል */}
             <Route 
               path="/login" 
               element={!isAuthenticated ? <Login /> : <Navigate to="/" />} 
             />
 
-            {/* Protected Routes: isAuthenticated true ከሆነ ብቻ ይከፈታሉ */}
+            {/* Protected Routes */}
             <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
             <Route path="/employees" element={isAuthenticated ? <Employees /> : <Navigate to="/login" />} />
             <Route path="/deposits" element={isAuthenticated ? <Deposits /> : <Navigate to="/login" />} />
@@ -67,13 +64,13 @@ function App() {
             <Route path="/terminated" element={isAuthenticated ? <TerminatedEmployees /> : <Navigate to="/login" />} />
             <Route path="/help" element={isAuthenticated ? <HelpPage /> : <Navigate to="/login" />} />
             <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
-            
-            {/* ተጠቃሚው የሌለ ገጽ ቢጠይቅ ወይም ገና ሲስተሙ ሲከፈት */}
+
+            {/* ተጠቃሚው የሌለ ገጽ ቢጠይቅ */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />
           </Routes>
         </div>
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 

@@ -1,6 +1,7 @@
 node_modules/
-client/node_modules/
-.cache/
+**/node_modules/
+.env
+**/.env
 build/
 dist/
-.env
+.cache/

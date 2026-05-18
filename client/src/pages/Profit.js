@@ -1,160 +1,113 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import API from "../services/api";
+import "./ProfitDistribution.css";
 
 export default function ProfitDistribution() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [member, setMember] = useState(null);
-  const [savingAmount, setSavingAmount] = useState("");
-  const [shareAmount, setShareAmount] = useState("");
+  const [employees, setEmployees] = useState([]);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [distribution, setDistribution] = useState({ savingAmount: "", shareAmount: "" });
 
-  // Search member by name or ID
-  const handleSearch = async () => {
-    if (!searchQuery) return;
-    try {
-      const res = await API.get(`/members/search?query=${searchQuery}`);
-      if (res.data) {
-        setMember(res.data);
+  useEffect(() => {
+    API.get("/employees").then(res => setEmployees(res.data || []));
+  }, []);
 
-        // Calculate total dividend for this member
-        const dividendAmount =
-          ((res.data.sharesPurchased || 0) /
-            (res.data.totalShares || 1)) *
-          (res.data.totalProfit || 0);
-
-        setMember((prev) => ({ ...prev, dividendAmount }));
-        setSavingAmount("");
-        setShareAmount("");
-      } else {
-        alert("Member not found");
-        setMember(null);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error fetching member");
-    }
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowDropdown(true);
+    const filtered = employees.filter(emp => 
+      emp.memberId?.toString().toLowerCase().includes(value.toLowerCase()) ||
+      `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredEmployees(filtered);
   };
 
-  const handleDistribute = async () => {
-    if (!member) return;
-
-    const dividendAmount = member.dividendAmount;
-    const saving = parseFloat(savingAmount || 0);
-    const share = parseFloat(shareAmount || 0);
-
-    if (share > 0 && share < 500) {
-      alert("Amount to save in share purchased must be ≥ 500 ETB");
-      return;
-    }
-
-    if (saving + share > dividendAmount) {
-      alert(`Total distribution cannot exceed dividend (${dividendAmount.toFixed(2)} ETB)`);
-      return;
-    }
-
-    try {
-      await API.post("/profit/distribute", {
-        memberId: member._id,
-        savingAmount: saving,
-        shareAmount: share,
-      });
-      alert("Profit distributed successfully!");
-      setMember(null);
-      setSearchQuery("");
-    } catch (err) {
-      console.error(err);
-      alert("Error distributing profit");
-    }
+  const handleSelect = (member) => {
+    const dividend = ((member.sharedPurchase || 0) / 1000) * 50000; 
+    setSelectedMember({ ...member, fullName: `${member.firstName} ${member.lastName}`, dividend });
+    setShowDropdown(false);
+    setSearchTerm("");
   };
 
   return (
-    <div style={styles.container}>
-      <h2>Profit Distribution</h2>
-
-      {/* Search */}
-      <div style={styles.searchContainer}>
-        <input
-          type="text"
-          placeholder="Search member by name or ID"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={styles.input}
-        />
-        <button onClick={handleSearch} style={styles.button}>
-          Search
-        </button>
+    <div className="pd-main-wrapper">
+      <div className="pd-top-bar">
+        <h1>የትርፍ ክፍፍል ማዕከል</h1>
+        <div className="pd-search-container">
+          <input 
+            type="text" 
+            className="pd-search-input"
+            placeholder="መታወቂያ ወይም ስም ይጻፉ..." 
+            value={searchTerm}
+            onChange={handleSearch}
+            onFocus={() => setShowDropdown(true)}
+          />
+          {showDropdown && searchTerm && (
+            <div className="pd-modern-dropdown">
+              {filteredEmployees.map(emp => (
+                <div key={emp._id} className="pd-dropdown-option" onClick={() => handleSelect(emp)}>
+                  <div className="pd-opt-avatar">{emp.firstName[0]}</div>
+                  <div className="pd-opt-info">
+                    <span className="pd-opt-name">{emp.firstName} {emp.lastName}</span>
+                    <span className="pd-opt-id">ID: #{emp.memberId}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {member && (
-        <div style={styles.distributionContainer}>
-          <h3>{member.fullName}</h3>
-          <p>Total Dividend: {member.dividendAmount.toFixed(2)} ETB</p>
-
-          <div style={styles.formRow}>
-            <label>Save to Saving Account:</label>
-            <input
-              type="number"
-              min="0"
-              max={member.dividendAmount}
-              value={savingAmount}
-              onChange={(e) => setSavingAmount(e.target.value)}
-              style={styles.input}
-            />
+      {selectedMember && (
+        <div className="pd-card-grid">
+          {/* ካርድ 1: Profile (ትንሽ መጠን) */}
+          <div className="pd-card pd-card-small">
+            <div className="pd-card-icon">👤</div>
+            <h3>የአባል መረጃ</h3>
+            <p className="pd-emp-name">{selectedMember.fullName}</p>
+            <p className="pd-emp-id">መታወቂያ: #{selectedMember.memberId}</p>
           </div>
 
-          <div style={styles.formRow}>
-            <label>Save to Share Purchased (≥500 ETB if any):</label>
-            <input
-              type="number"
-              min="0"
-              max={member.dividendAmount}
-              value={shareAmount}
-              onChange={(e) => setShareAmount(e.target.value)}
-              style={styles.input}
-            />
+          {/* ካርድ 2: Dividend (ትልቅ መጠን) */}
+          <div className="pd-card pd-card-large">
+            <div className="pd-card-icon">💰</div>
+            <h3>ሊከፋፈል የሚገባው ትርፍ</h3>
+            <h2 className="pd-amount-text">{selectedMember.dividend.toLocaleString()} <span>ETB</span></h2>
+            <div className="pd-progress-container">
+              <div className="pd-progress-bar" style={{width: '75%'}}></div>
+            </div>
+            <p className="pd-hint">ይህ መጠን የተሰላው ካለዎት {selectedMember.sharedPurchase} ዕጣ አንጻር ነው</p>
           </div>
 
-          <button onClick={handleDistribute} style={styles.button}>
-            Distribute Profit
-          </button>
+          {/* ካርድ 3: Input Form (መካከለኛ መጠን) */}
+          <div className="pd-card pd-card-medium">
+            <div className="pd-card-icon">📝</div>
+            <h3>የክፍፍል ስርጭት</h3>
+            <div className="pd-input-group">
+              <label>ወደ ቁጠባ (Saving)</label>
+              <input type="number" placeholder="0.00" value={distribution.savingAmount} onChange={(e) => setDistribution({...distribution, savingAmount: e.target.value})} />
+            </div>
+            <div className="pd-input-group">
+              <label>ለዕጣ ግዢ (Share ≥ 500)</label>
+              <input type="number" placeholder="500" value={distribution.shareAmount} onChange={(e) => setDistribution({...distribution, shareAmount: e.target.value})} />
+            </div>
+          </div>
+
+          {/* ካርድ 4: Summary (ትንሽ መጠን) */}
+          <div className="pd-card pd-card-small pd-summary-card">
+            <div className="pd-card-icon">📊</div>
+            <h3>ማጠቃለያ</h3>
+            <div className="pd-summary-row">
+              <span>ቀሪ:</span>
+              <strong>{(selectedMember.dividend - (parseFloat(distribution.savingAmount || 0) + parseFloat(distribution.shareAmount || 0))).toFixed(2)}</strong>
+            </div>
+            <button className="pd-confirm-btn">አጽድቅ</button>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    marginLeft: "260px",
-    padding: "20px",
-  },
-  searchContainer: {
-    display: "flex",
-    alignItems: "center",
-    marginBottom: "20px",
-    gap: "10px",
-  },
-  distributionContainer: {
-    background: "#ecf0f1",
-    padding: "20px",
-    borderRadius: "8px",
-    maxWidth: "500px",
-  },
-  formRow: {
-    marginBottom: "15px",
-  },
-  input: {
-    width: "100%",
-    padding: "8px",
-    borderRadius: "4px",
-    border: "1px solid #ccc",
-  },
-  button: {
-    padding: "12px 20px",
-    background: "#1abc9c",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "16px",
-  },
-};
