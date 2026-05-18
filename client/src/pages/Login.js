@@ -1,43 +1,59 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import "./Login.css";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [memberId, setMemberId] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("member");
   const [error, setError] = useState("");
 
-  // በLoginPage.js ውስጥ የሚጨመር
+  // ገጹ እንደተከፈተ ቶከን ካለ በራሱ ወደ ስራ ገጽ እንዲገባ (Auto-redirect)
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const userRole = localStorage.getItem("userRole");
+      if (userRole?.toLowerCase() === "admin") {
+        navigate("/");
+      } else {
+        navigate("/member-profile");
+      }
+    }
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError(""); // የድሮ ስህተት ካለ ማጽዳት
 
     try {
-      // Send memberId instead of email
+      // ወደ Backend የሎጊን ጥያቄ መላክ
       const res = await API.post("/auth/login", {
         memberId,
         password,
         role
       });
 
-      // Save token and user info
+      // የመጣውን ዳታ በሙሉ በLocalStorage ውስጥ ማስቀመጥ
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("userRole", res.data.user.role);
       localStorage.setItem("memberId", res.data.user.memberId);
       localStorage.setItem("fullName", res.data.user.fullName);
 
-      // Redirect by role
+      // በ Role መሰረት ወደ ተገቢው ገጽ መላክ
+      // ማሳሰቢያ፡ navigate የሚለው በራሳችን ሳይት ውስጥ ብቻ እንዲቆይ ያደርገዋል
       if (res.data.user.role.toLowerCase() === "admin") {
-        window.location.href = "/";
+        navigate("/");
       } else {
-        window.location.href = "/member-profile";
+        navigate("/member-profile");
       }
 
     } catch (err) {
+      // ስህተት ካለ ለተጠቃሚው ማሳየት
       setError(
-        err.response?.data?.message ||
-        "Login failed ❌"
+        err.response?.data?.message || 
+        "መግባት አልተቻለም፣ እባክዎ መረጃዎን ያረጋግጡ ❌"
       );
     }
   };
@@ -48,7 +64,7 @@ export default function Login() {
         <h2>Micro-Finance Login</h2>
 
         <form onSubmit={handleLogin}>
-
+          {/* Role መምረጫ (Member ወይም Admin) */}
           <div className="role-selector">
             <button
               type="button"
@@ -57,7 +73,6 @@ export default function Login() {
             >
               Member
             </button>
-
             <button
               type="button"
               className={role === "admin" ? "active" : ""}
@@ -69,19 +84,17 @@ export default function Login() {
 
           <div className="input-group">
             <label>Member ID</label>
-
             <input
               type="text"
               value={memberId}
               onChange={(e) => setMemberId(e.target.value)}
               required
-              placeholder="Enter Member ID"
+              placeholder="የመታወቂያ ቁጥር ያስገቡ"
             />
           </div>
 
           <div className="input-group">
             <label>Password</label>
-
             <input
               type="password"
               value={password}
@@ -91,19 +104,11 @@ export default function Login() {
             />
           </div>
 
-          {error && (
-            <p className="error-msg">
-              {error}
-            </p>
-          )}
+          {error && <p className="error-msg">{error}</p>}
 
-          <button
-            type="submit"
-            className="login-btn"
-          >
+          <button type="submit" className="login-btn">
             Login
           </button>
-
         </form>
       </div>
     </div>
