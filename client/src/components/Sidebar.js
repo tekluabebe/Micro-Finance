@@ -128,11 +128,11 @@ export default function Sidebar() {
     </div>
   );
 }
-
 const styles = {
   sidebar: {
     background: "#02020c",
-    height: "100vh",
+    // ከ height ይልቅ min-height በመጠቀም ዙም ሲደረግ ባክግራውንዱ አብሮ እንዲረዝም ያደርጋል
+    minHeight: "100vh", 
     padding: "15px",
     color: "#fff",
     display: "flex",
@@ -140,22 +140,64 @@ const styles = {
     transition: "width 0.3s ease",
     position: "sticky",
     top: 0,
+    // የውስጡ ይዘት ከSidebar ቁመት በላይ እንዳይፈስ ለመቆጣጠር
+    boxSizing: "border-box",
   },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px", padding: "0 10px" },
+  header: { 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    marginBottom: "30px", 
+    padding: "0 10px" 
+  },
   logoText: { fontSize: "20px", fontWeight: "bold" },
-  toggleBtn: { background: "#fff", border: "none", borderRadius: "50%", width: "25px", height: "25px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ee2b09" },
+  toggleBtn: { 
+    background: "#fff", 
+    border: "none", 
+    borderRadius: "50%", 
+    width: "25px", 
+    height: "25px", 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    cursor: "pointer", 
+    color: "#ee2b09" 
+  },
   menu: { listStyle: "none", padding: 0, flexGrow: 1 },
   listItem: { marginBottom: "8px" },
   subMenu: { listStyle: "none", padding: 0, marginTop: "5px" },
   link: {
-    display: "flex", alignItems: "center", gap: "15px", padding: "12px", borderRadius: "8px",
-    textDecoration: "none", color: "#fff", fontSize: "15px", transition: "all 0.2s",
+    display: "flex", 
+    alignItems: "center", 
+    gap: "15px", 
+    padding: "12px", 
+    borderRadius: "8px",
+    textDecoration: "none", 
+    color: "#fff", 
+    fontSize: "15px", 
+    transition: "all 0.2s",
   },
   icon: { fontSize: "20px", minWidth: "25px" },
-  footer: { borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "15px" },
-  userProfile: { display: "flex", alignItems: "center", gap: "10px", marginTop: "20px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "10px" },
+  // በምትወዛወዝበት ጊዜ የግርጌው ክፍል ሁልጊዜ ከታች ተጣብቆ እንዲቆይ
+  footer: { 
+    borderTop: "1px solid rgba(255,255,255,0.1)", 
+    paddingTop: "15px",
+    marginTop: "auto" // ሜኑው አጭር ቢሆንም እንኳ ፉተሩን ወደ ታች ይገፋዋል
+  },
+  userProfile: { 
+    display: "flex", 
+    alignItems: "center", 
+    gap: "10px", 
+    marginTop: "20px", 
+    padding: "10px", 
+    background: "rgba(255,255,255,0.05)", 
+    borderRadius: "10px" 
+  },
   avatar: { width: "35px", height: "35px", borderRadius: "50%" },
   userInfo: { overflow: "hidden" },
+  userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
+  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
+};
   userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
   userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
 };
