@@ -198,6 +198,3 @@ const styles = {
   userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
   userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
 };
-  userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
-  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
-};
