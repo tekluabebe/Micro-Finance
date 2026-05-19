@@ -7,6 +7,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use(express.urlencoded({ extended: true }));
+
 //app.use("/api/reports", reportsRoutes);
 // =======================
 // CONNECT TO MONGODB
@@ -1684,5 +1686,23 @@ app.delete("/api/terminated/:id", async (req, res) => {
 // =======================
 // START SERVER
 // =======================
+const path = require("path");
+
+// ሰርቨሩ ካለበት ፎልደር አንድ እርምጃ ወደ ኋላ ወጥቶ ወደ client/build እንዲገባ ያደርጋል
+const buildPath = path.join(__dirname, "..", "client", "build");
+
+app.use(express.static(buildPath));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(buildPath, "index.html"), (err) => {
+    if (err) {
+      res.status(500).send("የሪአክት ቢልድ ፋይል አልተገኘም! እባክህ Render ላይ Build መደረጉን አረጋግጥ።");
+    }
+  });
+});
+
+// START SERVER
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server is running successfully on port ${PORT} 🚀`);
+});

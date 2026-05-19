@@ -31,7 +31,19 @@ function App() {
   }, []);
 
   // 2. ቶክን ካለ ገብቷል (true) ካልሆነ ግን አልገባም (false)
-  const isAuthenticated = !!token; 
+
+  // በ App.js ውስጥ
+const isAuthenticated = token !== null && token !== undefined && token !== "";
+
+  // በ App.js ውስጥ
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem("token");
+  // ቶከን ከሌለ በቀጥታ ወደ Login ገጽ እንዲመለስ ያደርጋል
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
   return (
     <HashRouter>
