@@ -14,8 +14,8 @@ export default function Employees() {
     gender: "",
     phone: "",
     maritalStatus: "",
-    role: "Member", // Default role
-    password: "",   // ለሎጊን የሚያገለግል
+    role: "Member",
+    password: "",   
     wifeName: "",
     wifeFatherName: "",
     wifeMotherName: "",
@@ -31,7 +31,6 @@ export default function Employees() {
 
   const [formData, setFormData] = useState(initialState);
 
-  // Fetch employees
   useEffect(() => {
     fetchEmployees();
   }, []);
@@ -59,21 +58,15 @@ export default function Employees() {
     setFormData({ ...formData, [field]: [...formData[field], ""] });
   };
 
-  // CREATE / UPDATE
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // 🔴 ቼክ፡ Member ID አስቀድሞ መኖሩን ማረጋገጥ (ሲፈጠር ብቻ)
     if (!editingId) {
-      const exists = employees.some(
-        (emp) => emp.memberId === formData.memberId
-      );
-
+      const exists = employees.some((emp) => emp.memberId === formData.memberId);
       if (exists) {
         alert("ስህተት: ይህ Member ID አስቀድሞ ተመዝግቧል!");
         return;
       }
-
       if (!formData.password) {
         alert("እባክህ ለተጠቃሚው ፓስወርድ አስገባ!");
         return;
@@ -81,10 +74,9 @@ export default function Employees() {
     }
 
     try {
-      // ለሎጊን እንዲመች ዳታውን አዘጋጅተን እንልካለን
       const submissionData = {
         ...formData,
-        role: formData.role.toLowerCase(), // 'admin' ወይም 'member' ለማድረግ
+        role: formData.role.toLowerCase(),
       };
 
       if (editingId) {
@@ -110,14 +102,12 @@ export default function Employees() {
     }
   };
 
-  // EDIT
   const handleEdit = (emp) => {
-    setFormData({ ...emp, password: "" }); // Edit ሲደረግ ፓስወርዱን በባዶ እናሳየዋለን
+    setFormData({ ...emp, password: "" }); 
     setEditingId(emp._id);
     setShowForm(true);
   };
 
-  // DELETE
   const handleDelete = async (id) => {
     if (!window.confirm("ይህንን ሰራተኛ መሰረዝ ትፈልጋለህ?")) return;
 
@@ -136,158 +126,204 @@ export default function Employees() {
   );
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial" }}>
-      <h2>Employees Management</h2>
+    <div className="employees-page-container" style={styles.container}>
+      <h2 style={{ color: "#2c3e50" }}>Employees Management</h2>
 
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+      <div className="emp-actions-bar" style={styles.actionBar}>
         <button onClick={() => {
           setShowForm(!showForm);
           if(!showForm) setEditingId(null); setFormData(initialState);
-        }} style={btnStyle}>
+        }} style={styles.btnStyle}>
           {showForm ? "Close Form" : editingId ? "Edit Employee" : "Register Employee"}
         </button>
         <input
           placeholder="Search by name, ID or phone..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ padding: "8px 12px", width: 300, borderRadius: "6px", border: "1px solid #ccc" }}
+          className="emp-search-input"
+          style={styles.searchInput}
         />
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={formStyle}>
-          <h3>Login & Basic Info</h3>
-          <div style={gridStyle}>
+        <form onSubmit={handleSubmit} style={styles.formStyle}>
+          <h3 style={styles.sectionTitle}>Login & Basic Info</h3>
+          <div className="emp-form-grid" style={styles.gridStyle}>
             <div>
-                <label>Member ID (Username)</label>
-                <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={inputStyle} disabled={editingId} />
+                <label style={styles.labelStyle}>Member ID (Username)</label>
+                <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={styles.inputStyle} disabled={editingId} />
             </div>
             <div>
-                <label>Login Password</label>
-                <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={inputStyle}/>
+                <label style={styles.labelStyle}>Login Password</label>
+                <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={styles.inputStyle}/>
             </div>
-            <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={inputStyle}/>
-            <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={inputStyle}/>
+            <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={styles.inputStyle}/>
+            <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={styles.inputStyle}/>
             
-            <select name="gender" value={formData.gender} onChange={handleChange} style={inputStyle}>
+            <select name="gender" value={formData.gender} onChange={handleChange} style={styles.inputStyle}>
               <option value="">Gender</option>
               <option>Male</option>
               <option>Female</option>
             </select>
             
-            <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={inputStyle}/>
+            <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={styles.inputStyle}/>
             
-            <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={inputStyle}>
+            <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={styles.inputStyle}>
               <option value="">Marital Status</option>
               <option>Single</option>
               <option>Married</option>
             </select>
 
-            <select name="role" value={formData.role} onChange={handleChange} style={inputStyle}>
+            <select name="role" value={formData.role} onChange={handleChange} style={styles.inputStyle}>
               <option>Member</option>
               <option>Admin</option>
             </select>
           </div>
 
-          <h3>Family Info</h3>
-          <div style={gridStyle}>
-            <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={inputStyle}/>
-            <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={inputStyle}/>
+          <h3 style={styles.sectionTitle}>Family Info</h3>
+          <div className="emp-form-grid" style={styles.gridStyle}>
+            <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle}/>
+            <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle}/>
           </div>
 
           {formData.maritalStatus === "Married" && formData.gender === "Male" && (
-            <div style={{background: "#eee", padding: 10, borderRadius: 8, marginTop: 10}}>
-              <h4>Spouse Info (Wife)</h4>
-              <div style={gridStyle}>
-                <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={inputStyle}/>
-                <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={inputStyle}/>
-                <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={inputStyle}/>
+            <div style={styles.spouseBox}>
+              <h4 style={styles.subSectionTitle}>Spouse Info (Wife)</h4>
+              <div className="emp-form-grid" style={styles.gridStyle}>
+                <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={styles.inputStyle}/>
+                <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={styles.inputStyle}/>
+                <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={styles.inputStyle}/>
               </div>
             </div>
           )}
 
           {formData.maritalStatus === "Married" && formData.gender === "Female" && (
-            <div style={{background: "#eee", padding: 10, borderRadius: 8, marginTop: 10}}>
-              <h4>Spouse Info (Husband)</h4>
-              <div style={gridStyle}>
-                <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={inputStyle}/>
-                <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={inputStyle}/>
-                <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={inputStyle}/>
+            <div style={styles.spouseBox}>
+              <h4 style={styles.subSectionTitle}>Spouse Info (Husband)</h4>
+              <div className="emp-form-grid" style={styles.gridStyle}>
+                <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={styles.inputStyle}/>
+                <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={styles.inputStyle}/>
+                <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={styles.inputStyle}/>
               </div>
             </div>
           )}
 
-          <h4>Brothers</h4>
+          <h4 style={styles.subSectionTitle}>Brothers</h4>
           {formData.brothers.map((b,i)=>
-            <input key={i} value={b} placeholder="Brother Name" onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={inputStyle}/>
+            <input key={i} value={b} placeholder="Brother Name" onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={styles.inputStyle}/>
           )}
-          <button type="button" onClick={()=>addField("brothers")} style={addBtn}>➕ Add Brother</button>
+          <button type="button" onClick={()=>addField("brothers")} style={styles.addBtn}>➕ Add Brother</button>
 
-          <h4>Sisters</h4>
+          <h4 style={styles.subSectionTitle}>Sisters</h4>
           {formData.sisters.map((s,i)=>
-            <input key={i} value={s} placeholder="Sister Name" onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={inputStyle}/>
+            <input key={i} value={s} placeholder="Sister Name" onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={styles.inputStyle}/>
           )}
-          <button type="button" onClick={()=>addField("sisters")} style={addBtn}>➕ Add Sister</button>
+          <button type="button" onClick={()=>addField("sisters")} style={styles.addBtn}>➕ Add Sister</button>
 
-          <h4>Children</h4>
+          <h4 style={styles.subSectionTitle}>Children</h4>
           {formData.children.map((c,i)=>
-            <input key={i} value={c} placeholder="Child Name" onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={inputStyle}/>
+            <input key={i} value={c} placeholder="Child Name" onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={styles.inputStyle}/>
           )}
-          <button type="button" onClick={()=>addField("children")} style={addBtn}>➕ Add Child</button>
+          <button type="button" onClick={()=>addField("children")} style={styles.addBtn}>➕ Add Child</button>
 
           <br/><br/>
-          <button type="submit" style={submitBtn}>{editingId ? "Update Info" : "Register & Create Account"}</button>
+          <button type="submit" style={styles.submitBtn}>{editingId ? "Update Info" : "Register & Create Account"}</button>
         </form>
       )}
 
-      <h3 style={{marginTop:30}}>Employee List</h3>
-      <table style={tableStyle}>
-        <thead>
-          <tr>
-            <th style={thStyle}>Member ID</th>
-            <th style={thStyle}>Full Name</th>
-            <th style={thStyle}>Phone</th>
-            <th style={thStyle}>Role</th>
-            <th style={thStyle}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredEmployees.map(emp=>(
-            <tr key={emp._id}>
-              <td style={tdStyle}>{emp.memberId}</td>
-              <td style={tdStyle}>{emp.firstName} {emp.lastName}</td>
-              <td style={tdStyle}>{emp.phone}</td>
-              <td style={tdStyle}>
-                <span style={{
-                    padding: "4px 8px", 
-                    borderRadius: 4, 
-                    fontSize: 12, 
-                    background: emp.role === 'admin' ? '#fdecea' : '#eaf7ff',
-                    color: emp.role === 'admin' ? '#d32f2f' : '#1976d2',
-                    fontWeight: 'bold'
-                }}>
-                    {emp.role.toUpperCase()}
-                </span>
-              </td>
-              <td style={tdStyle}>
-                <button onClick={()=>handleEdit(emp)} style={{marginRight: 5, cursor: "pointer"}}>✏️</button>
-                <button onClick={()=>handleDelete(emp._id)} style={{cursor: "pointer"}}>❌</button>
-              </td>
+      <h3 style={{ marginTop: 30, color: "#2c3e50" }}>Employee List</h3>
+      
+      {/* ሰንጠረዡ በስልክ ላይ ስክሪን እንዳይሰብር መከለያ (Wrapper) */}
+      <div className="emp-table-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" }}>
+        <table style={styles.tableStyle}>
+          <thead>
+            <tr>
+              <th style={styles.thStyle}>Member ID</th>
+              <th style={styles.thStyle}>Full Name</th>
+              <th style={styles.thStyle}>Phone</th>
+              <th style={styles.thStyle}>Role</th>
+              <th style={styles.thStyle}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredEmployees.length > 0 ? (
+              filteredEmployees.map(emp=>(
+                <tr key={emp._id}>
+                  <td style={styles.tdStyle}>{emp.memberId}</td>
+                  <td style={styles.tdStyle}>{emp.firstName} {emp.lastName}</td>
+                  <td style={styles.tdStyle}>{emp.phone}</td>
+                  <td style={styles.tdStyle}>
+                    <span style={{
+                        padding: "4px 8px", 
+                        borderRadius: 4, 
+                        fontSize: 12, 
+                        background: emp.role === 'admin' ? '#fdecea' : '#eaf7ff',
+                        color: emp.role === 'admin' ? '#d32f2f' : '#1976d2',
+                        fontWeight: 'bold'
+                    }}>
+                        {emp.role.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={styles.tdStyle}>
+                    <button onClick={()=>handleEdit(emp)} style={{ marginRight: 8, cursor: "pointer", border: "none", background: "none", fontSize: "16px" }}>✏️</button>
+                    <button onClick={()=>handleDelete(emp._id)} style={{ cursor: "pointer", border: "none", background: "none", fontSize: "16px" }}>❌</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr><td colSpan="5" style={{ padding: "20px", textAlign: "center" }}>ምንም ሰራተኛ አልተገኘም</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* የሞባይል ማስተካከያ CSS */}
+      <style>
+        {`
+          @media (max-width: 768px) {
+            .employees-page-container {
+              margin-left: 0 !important; /* የSidebar ክፍተትን ማጥፋት */
+              padding: 15px !important;
+            }
+            .emp-actions-bar {
+              flex-direction: column !important; /* በተኑ እና ፍለጋው ወደ ታች እንዲደረደሩ */
+              gap: 12px !important;
+              align-items: stretch !important;
+            }
+            .emp-search-input {
+              width: 100% !important;
+            }
+            .emp-form-grid {
+              grid-template-columns: 1fr !important; /* ሳጥኖች በስልክ 1 ረድፍ ብቻ እንዲሆኑ */
+              gap: 10px !important;
+            }
+            th, td {
+              padding: 10px !important;
+              font-size: 14px !important;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }
 
-// STYLES (Inline)
-const inputStyle={padding:"10px",margin:"5px 0",borderRadius:"6px",border:"1px solid #ccc",width:"100%", boxSizing: "border-box"};
-const gridStyle={display:"grid",gridTemplateColumns:"1fr 1fr",gap:"15px"};
-const formStyle={marginTop:"20px",padding:"20px",background:"#f9f9f9",borderRadius:"10px", border: "1px solid #ddd"};
-const btnStyle={padding:"10px 20px",backgroundColor:"#007bff",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer", fontWeight: "bold"};
-const addBtn={margin:"5px 0 15px",padding:"6px 12px",border:"1px solid #ddd",background:"#fff",cursor:"pointer",borderRadius:"6px"};
-const submitBtn={padding:"14px",width:"100%",backgroundColor:"#28a745",color:"#fff",border:"none",borderRadius:"8px",fontSize:"16px", fontWeight: "bold", cursor: "pointer"};
-const tableStyle={width:"100%",borderCollapse:"collapse",marginTop:"15px"};
-const thStyle={border:"1px solid #ddd",padding:"12px",background:"#f4f4f4",textAlign:"left"};
-const tdStyle={border:"1px solid #ddd",padding:"12px"};
+// የተደራጁ የስታይል ህግጋት (Styles Objects)
+const styles = {
+  container: { marginLeft: "20px", padding: "20px", backgroundColor: "#f8f9fa", minHeight: "100vh", boxSizing: "border-box" },
+  actionBar: { display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" },
+  searchInput: { padding: "10px 12px", width: 300, borderRadius: "6px", border: "1px solid #ccc", outline: "none", boxSizing: "border-box" },
+  inputStyle: { padding: "10px", margin: "5px 0", borderRadius: "6px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box", fontSize: "14px" },
+  labelStyle: { fontSize: "12px", fontWeight: "bold", color: "#555", marginLeft: "2px" },
+  gridStyle: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" },
+  formStyle: { marginTop: "20px", padding: "25px", background: "#fff", borderRadius: "12px", border: "1px solid #eee", boxShadow: "0 4px 10px rgba(0,0,0,0.02)" },
+  btnStyle: { padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
+  addBtn: { margin: "5px 0 15px", padding: "8px 14px", border: "1px solid #ddd", background: "#fff", cursor: "pointer", borderRadius: "6px", fontSize: "13px", fontWeight: "600" },
+  submitBtn: { padding: "14px", width: "100%", backgroundColor: "#28a745", color: "#fff", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer", marginTop: "15px" },
+  tableStyle: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "650px" },
+  thStyle: { padding: "12px", background: "#34495e", color: "#fff", textAlign: "left", borderBottom: "2px solid #ddd" },
+  tdStyle: { padding: "12px", borderBottom: "1px solid #eee" },
+  spouseBox: { background: "#f1f3f5", padding: "15px", borderRadius: "10px", marginTop: "15px", marginBottom: "15px" },
+  sectionTitle: { borderBottom: "2px solid #007bff", paddingBottom: "5px", color: "#333", marginTop: "20px", marginBottom: "15px", fontSize: "18px" },
+  subSectionTitle: { color: "#495057", marginTop: "15px", marginBottom: "8px" }
+};

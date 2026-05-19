@@ -12,10 +12,10 @@ export default function HelpPage() {
   ];
 
   return (
-    <div style={styles.container}>
+    <div className="help-page-container" style={styles.container}>
       <h1 style={styles.title}><FaQuestionCircle /> Help & Support Center</h1>
       
-      <div style={styles.grid}>
+      <div className="help-grid" style={styles.grid}>
         {/* --- የብድር አጠቃቀም መመሪያ --- */}
         <div style={styles.card} className="help-card">
           <h3 style={styles.cardTitle}><FaBook /> የብድር አጠቃቀም መመሪያ</h3>
@@ -26,8 +26,8 @@ export default function HelpPage() {
           </ul>
         </div>
 
-        {/* --- FAQ (ተደጋጋሚ ጥያቄዎች) - በካርዱ ውስጥ Scroll የሚሆን --- */}
-        <div style={styles.card} className="help-card">
+        {/* --- FAQ (ተደጋጋሚ ጥያቄዎች) --- */}
+        <div style={styles.card} className="help-card faq-card-height">
           <h3 style={styles.cardTitle}><FaInfoCircle /> FAQ (ተደጋጋሚ ጥያቄዎች)</h3>
           <div style={styles.faqScrollContainer}>
             {faqs.map((item, index) => (
@@ -63,10 +63,10 @@ export default function HelpPage() {
         {/* --- Technical Support --- */}
         <div style={styles.card} className="help-card">
           <h3 style={styles.cardTitle}><FaHeadset /> Technical Support</h3>
-          <div style={{fontSize: "14px", color: "#444"}}>
-            <p><strong>Admin:</strong> Teklu Abebe Temitme</p>
-            <p><strong>Email:</strong> tekluabebe0962@gmail.com</p>
-            <p><strong>Phone:</strong> +251905698140</p>
+          <div style={{fontSize: "14px", color: "#444", marginBottom: "15px"}}>
+            <p style={{margin: "5px 0"}}><strong>Admin:</strong> Teklu Abebe Temitme</p>
+            <p style={{margin: "5px 0"}}><strong>Email:</strong> tekluabebe0962@gmail.com</p>
+            <p style={{margin: "5px 0"}}><strong>Phone:</strong> +251905698140</p>
           </div>
           <div style={styles.statusBadge}>System Status: Online</div>
         </div>
@@ -106,6 +106,30 @@ export default function HelpPage() {
           div::-webkit-scrollbar-thumb:hover {
             background: #3f47d9;
           }
+
+          /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
+          @media (max-width: 900px) {
+            .help-grid {
+              grid-template-columns: repeat(2, 1fr) !important; /* መካከለኛ ስክሪን ላይ 2 ረድፍ */
+            }
+          }
+
+          @media (max-width: 600px) {
+            .help-page-container {
+              padding: 15px !important;
+            }
+            .help-grid {
+              grid-template-columns: 1fr !important; /* በስልክ ላይ 1 ረድፍ ብቻ */
+              gap: 15px !important;
+            }
+            .help-card {
+              height: auto !important; /* በስልክ ላይ ቁመቱ እንደ ጽሑፉ እንዲለጠጥ */
+              padding: 20px !important;
+            }
+            .faq-card-height {
+              height: 350px !important; /* የ FAQ ካርድ ብቻ ስልክ ላይም በውስጡ Scroll እንዲሆን ቋሚ ቁመት ሰጠነው */
+            }
+          }
         `}
       </style>
     </div>
@@ -113,7 +137,7 @@ export default function HelpPage() {
 }
 
 const styles = {
-  container: { padding: "30px", backgroundColor: "#f8f9fa", minHeight: "100vh" },
+  container: { padding: "30px", backgroundColor: "#f8f9fa", minHeight: "100vh", boxSizing: "border-box" },
   title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "35px", color: "#3f47d9", fontSize: "24px" },
   grid: { 
     display: "grid", 
@@ -126,19 +150,20 @@ const styles = {
     borderRadius: "16px", 
     boxShadow: "0 4px 12px rgba(0,0,0,0.05)", 
     border: "1px solid #eee",
-    height: "300px", // ሁሉም ካርዶች እኩል ቁመት እንዲኖራቸው
-    overflow: "hidden"
+    height: "300px", 
+    overflow: "hidden",
+    boxSizing: "border-box"
   },
   cardTitle: { display: "flex", alignItems: "center", gap: "10px", color: "#3f47d9", marginBottom: "15px", fontSize: "18px", fontWeight: "600" },
   list: { paddingLeft: "20px", lineHeight: "1.8", margin: 0, fontSize: "14px", color: "#444" },
   
-  // FAQ Scroll ሎጂክ
   faqScrollContainer: {
     overflowY: "auto",
     paddingRight: "5px",
     display: "flex",
     flexDirection: "column",
-    gap: "10px"
+    gap: "10px",
+    flex: 1
   },
   faqItem: { 
     padding: "12px", 

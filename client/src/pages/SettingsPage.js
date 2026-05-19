@@ -92,11 +92,11 @@ export default function SettingsPage() {
 
   const t = texts[language];
 
- const handleLogout = () => {
-  localStorage.clear(); // ሁሉንም በአንዴ ያጠፋል (ቀላል ነው)
-  window.dispatchEvent(new Event("storage"));
-  window.location.href = "/login";
-};
+  const handleLogout = () => {
+    localStorage.clear();
+    window.dispatchEvent(new Event("storage"));
+    window.location.href = "/login";
+  };
 
   const currentContainerStyle = {
     ...styles.container,
@@ -105,14 +105,14 @@ export default function SettingsPage() {
   };
 
   return (
-    <div style={currentContainerStyle}>
-      <h1 style={{...styles.title, color: darkMode ? "#6366f1" : "#3f47d9"}}>
+    <div className="settings-page-container" style={currentContainerStyle}>
+      <h1 style={{...styles.title, color: darkMode ? "#818cf8" : "#3f47d9"}}>
         <FaCog /> {t.title}
       </h1>
 
-      <div style={styles.grid}>
+      <div className="settings-grid" style={styles.grid}>
         {/* Finance Settings */}
-        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff"}} className="settings-card">
+        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff", borderColor: darkMode ? "#374151" : "transparent"}} className="settings-card">
           <h3 style={styles.sectionTitle}><FaPercentage /> {t.finance}</h3>
           <div style={styles.inputGroup}>
             <label style={styles.label}>{t.penaltyLabel}</label>
@@ -120,14 +120,14 @@ export default function SettingsPage() {
               type="number" 
               value={penalty} 
               onChange={(e) => setPenalty(e.target.value)} 
-              style={{...styles.input, backgroundColor: darkMode ? "#374151" : "#fff", color: darkMode ? "#fff" : "#000"}}
+              style={{...styles.input, backgroundColor: darkMode ? "#374151" : "#fff", color: darkMode ? "#fff" : "#000", borderColor: darkMode ? "#4b5563" : "rgba(128,128,128,0.2)"}}
             />
           </div>
           <p style={styles.hint}>{t.penaltyHint}</p>
         </div>
 
         {/* Appearance Settings */}
-        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff"}} className="settings-card">
+        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff", borderColor: darkMode ? "#374151" : "transparent"}} className="settings-card">
           <h3 style={styles.sectionTitle}><FaPalette /> {t.appearance}</h3>
           <div style={styles.toggleRow}>
             <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -145,7 +145,7 @@ export default function SettingsPage() {
             <select 
               value={language} 
               onChange={(e) => setLanguage(e.target.value)} 
-              style={{...styles.select, backgroundColor: darkMode ? "#374151" : "#fff", color: darkMode ? "#fff" : "#000"}}
+              style={{...styles.select, backgroundColor: darkMode ? "#374151" : "#fff", color: darkMode ? "#fff" : "#000", borderColor: darkMode ? "#4b5563" : "rgba(128,128,128,0.2)"}}
             >
               <option value="Amharic">አማርኛ</option>
               <option value="English">English</option>
@@ -156,7 +156,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Security Settings */}
-        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff"}} className="settings-card">
+        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff", borderColor: darkMode ? "#374151" : "transparent"}} className="settings-card">
           <h3 style={styles.sectionTitle}><FaUserShield /> {t.security}</h3>
           <button style={styles.btnSecondary}>{t.changePass}</button>
           <button onClick={handleLogout} style={styles.btnLogout}>
@@ -165,22 +165,22 @@ export default function SettingsPage() {
         </div>
 
         {/* About Us Section */}
-        <div style={{...styles.section, gridColumn: "1 / -1", backgroundColor: darkMode ? "#1f2937" : "#fff"}} className="settings-card">
+        <div style={{...styles.section, backgroundColor: darkMode ? "#1f2937" : "#fff", borderColor: darkMode ? "#374151" : "transparent"}} className="settings-card about-card-full">
           <h3 style={styles.sectionTitle}><FaInfoCircle /> {t.about}</h3>
-          <div style={styles.aboutGrid}>
-            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff"}}>
-              <h4><FaGlobe /> {t.mission}</h4>
-              <p>{t.missionText}</p>
+          <div className="about-sub-grid" style={styles.aboutGrid}>
+            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff", borderColor: darkMode ? "#374151" : "rgba(128,128,128,0.1)"}}>
+              <h4 style={{margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: "8px"}}><FaGlobe /> {t.mission}</h4>
+              <p style={{margin: 0, fontSize: "13px", lineHeight: "1.5"}}>{t.missionText}</p>
             </div>
-            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff"}}>
-              <h4><FaHistory /> {t.version}</h4>
-              <p>v1.0.4 (Stable Build)</p>
-              <p>Updated: May 2026</p>
+            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff", borderColor: darkMode ? "#374151" : "rgba(128,128,128,0.1)"}}>
+              <h4 style={{margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: "8px"}}><FaHistory /> {t.version}</h4>
+              <p style={{margin: "0 0 5px 0", fontSize: "13px"}}>v1.0.4 (Stable Build)</p>
+              <p style={{margin: 0, fontSize: "12px", color: "#888"}}>Updated: May 2026</p>
             </div>
-            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff"}}>
-              <h4><FaCode /> {t.devInfo}</h4>
-              <p><strong>{t.developer}</strong></p>
-              <p>{t.pro}</p>
+            <div style={{...styles.aboutItem, backgroundColor: darkMode ? "#111827" : "#f9fbff", borderColor: darkMode ? "#374151" : "rgba(128,128,128,0.1)"}}>
+              <h4 style={{margin: "0 0 10px 0", display: "flex", alignItems: "center", gap: "8px"}}><FaCode /> {t.devInfo}</h4>
+              <p style={{margin: "0 0 5px 0", fontSize: "13px"}}><strong>{t.developer}</strong></p>
+              <p style={{margin: 0, fontSize: "12px", color: "#888"}}>{t.pro}</p>
             </div>
           </div>
         </div>
@@ -191,18 +191,47 @@ export default function SettingsPage() {
           .settings-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
-            cursor: pointer;
+            box-sizing: border-box;
           }
           .settings-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
             border-left: 5px solid #3f47d9;
           }
+          .about-card-full {
+            grid-column: 1 / -1;
+          }
           .mode-checkbox {
             width: 40px;
             height: 20px;
             accent-color: #3f47d9;
             cursor: pointer;
+          }
+
+          /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
+          @media (max-width: 768px) {
+            .settings-page-container {
+              padding: 15px !important;
+            }
+            .settings-title {
+              font-size: 22px !important;
+              margin-bottom: 20px !important;
+            }
+            .settings-grid {
+              grid-template-columns: 1fr !important; /* በስልክ ላይ 1 ረድፍ ብቻ */
+              gap: 15px !important;
+            }
+            .about-card-full {
+              grid-column: span 1 !important; /* በስልክ ላይ ሙሉ ስፋት ህጉን ማስተካከል */
+            }
+            .settings-card {
+              padding: 20px !important;
+              border-radius: 14px !important;
+            }
+            .about-sub-grid {
+              grid-template-columns: 1fr !important; /* የውስጥ ካርዶችም ወደታች እንዲደረደሩ */
+              gap: 10px !important;
+            }
           }
         `}
       </style>
@@ -211,19 +240,19 @@ export default function SettingsPage() {
 }
 
 const styles = {
-  container: { padding: "30px", transition: "background 0.3s ease", minHeight: "100vh" },
-  title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px", fontSize: "28px" },
+  container: { padding: "30px", transition: "background 0.3s ease", minHeight: "100vh", boxSizing: "border-box" },
+  title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px", fontSize: "28px", marginTop: 0 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "25px" },
-  section: { padding: "25px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" },
-  sectionTitle: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px", borderBottom: "1px solid rgba(128,128,128,0.1)", paddingBottom: "10px" },
+  section: { padding: "25px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid transparent" },
+  sectionTitle: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px", borderBottom: "1px solid rgba(128,128,128,0.1)", paddingBottom: "10px", marginTop: 0, fontSize: "18px" },
   inputGroup: { display: "flex", flexDirection: "column", gap: "10px" },
   label: { fontSize: "14px", fontWeight: "600" },
-  input: { padding: "12px", borderRadius: "10px", border: "1.5px solid rgba(128,128,128,0.2)", fontSize: "16px", outline: "none" },
-  hint: { fontSize: "11px", color: "#888", marginTop: "8px" },
+  input: { padding: "12px", borderRadius: "10px", border: "1.5px solid rgba(128,128,128,0.2)", fontSize: "16px", outline: "none", boxSizing: "border-box" },
+  hint: { fontSize: "11px", color: "#888", marginTop: "8px", marginBottom: 0 },
   toggleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(128,128,128,0.05)" },
-  select: { padding: "8px", borderRadius: "8px", border: "1px solid rgba(128,128,128,0.2)", cursor: "pointer" },
-  btnSecondary: { width: "100%", padding: "12px", background: "#3f47d9", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", marginBottom: "12px" },
-  btnLogout: { width: "100%", padding: "12px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" },
+  select: { padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(128,128,128,0.2)", cursor: "pointer", fontSize: "14px", outline: "none" },
+  btnSecondary: { width: "100%", padding: "12px", background: "#3f47d9", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", marginBottom: "12px", fontSize: "14px" },
+  btnLogout: { width: "100%", padding: "12px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px" },
   aboutGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" },
-  aboutItem: { padding: "15px", borderRadius: "12px", border: "1px solid rgba(128,128,128,0.1)" }
+  aboutItem: { padding: "15px", borderRadius: "12px", border: "1px solid rgba(128,128,128,0.1)", boxSizing: "border-box" }
 };

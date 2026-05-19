@@ -382,3 +382,66 @@
 }
 
 .pd-summary-card h3 { color: #edf2f7; }
+
+/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
+@media (max-width: 768px) {
+  /* የSidebar ክፍተቶችን ማጥፋት እና ሙሉ ስክሪን ማድረግ */
+  .pd-container, 
+  .pd-main-wrapper {
+    margin-left: 0 !important;
+    padding: 15px !important;
+  }
+
+  /* የGlass Card ክፍተትን ለስልክ ማመጣጠን */
+  .pd-glass-card {
+    padding: 25px 15px;
+    border-radius: 18px;
+  }
+
+  .pd-header h1 {
+    font-size: 1.8rem; /* የርዕሱን መጠን በስልክ ላይ ማሳነስ */
+  }
+
+  /* የቶፕ ባር አቀማመጥን ከጎን ለጎን ወደ ታች ማደራደር */
+  .pd-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+
+  /* የፍለጋ ሳጥኑን ስፋት ከስክሪኑ ጋር ማስተካከል */
+  .pd-search-container {
+    width: 100% !important;
+  }
+
+  /* ፎርሞች በስልክ 1 ረድፍ ብቻ እንዲሆኑ ማድረግ */
+  .pd-form-grid {
+    grid-template-columns: 1fr !important;
+    gap: 15px;
+  }
+
+  /* የካርድ ግሪዶችን ለስልክ 1 ረድፍ ማድረግ */
+  .pd-card-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+
+  /* በስልክ ላይ ካርዶቹ በቁመት እንዳይለጠጡ ቁመታቸውን ነፃ ማድረግ */
+  .pd-card-medium, 
+  .pd-card-large {
+    grid-row: span 1 !important;
+    padding: 20px !important;
+  }
+
+  /* የትልቅ አማውንት ጽሑፍ መጠን ማስተካከል */
+  .pd-amount-text {
+    font-size: 28px;
+  }
+
+  .pd-submit-btn, 
+  .pd-confirm-btn {
+    padding: 14px;
+    font-size: 16px;
+  }
+}

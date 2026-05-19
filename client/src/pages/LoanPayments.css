@@ -157,3 +157,47 @@
 
 .text-danger { color: #ef4444; }
 .text-success { color: #10b981; }
+
+/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
+@media (max-width: 600px) {
+  .loan-payment-container {
+    padding: 10px; /* በስክሪኑ ዙሪያ ያለውን አላስፈላጊ ክፍተት ለመቀነስ */
+  }
+
+  .loan-payment-card {
+    padding: 24px 16px; /* የካርዱን ውስጣዊ ክፍተት ስልክ ላይ ተመጣጣኝ ማድረግ */
+    border-radius: 18px;
+  }
+
+  .loan-payment-title {
+    font-size: 20px; /* የርዕሱን መጠን በስልክ ላይ በትንሹ መቀነስ */
+    margin-bottom: 20px;
+  }
+
+  .loan-selection-box, 
+  .loan-status-panel {
+    padding: 15px; /* የውስጥ ሳጥኖችን ክፍተት በስልክ ማስተካከል */
+    border-radius: 12px;
+  }
+
+  /* በስልክ ላይ የስታተስ መረጃዎች እርስ በእርስ እንዳይጨፈለቁ ወደ ታች ማደራደር */
+  .status-grid {
+    grid-template-columns: 1fr; 
+    gap: 12px;
+  }
+
+  .status-item p {
+    font-size: 16px; /* የቁጥሮቹን መጠን ስልክ ላይ ተነባቢ ማድረግ */
+  }
+
+  .loan-input-group select, 
+  .loan-input-group input {
+    padding: 12px; /* የኢንፑት ሳጥኖቹን ቁመት ስልክ ላይ ምቹ ማድረግ */
+    font-size: 14px;
+  }
+
+  .loan-submit-btn {
+    padding: 14px;
+    font-size: 15px;
+  }
+}

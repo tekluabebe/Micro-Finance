@@ -2,24 +2,14 @@ import React from "react";
 
 export default function Navbar() {
   return (
-    <div
-      style={{
-        background: "#2c3e50",
-        padding: "15px",
-        fontSize: "24px",
-        fontWeight: "bold",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        
-      }}
-    >
+    <div style={styles.navbarContainer}>
       <span style={styles.blink}>
         Microfinance Management System
       </span>
 
       <style>
         {`
+          /* የብርሃን ብልጭታ አኒሜሽን (Glow Animation) */
           @keyframes glowBlink {
             0% {
               color: #ffffff;
@@ -47,6 +37,20 @@ export default function Navbar() {
               text-shadow: 0 0 5px #fff, 0 0 10px #fff;
             }
           }
+
+          /* ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) */
+          @media (max-width: 768px) {
+            .navbar-text {
+              font-size: 16px !important; /* በስልክ ላይ የጽሁፉ መጠን እንዲያንስ */
+              text-align: center;
+              padding: 0 10px;
+            }
+          }
+          @media (max-width: 480px) {
+            .navbar-text {
+              font-size: 14px !important; /* በጣም አነስተኛ ስልኮች ላይ ይበልጥ እንዲያንስ */
+            }
+          }
         `}
       </style>
     </div>
@@ -54,7 +58,19 @@ export default function Navbar() {
 }
 
 const styles = {
+  navbarContainer: {
+    background: "#2c3e50",
+    padding: "15px",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    boxSizing: "border-box",
+  },
   blink: {
+    // እዚህ ላይ ለሚዲያ ኳሪው እንዲመች 'navbar-text' የሚል ክላስ እንድናገኝ በ inline style ውስጥ ቋሚ font-size ሰጥተነዋል
+    fontSize: "24px", 
+    fontWeight: "bold",
     animation: "glowBlink 2.5s infinite ease-in-out",
   },
 };

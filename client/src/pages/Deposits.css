@@ -116,9 +116,39 @@
   transform: translateY(-1px);
 }
 
-@media (max-width: 500px) {
+/* --- ለሞባይል ስልኮች እና ታብሌቶች የሚሆን ማስተካከያ --- */
+@media (max-width: 650px) {
+  .deposit-container {
+    padding: 10px; /* በስክሪኑ ግራና ቀኝ ያለውን አላስፈላጊ ባዶ ቦታ ለመቀነስ */
+    min-height: 100vh;
+  }
+
+  .deposit-card {
+    padding: 20px; /* የካርዱ ውስጣዊ ክፍተት ስልክ ላይ እንዲያንስ */
+    border-radius: 12px;
+  }
+
+  /* በስልክ ላይ የጎንዮሽ ረድፎችን (Flex Row) ወደ ታች (Column) መቀየር */
+  .input-row {
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  /* ግሪዱን ወደ አንድ ረድፍ ብቻ መቀየር */
   .deposit-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .form-title {
+    font-size: 18px; /* የርዕሱ ጽሁፍ ስልክ ላይ በጣም ትልቅ እንዳይሆን */
+    margin-bottom: 15px;
+  }
+
+  .submit-btn {
+    padding: 12px;
+    font-size: 15px;
   }
 }
 

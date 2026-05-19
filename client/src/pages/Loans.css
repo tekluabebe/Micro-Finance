@@ -108,3 +108,47 @@
   background: #cbd5e0;
   cursor: not-allowed;
 }
+
+/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
+@media (max-width: 600px) {
+  .loan-container {
+    padding: 15px 10px; /* በላይና በታች ያለውን ሰፊ ክፍተት ለስልክ ተስማሚ ማድረግ */
+  }
+
+  .loan-card {
+    padding: 22px 16px; /* የካርዱን የውስጥ ክፍተት በመቀነስ ለፎርሙ ሰፊ ቦታ መስጠት */
+    border-radius: 16px;
+  }
+
+  .loan-card h2 {
+    font-size: 20px; /* የርዕሱን መጠን በስልክ ላይ በትንሹ መቀነስ */
+    margin-bottom: 20px;
+  }
+
+  .loan-card select, 
+  .loan-card input {
+    padding: 12px; /* የሳጥኖቹን ቁመት ስልክ ላይ ጣትን ታሳቢ ባደረገ መልኩ ማስተካከል */
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .info {
+    padding: 10px 12px;
+    font-size: 13px; /* የሁኔታ ማሳያ ፅሁፎችን መጠን ለስልክ ማመጣጠን */
+    margin-bottom: 12px;
+  }
+
+  .guarantor-list {
+    padding: 8px;
+  }
+
+  .guarantor-item {
+    font-size: 13px; /* የዋሶች (Guarantors) ስም ዝርዝር እንዳይጋጭ ማድረግ */
+    padding: 8px 10px;
+  }
+
+  .loan-btn {
+    padding: 14px;
+    font-size: 15px;
+  }
+}

@@ -74,3 +74,34 @@
 .login-btn:hover { background: #34495e; }
 
 .error-msg { color: red; font-size: 14px; margin-top: 10px; }
+
+/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 15px; /* በስልኩ ስክሪን ዙሪያ ያለውን ክፍተት በመጠበቅ ካርዱ ከስክሪኑ እንዳይወጣ ይረዳል */
+  }
+
+  .login-card {
+    padding: 30px 20px; /* የውስጥ ክፍተቱን በመቀነስ ለሳጥኖቹ እና ለፅሁፎቹ ሰፊ ቦታ መስጠት */
+    border-radius: 16px; /* በስልክ ላይ ማዕዘኑ ይበልጥ እንዲጠጋጋ */
+  }
+
+  .login-card h2 {
+    font-size: 22px; /* የርዕሱን መጠን ለስልክ ተስማሚ ማድረግ */
+  }
+
+  .role-selector button {
+    padding: 8px; /* በስልክ ጣት ለመንካት ምቹ እንዲሆን የታቦቹን ቁመት ማስተካከል */
+    font-size: 14px;
+  }
+
+  .input-group input {
+    padding: 10px; /* የኢንፑት ሳጥኖቹን ቁመት በስልክ ማመጣጠን */
+    font-size: 14px;
+  }
+
+  .login-btn {
+    padding: 11px;
+    font-size: 15px;
+  }
+}
