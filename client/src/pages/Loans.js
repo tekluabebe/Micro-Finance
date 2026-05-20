@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import "./Loans.css";
 
-export default function Loans() {
+// 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
+export default function Loans({ isSidebarOpen = true }) {
   const [employees, setEmployees] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -21,10 +22,15 @@ export default function Loans() {
   const [requiredGuarantee, setRequiredGuarantee] = useState(0);
   const [guarantorSavings, setGuarantorSavings] = useState({});
   const [error, setError] = useState("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // =======================
-  // LOAD DATA
-  // =======================
+  // የስክሪን መጠን መለወጫ ማዳመጫ (Responsive)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -42,18 +48,12 @@ export default function Loans() {
     }
   };
 
-  // =======================
-  // CALCULATE SAVINGS
-  // =======================
   const calculateSaving = (employeeId) => {
     return deposits
       .filter((d) => String(d.employeeId?._id || d.employeeId) === employeeId)
       .reduce((sum, d) => sum + (Number(d.normalSaving) || 0) + (Number(d.voluntarySaving) || 0), 0);
   };
 
-  // =======================
-  // HANDLE INPUTS
-  // =======================
   const handleChange = (e) => {
     const { name, value } = e.target;
     setError("");
@@ -75,9 +75,6 @@ export default function Loans() {
     }
   };
 
-  // =======================
-  // ADD/REMOVE GUARANTORS
-  // =======================
   const addGuarantor = (selectedId) => {
     if (!selectedId || loan.guarantors.includes(selectedId)) return;
 
@@ -99,13 +96,7 @@ export default function Loans() {
 
   const totalGuarantorSavings = Object.values(guarantorSavings).reduce((a, b) => a + b, 0);
 
-  // =======================
-  // CALCULATE LOAN DETAILS
-  // =======================
-  // =======================
-  // CALCULATE LOAN DETAILS (UI ላይ ወዲያውኑ እንዲታይ)
-  // =======================
- useEffect(() => {
+  useEffect(() => {
     const amount = Number(loan.principalAmount);
     const duration = Number(loan.durationMonths);
 
@@ -119,12 +110,8 @@ export default function Loans() {
     let totalLoanWithInterest = loan.loanType === "normal" ? amount * 1.12 : amount * 1.08;
     setMonthlyPayment(Math.ceil(totalLoanWithInterest / duration));
 
-    // --- የብድር ማብቂያ ቀን ማስተካከያ ---
-    const today = new Date(); // ዛሬ May 13 (ወር 4 በ JS አቆጣጠር)
+    const today = new Date();
     const endDate = new Date();
-
-    // ሎጂኩ፡ ዛሬ ባለበት ወር ላይ 1 ወር (ሰኔን) ዘልሎ + የብድሩን ወራት ይደምራል
-    // ግን መጨረሻው ታህሳስ (Month 11) እንዲሆን ከድምሩ ላይ 1 ቀንሰናል
     endDate.setMonth(today.getMonth() + 1 + duration); 
 
     setLoanEndDate(endDate.toDateString());
@@ -132,9 +119,7 @@ export default function Loans() {
     const gap = amount - totalSaving;
     setRequiredGuarantee(gap > 0 ? gap : 0);
   }, [loan.principalAmount, loan.durationMonths, loan.loanType, totalSaving]);
-  // =======================
-  // SUBMIT
-  // =======================
+
   const submit = async () => {
     const amount = Number(loan.principalAmount);
     const duration = Number(loan.durationMonths);
@@ -148,20 +133,17 @@ export default function Loans() {
       return;
     }
 
-    // ገደቦችን ማረጋገጥ... (ከዚህ በፊት የነበረው ኮድ)
     if (amount > maxAllowed || amount > absoluteLimit) {
       setError("የብድር መጠኑ ከተፈቀደው በላይ ነው! ❌");
       return;
     }
 
-    // --- የክፍያ መጀመሪያ እና ማብቂያ ቀናትን ማዘጋጀት ---
-    const loanDate = new Date(); // የተወሰደበት ቀን (May 13)
-    
+    const loanDate = new Date();
     const firstPaymentDate = new Date();
-    firstPaymentDate.setMonth(loanDate.getMonth() + 2); // ከ 2 ወር በኋላ (July 13)
+    firstPaymentDate.setMonth(loanDate.getMonth() + 2);
 
-   const finalEndDate = new Date();
-finalEndDate.setMonth(loanDate.getMonth() + 1 + duration);
+    const finalEndDate = new Date();
+    finalEndDate.setMonth(loanDate.getMonth() + 1 + duration);
 
     const payload = {
       ...loan,
@@ -176,113 +158,169 @@ finalEndDate.setMonth(loanDate.getMonth() + 1 + duration);
     try {
       await API.post("/loans", payload);
       alert(`ብድሩ ተመዝግቧል። ክፍያ የሚጀምረው ${firstPaymentDate.toDateString()} ሲሆን የሚያበቃው ${finalEndDate.toDateString()} ይሆናል። ✅`);
-      
-      // Reset Form...
       setLoan({ employeeId: "", guarantors: [], principalAmount: "", loanType: "normal", durationMonths: 6 });
       fetchData();
     } catch (err) {
       setError(err.response?.data?.message || "የብድር ምዝገባው አልተሳካም ❌");
     }
   };
-  // ... (የቀረው የ UI ክፍል ቀደም ሲል በነበረው ይቀጥላል)
+
+  // 🛠️ ከሳይድባር አቀማመጥ ጋር ማጣበቂያ ተለዋዋጭ ማርጅን
+  const currentLeftMargin = isMobile ? "0px" : (isSidebarOpen ? "130px" : "65px");
+
+  const dynamicContainerStyle = {
+    marginLeft: currentLeftMargin,
+    width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
+  };
 
   return (
-    <div className="loan-container">
+    <div className="loan-container" style={dynamicContainerStyle}>
       <div className="loan-card">
-        <h2>Create Loan</h2>
+        <h2 className="loan-title">Create Loan Account</h2>
 
-        {/* EMPLOYEE SELECT */}
-        <select name="employeeId" value={loan.employeeId} onChange={handleChange}>
-          <option value="">Select Employee</option>
-          {employees.map((emp) => (
-            <option key={emp._id} value={emp._id}>
-              {emp.memberId} - {emp.firstName} {emp.lastName}
-            </option>
-          ))}
-        </select>
+        <div className="loan-form-grid">
+          
+          {/* ግራውንድ 1: የብድር ቅጽ (Loan Configuration) */}
+          <div className="loan-form-section">
+            <div className="loan-input-group">
+              <label>Select Employee</label>
+              <select name="employeeId" value={loan.employeeId} onChange={handleChange}>
+                <option value="">-- Choose Employee --</option>
+                {employees.map((emp) => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.memberId} - {emp.firstName} {emp.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {loan.employeeId && (
-          <div className="info success">
-            Employee Deposit: <strong>{totalSaving.toLocaleString()} birr</strong>
-          </div>
-        )}
-
-        {/* LOAN AMOUNT INPUT */}
-        <input 
-          type="number" 
-          name="principalAmount" 
-          placeholder="Loan Amount" 
-          value={loan.principalAmount} 
-          onChange={handleChange} 
-        />
-
-        {/* አዲሱ የመረጃ ሳጥን (Limit Info Box) */}
-        {totalSaving > 0 && (
-          <div style={{ color: "#2980b9", fontSize: "13px", marginTop: "5px", background: "#eaf2f8", padding: "8px", borderRadius: "5px" }}>
-            ℹ️ ይህ አባል መበደር የሚችለው ከፍተኛ መጠን: 
-            <strong> {Math.min(totalSaving * 3, 300000).toLocaleString()} ETB </strong> ነው::
-          </div>
-        )}
-
-        <select name="durationMonths" value={loan.durationMonths} onChange={handleChange}>
-          {[1,2,3,4,5,6,7,8,9,10,11,12].map((m) => (
-            <option key={m} value={m}>{m} Month{m > 1 ? "s" : ""}</option>
-          ))}
-        </select>
-
-        <select name="loanType" value={loan.loanType} onChange={handleChange}>
-          <option value="normal">Normal Loan</option>
-          <option value="holiday">Holiday Loan</option>
-        </select>
-
-        {monthlyPayment > 0 && (
-          <div className="info success">
-            <p>Monthly Payment: <strong>{monthlyPayment.toLocaleString()} birr</strong></p>
-            <p>Loan Ends: <strong>{loanEndDate}</strong></p>
-          </div>
-        )}
-
-        {/* GUARANTOR SECTION */}
-        {requiredGuarantee > 0 && (
-          <div className="info warning">
-            <p>Loan exceeds employee deposits by: <strong>{requiredGuarantee.toLocaleString()} birr</strong></p>
-            
-            {totalGuarantorSavings >= requiredGuarantee ? (
-              <p style={{ color: "green", fontWeight: "bold" }}>✅ Enough guarantor deposits selected</p>
-            ) : (
-              <p style={{ color: "red" }}>Need at least <strong>{requiredGuarantee.toLocaleString()} birr</strong> guarantor deposits</p>
+            {loan.employeeId && (
+              <div className="info-box success-box">
+                Employee Deposit: <strong>{totalSaving.toLocaleString()} ETB</strong>
+              </div>
             )}
 
-            <select value="" onChange={(e) => addGuarantor(e.target.value)}>
-              <option value="">Select Guarantor</option>
-              {employees
-                .filter((e) => e._id !== loan.employeeId && !loan.guarantors.includes(e._id))
-                .map((emp) => (
-                  <option key={emp._id} value={emp._id}>{emp.memberId} - {emp.firstName} {emp.lastName}</option>
-                ))}
-            </select>
-
-            <div className="guarantor-list">
-              {loan.guarantors.map((id) => {
-                const emp = employees.find((e) => e._id === id);
-                return (
-                  <div key={id} className="guarantor-item" style={{ display: "flex", justifyContent: "space-between", margin: "5px 0" }}>
-                    <span>{emp?.firstName} - <strong>{guarantorSavings[id].toLocaleString()} birr</strong></span>
-                    <button onClick={() => removeGuarantor(id)} style={{ background: "red", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", padding: "2px 8px" }}>Remove</button>
-                  </div>
-                );
-              })}
+            <div className="loan-input-group">
+              <label>Loan Amount</label>
+              <input 
+                type="number" 
+                name="principalAmount" 
+                placeholder="Enter amount (ETB)..." 
+                value={loan.principalAmount} 
+                onChange={handleChange} 
+              />
             </div>
-            <hr />
-            <p>Total Guarantor Savings: <strong>{totalGuarantorSavings.toLocaleString()} birr</strong></p>
+
+            {totalSaving > 0 && (
+              <div className="info-box limit-box">
+                ℹ️ ይህ አባል መበደር የሚችለው ከፍተኛ መጠን: 
+                <strong> {Math.min(totalSaving * 3, 300000).toLocaleString()} ETB </strong> ነው::
+              </div>
+            )}
+
+            <div className="loan-input-group">
+              <label>Duration (Months)</label>
+              <select name="durationMonths" value={loan.durationMonths} onChange={handleChange}>
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map((m) => (
+                  <option key={m} value={m}>{m} Month{m > 1 ? "s" : ""}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="loan-input-group">
+              <label>Loan Category</label>
+              <select name="loanType" value={loan.loanType} onChange={handleChange}>
+                <option value="normal">Normal Loan (12%)</option>
+                <option value="holiday">Holiday Loan (8%)</option>
+              </select>
+            </div>
           </div>
-        )}
 
-        {error && <div className="info danger" style={{ whiteSpace: "pre-line" }}>{error}</div>}
+          {/* ቀኙ 2: የቀጥታ ስሌት እና የዋስትና ሰሌዳ (Live Summary & Guarantor Panel) */}
+          <div className="loan-summary-section">
+            {monthlyPayment > 0 ? (
+              <div className="info-box summary-card">
+                <div className="summary-row">
+                  <span>Monthly Payment:</span>
+                  <strong>{monthlyPayment.toLocaleString()} ETB</strong>
+                </div>
+                <div className="summary-row">
+                  <span>Loan Maturity Date:</span>
+                  <strong>{loanEndDate}</strong>
+                </div>
+              </div>
+            ) : (
+              <div className="info-box empty-summary">
+                ℹ️ Enter an amount and employee to view live calculation summary.
+              </div>
+            )}
 
-        <button onClick={submit} className="loan-btn" disabled={requiredGuarantee > 0 && totalGuarantorSavings < requiredGuarantee}>
-          Create Loan
-        </button>
+            {/* GUARANTOR SECTION */}
+            {requiredGuarantee > 0 ? (
+              <div className="guarantor-card">
+                <h3 className="section-subtitle">Guarantor Verification</h3>
+                <p className="guarantor-warning-text">
+                  Loan exceeds employee deposits by: <strong>{requiredGuarantee.toLocaleString()} ETB</strong>
+                </p>
+                
+                {totalGuarantorSavings >= requiredGuarantee ? (
+                  <div className="badge badge-success">✅ Enough guarantor deposits selected</div>
+                ) : (
+                  <div className="badge badge-danger">
+                    Need at least <strong>{(requiredGuarantee - totalGuarantorSavings).toLocaleString()} ETB</strong> more
+                  </div>
+                )}
+
+                <div className="loan-input-group" style={{ marginTop: "15px" }}>
+                  <label>Add Guarantor</label>
+                  <select value="" onChange={(e) => addGuarantor(e.target.value)}>
+                    <option value="">-- Choose Guarantor --</option>
+                    {employees
+                      .filter((e) => e._id !== loan.employeeId && !loan.guarantors.includes(e._id))
+                      .map((emp) => (
+                        <option key={emp._id} value={emp._id}>{emp.memberId} - {emp.firstName} {emp.lastName}</option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="guarantor-list">
+                  {loan.guarantors.map((id) => {
+                    const emp = employees.find((e) => e._id === id);
+                    return (
+                      <div key={id} className="guarantor-item">
+                        <span>{emp?.firstName} {emp?.lastName?.charAt(0)}. (<strong>{guarantorSavings[id].toLocaleString()} ETB</strong>)</span>
+                        <button onClick={() => removeGuarantor(id)} className="remove-guarantor-btn">Remove</button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="guarantor-total-footer">
+                  Total Guarantor Savings: <strong>{totalGuarantorSavings.toLocaleString()} ETB</strong>
+                </div>
+              </div>
+            ) : (
+              loan.employeeId && loan.principalAmount && (
+                <div className="badge badge-success" style={{ padding: "20px", fontSize: "14px", display: "block", textAlign: "center" }}>
+                  🎉 No guarantor required. Employee deposits cover this loan amount.
+                </div>
+              )
+            )}
+          </div>
+
+          {/* ከታች 3: ስህተት ማሳያ እና ማስገቢያ ቁልፍ (Footer Actions) */}
+          <div className="loan-footer-actions">
+            {error && <div className="info-box danger-box">{error}</div>}
+
+            <button 
+              onClick={submit} 
+              className="loan-btn" 
+              disabled={requiredGuarantee > 0 && totalGuarantorSavings < requiredGuarantee}
+            >
+              Create Loan Account
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
   );

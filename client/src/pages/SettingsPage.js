@@ -17,7 +17,7 @@ export default function SettingsPage() {
       finance: "የፋይናንስ ቅንብሮች",
       penaltyLabel: "የወር ውዝፍ ቅጣት (ብር)",
       penaltyHint: "* ይህ ዋጋ በወር የሚታሰብ የውዝፍ ቅጣትን ይወክላል።",
-      appearance: "የገጽታ ቅንብሮች",
+      appearance: "የቭዥታ ቅንብሮች",
       darkMode: "የጨለማ ገጽታ (Dark Mode)",
       langLabel: "ቋንቋ ይምረጡ",
       security: "ደህንነት",
@@ -106,7 +106,7 @@ export default function SettingsPage() {
 
   return (
     <div className="settings-page-container" style={currentContainerStyle}>
-      <h1 style={{...styles.title, color: darkMode ? "#818cf8" : "#3f47d9"}}>
+      <h1 className="settings-main-title" style={{...styles.title, color: darkMode ? "#818cf8" : "#3f47d9"}}>
         <FaCog /> {t.title}
       </h1>
 
@@ -140,7 +140,7 @@ export default function SettingsPage() {
               className="mode-checkbox"
             />
           </div>
-          <div style={styles.toggleRow}>
+          <div style={styles.toggleRow} className="language-toggle-row">
             <span><FaGlobe /> {t.langLabel}</span>
             <select 
               value={language} 
@@ -188,6 +188,9 @@ export default function SettingsPage() {
 
       <style>
         {`
+          .settings-page-container {
+            padding-top: 90px !important; /* ከቶፕ ባር ጋር እንዳይጋጭ */
+          }
           .settings-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border: 1px solid transparent;
@@ -208,29 +211,39 @@ export default function SettingsPage() {
             cursor: pointer;
           }
 
-          /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
+          /* --- ለሞባይል ስልኮች ፍጹም ማስተካከያ (Mobile Responsive) --- */
           @media (max-width: 768px) {
             .settings-page-container {
               padding: 15px !important;
+              padding-top: 85px !important;
             }
-            .settings-title {
+            .settings-main-title {
               font-size: 22px !important;
               margin-bottom: 20px !important;
             }
             .settings-grid {
-              grid-template-columns: 1fr !important; /* በስልክ ላይ 1 ረድፍ ብቻ */
-              gap: 15px !important;
+              grid-template-columns: 1fr !important;
+              gap: 16px !important;
             }
             .about-card-full {
-              grid-column: span 1 !important; /* በስልክ ላይ ሙሉ ስፋት ህጉን ማስተካከል */
+              grid-column: span 1 !important;
             }
             .settings-card {
-              padding: 20px !important;
+              padding: 18px !important;
               border-radius: 14px !important;
             }
-            .about-sub-grid {
-              grid-template-columns: 1fr !important; /* የውስጥ ካርዶችም ወደታች እንዲደረደሩ */
+            .language-toggle-row {
+              flex-direction: column !important;
+              align-items: flex-start !important;
               gap: 10px !important;
+            }
+            .language-toggle-row select {
+              width: 100% !important;
+              padding: 10px !important;
+            }
+            .about-sub-grid {
+              grid-template-columns: 1fr !important;
+              gap: 12px !important;
             }
           }
         `}
@@ -242,17 +255,17 @@ export default function SettingsPage() {
 const styles = {
   container: { padding: "30px", transition: "background 0.3s ease", minHeight: "100vh", boxSizing: "border-box" },
   title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px", fontSize: "28px", marginTop: 0 },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "25px" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px" },
   section: { padding: "25px", borderRadius: "18px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)", border: "1px solid transparent" },
   sectionTitle: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px", borderBottom: "1px solid rgba(128,128,128,0.1)", paddingBottom: "10px", marginTop: 0, fontSize: "18px" },
   inputGroup: { display: "flex", flexDirection: "column", gap: "10px" },
   label: { fontSize: "14px", fontWeight: "600" },
-  input: { padding: "12px", borderRadius: "10px", border: "1.5px solid rgba(128,128,128,0.2)", fontSize: "16px", outline: "none", boxSizing: "border-box" },
+  input: { padding: "12px", borderRadius: "10px", border: "1.5px solid rgba(128,128,128,0.2)", fontSize: "16px", outline: "none", boxSizing: "border-box", width: "100%" },
   hint: { fontSize: "11px", color: "#888", marginTop: "8px", marginBottom: 0 },
   toggleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: "1px solid rgba(128,128,128,0.05)" },
   select: { padding: "8px 12px", borderRadius: "8px", border: "1px solid rgba(128,128,128,0.2)", cursor: "pointer", fontSize: "14px", outline: "none" },
-  btnSecondary: { width: "100%", padding: "12px", background: "#3f47d9", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", marginBottom: "12px", fontSize: "14px" },
-  btnLogout: { width: "100%", padding: "12px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px" },
-  aboutGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "15px" },
+  btnSecondary: { width: "100%", padding: "12px", background: "#3f47d9", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", marginBottom: "12px", fontSize: "14px", transition: "0.2s" },
+  btnLogout: { width: "100%", padding: "12px", background: "#fee2e2", color: "#ef4444", border: "none", borderRadius: "12px", cursor: "pointer", fontWeight: "bold", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "14px", transition: "0.2s" },
+  aboutGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "15px" },
   aboutItem: { padding: "15px", borderRadius: "12px", border: "1px solid rgba(128,128,128,0.1)", boxSizing: "border-box" }
 };

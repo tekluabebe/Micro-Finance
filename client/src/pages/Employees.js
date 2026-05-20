@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 
-export default function Employees() {
+// ሳይድባሩ የተሰበሰበ መሆኑን ከላይኛው Layout የሚያውቅ ከሆነ `isCollapsed` ን በ props መቀበል ይቻላል
+export default function Employees({ isCollapsed = false }) {
   const [employees, setEmployees] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
+
+  // በስክሪን መጠን ለውጥ ላይ ተመስርቶ ገጹን በቅጽበት Responsive ለማድረግ
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const initialState = {
     memberId: "",
@@ -33,6 +37,11 @@ export default function Employees() {
 
   useEffect(() => {
     fetchEmployees();
+
+    // የስክሪን ስፋት ሲቀያየር በቅጽበት እንዲያስተካክል Listener መጫን
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const fetchEmployees = async () => {
@@ -97,7 +106,7 @@ export default function Employees() {
       if (err.response?.data?.message?.includes("duplicate")) {
         alert("ስህተት: Member ID አስቀድሞ ተይዟል!");
       } else {
-        alert("መረጃውን ማስቀመጥ አልተቻለም።");
+        alert("መረጃውን ማስቀመጥ አልተቻለም膜");
       }
     }
   };
@@ -125,11 +134,35 @@ export default function Employees() {
     `${e.firstName} ${e.lastName} ${e.phone} ${e.memberId}`.toLowerCase().includes(search.toLowerCase())
   );
 
+  // ገጹ ወደ ግራ ሙሉ በሙሉ እንዲጠጋና ከሳይድባሩ ተንቀሳቃሽነት ጋር እንዲጣበቅ የተደረገ ሎጂክ
+  //const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "90px" : "270px");
+
+// ሳይድባሩ ይበልጥ ተለጥፎ ገጹ ወደ ግራ እንዲጠጋ ቁጥሮቹን ቀንሰናል
+  const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "55px" : "130px");
+
+  const dynamicContainerStyle = {
+    ...styles.container,
+    marginLeft: currentLeftMargin,
+    padding: isMobile ? "10px" : "15px 25px 15px 5px", // የግራ ክፍተቱን ወደ 5px ብቻ አጠበባንው
+    paddingTop: isMobile ? "75px" : "85px", 
+  };
+
+  const dynamicGridStyle = {
+    ...styles.gridStyle,
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", // በስልክ 1 ረድፍ፣ ኮምፒውተር ላይ 2 ረድፍ
+  };
+
+  const dynamicActionBarStyle = {
+    ...styles.actionBar,
+    flexDirection: isMobile ? "column" : "row",
+    alignItems: isMobile ? "stretch" : "center",
+  };
+
   return (
-    <div className="employees-page-container" style={styles.container}>
+    <div className="employees-page-container" style={dynamicContainerStyle}>
       <h2 style={{ color: "#2c3e50" }}>Employees Management</h2>
 
-      <div className="emp-actions-bar" style={styles.actionBar}>
+      <div className="emp-actions-bar" style={dynamicActionBarStyle}>
         <button onClick={() => {
           setShowForm(!showForm);
           if(!showForm) setEditingId(null); setFormData(initialState);
@@ -141,14 +174,14 @@ export default function Employees() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="emp-search-input"
-          style={styles.searchInput}
+          style={{ ...styles.searchInput, width: isMobile ? "100%" : 300 }}
         />
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={styles.formStyle}>
+        <form onSubmit={handleSubmit} style={{ ...styles.formStyle, padding: isMobile ? "15px" : "25px" }}>
           <h3 style={styles.sectionTitle}>Login & Basic Info</h3>
-          <div className="emp-form-grid" style={styles.gridStyle}>
+          <div className="emp-form-grid" style={dynamicGridStyle}>
             <div>
                 <label style={styles.labelStyle}>Member ID (Username)</label>
                 <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={styles.inputStyle} disabled={editingId} />
@@ -181,7 +214,7 @@ export default function Employees() {
           </div>
 
           <h3 style={styles.sectionTitle}>Family Info</h3>
-          <div className="emp-form-grid" style={styles.gridStyle}>
+          <div className="emp-form-grid" style={dynamicGridStyle}>
             <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle}/>
             <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle}/>
           </div>
@@ -189,7 +222,7 @@ export default function Employees() {
           {formData.maritalStatus === "Married" && formData.gender === "Male" && (
             <div style={styles.spouseBox}>
               <h4 style={styles.subSectionTitle}>Spouse Info (Wife)</h4>
-              <div className="emp-form-grid" style={styles.gridStyle}>
+              <div className="emp-form-grid" style={dynamicGridStyle}>
                 <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={styles.inputStyle}/>
                 <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={styles.inputStyle}/>
                 <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={styles.inputStyle}/>
@@ -200,7 +233,7 @@ export default function Employees() {
           {formData.maritalStatus === "Married" && formData.gender === "Female" && (
             <div style={styles.spouseBox}>
               <h4 style={styles.subSectionTitle}>Spouse Info (Husband)</h4>
-              <div className="emp-form-grid" style={styles.gridStyle}>
+              <div className="emp-form-grid" style={dynamicGridStyle}>
                 <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={styles.inputStyle}/>
                 <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={styles.inputStyle}/>
                 <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={styles.inputStyle}/>
@@ -233,7 +266,6 @@ export default function Employees() {
 
       <h3 style={{ marginTop: 30, color: "#2c3e50" }}>Employee List</h3>
       
-      {/* ሰንጠረዡ በስልክ ላይ ስክሪን እንዳይሰብር መከለያ (Wrapper) */}
       <div className="emp-table-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" }}>
         <table style={styles.tableStyle}>
           <thead>
@@ -277,25 +309,15 @@ export default function Employees() {
         </table>
       </div>
 
-      {/* የሞባይል ማስተካከያ CSS */}
       <style>
         {`
           @media (max-width: 768px) {
             .employees-page-container {
-              margin-left: 0 !important; /* የSidebar ክፍተትን ማጥፋት */
-              padding: 15px !important;
+              padding: 10px !important;
+              padding-top: 75px !important;
             }
             .emp-actions-bar {
-              flex-direction: column !important; /* በተኑ እና ፍለጋው ወደ ታች እንዲደረደሩ */
               gap: 12px !important;
-              align-items: stretch !important;
-            }
-            .emp-search-input {
-              width: 100% !important;
-            }
-            .emp-form-grid {
-              grid-template-columns: 1fr !important; /* ሳጥኖች በስልክ 1 ረድፍ ብቻ እንዲሆኑ */
-              gap: 10px !important;
             }
             th, td {
               padding: 10px !important;
@@ -308,15 +330,40 @@ export default function Employees() {
   );
 }
 
-// የተደራጁ የስታይል ህግጋት (Styles Objects)
 const styles = {
-  container: { marginLeft: "20px", padding: "20px", backgroundColor: "#f8f9fa", minHeight: "100vh", boxSizing: "border-box" },
-  actionBar: { display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" },
-  searchInput: { padding: "10px 12px", width: 300, borderRadius: "6px", border: "1px solid #ccc", outline: "none", boxSizing: "border-box" },
+  container: { 
+    backgroundColor: "#f8f9fa", 
+    minHeight: "100vh", 
+    transition: "margin-left 0.3s ease", // ማውጫው ሲከፈትና ሲዘጋ ገጹ አብሮ በለስላሳ ሁኔታ እንዲንሸራተት
+    boxSizing: "border-box" 
+  },
+  
+  actionBar: { 
+    display: "flex", 
+    gap: "0",
+    justifyContent: "space-between", 
+    marginBottom: "20px", 
+  },
+  
+  searchInput: { 
+    padding: "10px 12px", 
+    borderRadius: "6px", 
+    border: "1px solid #ccc", 
+    outline: "none", 
+    boxSizing: "border-box" 
+  },
+  
   inputStyle: { padding: "10px", margin: "5px 0", borderRadius: "6px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box", fontSize: "14px" },
   labelStyle: { fontSize: "12px", fontWeight: "bold", color: "#555", marginLeft: "2px" },
-  gridStyle: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" },
-  formStyle: { marginTop: "20px", padding: "25px", background: "#fff", borderRadius: "12px", border: "1px solid #eee", boxShadow: "0 4px 10px rgba(0,0,0,0.02)" },
+  gridStyle: { display: "grid", gap: "15px" },
+  formStyle: { 
+    marginTop: "20px", 
+    background: "#fff", 
+    borderRadius: "12px", 
+    border: "1px solid #eee", 
+    boxShadow: "0 4px 10px rgba(0,0,0,0.02)" 
+  },
+  
   btnStyle: { padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
   addBtn: { margin: "5px 0 15px", padding: "8px 14px", border: "1px solid #ddd", background: "#fff", cursor: "pointer", borderRadius: "6px", fontSize: "13px", fontWeight: "600" },
   submitBtn: { padding: "14px", width: "100%", backgroundColor: "#28a745", color: "#fff", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer", marginTop: "15px" },

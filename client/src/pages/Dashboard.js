@@ -557,10 +557,10 @@ export default function Dashboard() {
 // STYLES
 // =========================
 const styles = {
-
+  // ናቭባሩ 55px ስለሆነ፣ ይህ ክፍል ከናቭባሩ በታች 20px ዝቅ ብሎ እንዲታይ top: 75 አድርገነዋል (55 + 20)
   headerRight: {
     position: "absolute",
-    top: 20,
+    top: 75, 
     right: 20,
     display: "flex",
     flexDirection: "column",
@@ -600,9 +600,10 @@ const styles = {
     alignItems: "center",
   },
 
+  // ማሳወቂያው ሲነካ የሚወርደው ሳጥን (Dropdown) ከናቭባሩ እና ከራሱ ከማሳወቂያው ቁልፍ በታች እንዲሆን top: 125 ሆኗል
   dropdown: {
     position: "absolute",
-    top: 70,
+    top: 125, 
     right: 20,
     width: 320,
     background: "#fff",
@@ -646,10 +647,12 @@ const styles = {
     cursor: "pointer",
   },
 
+  // የገጹ ዋና ርዕስ ከላይኛው ቋሚ ናቭባር ጀርባ እንዳይሸሸግ paddingTop ጨምረንለታል
   title: {
     textAlign: "center",
     color: "#3498db",
     marginBottom: 30,
+    paddingTop: 70, 
   },
 
   cardContainer: {

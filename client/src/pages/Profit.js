@@ -2,13 +2,22 @@ import React, { useState, useEffect } from "react";
 import API from "../services/api";
 import "./ProfitDistribution.css";
 
-export default function ProfitDistribution() {
+// 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
+export default function ProfitDistribution({ isSidebarOpen = true }) {
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [distribution, setDistribution] = useState({ savingAmount: "", shareAmount: "" });
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // የስክሪን መጠን መለወጫ ማዳመጫ (Responsive Listener)
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     API.get("/employees").then(res => setEmployees(res.data || []));
@@ -32,8 +41,16 @@ export default function ProfitDistribution() {
     setSearchTerm("");
   };
 
+  // 🛠️ ከሳይድባር አቀማመጥ ጋር ማጣበቂያ ተለዋዋጭ ማርጅን
+  const currentLeftMargin = isMobile ? "0px" : (isSidebarOpen ? "130px" : "65px");
+
+  const dynamicWrapperStyle = {
+    marginLeft: currentLeftMargin,
+    width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
+  };
+
   return (
-    <div className="pd-main-wrapper">
+    <div className="pd-main-wrapper" style={dynamicWrapperStyle}>
       <div className="pd-top-bar">
         <h1>የትርፍ ክፍፍል ማዕከል</h1>
         <div className="pd-search-container">
@@ -61,7 +78,7 @@ export default function ProfitDistribution() {
         </div>
       </div>
 
-      {selectedMember && (
+      {selectedMember ? (
         <div className="pd-card-grid">
           {/* ካርድ 1: Profile (ትንሽ መጠን) */}
           <div className="pd-card pd-card-small">
@@ -102,10 +119,16 @@ export default function ProfitDistribution() {
             <h3>ማጠቃለያ</h3>
             <div className="pd-summary-row">
               <span>ቀሪ:</span>
-              <strong>{(selectedMember.dividend - (parseFloat(distribution.savingAmount || 0) + parseFloat(distribution.shareAmount || 0))).toFixed(2)}</strong>
+              <strong>{(selectedMember.dividend - (parseFloat(distribution.savingAmount || 0) + parseFloat(distribution.shareAmount || 0))).toFixed(2)} ETB</strong>
             </div>
             <button className="pd-confirm-btn">አጽድቅ</button>
           </div>
+        </div>
+      ) : (
+        /* 💡 አባል ሳይመረጥ ሲቀር የሚታይ የሚያምር መረጃ ሰጭ ሳጥን (Placeholder) */
+        <div className="pd-placeholder-container">
+          <div className="pd-placeholder-icon">ℹ️</div>
+          <p>የትርፍ ክፍፍል ዝርዝር ሁኔታን ለማየት እባክዎ ከላይ አባል በስም ወይም በመታወቂያ ይፈልጉ::</p>
         </div>
       )}
     </div>

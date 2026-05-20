@@ -11,8 +11,15 @@ export default function Dividend() {
   });
   const [searchQuery, setSearchQuery] = useState("");
 
+  // በስልክ እና በኮምፒውተር ላይ ተለዋዋጭ ክፍተት ለመስጠት የስክሪን ስፋት መቆጣጠሪያ
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
   useEffect(() => {
     fetchDividendData();
+
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const fetchDividendData = async () => {
@@ -71,8 +78,17 @@ export default function Dividend() {
     setFilteredMembers(filtered);
   };
 
+  // የናቭባር እና የሳይድባር ለውጥን ያማከለ ተለዋዋጭ ስታይል
+// የናቭባር እና የሳይድባር ለውጥን ያማከለ ተለዋዋጭ ስታይል
+  const containerStyle = {
+    ...styles.container,
+    marginLeft: isMobile ? "0" : "240px", // ከ 270px ወደ 240px ቀነስነው (ወደ ግራ እንዲጠጋ)
+    padding: isMobile ? "10px" : "15px 25px 15px 10px", // የግራ ክፍተቱን 10px ብቻ አደረግነው
+    paddingTop: isMobile ? "75px" : "85px", 
+  };
+
   return (
-    <div className="dividend-page-container" style={styles.container}>
+    <div className="dividend-page-container" style={containerStyle}>
       <div style={styles.headerBox}>
         <h2 style={{ color: "#2c3e50", margin: 0, fontSize: "22px" }}>የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)</h2>
         <div className="summary-cards-grid" style={styles.summaryGrid}>
@@ -99,7 +115,6 @@ export default function Dividend() {
         style={styles.searchInput}
       />
 
-      {/* በስልክ ላይ ሰንጠረዡ ዲዛይኑን እንዳያበላሽ በ scrollable div እንሸፍነዋለን */}
       <div className="table-responsive-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
         <table style={styles.table}>
           <thead>
@@ -134,23 +149,22 @@ export default function Dividend() {
         </table>
       </div>
 
-      {/* የሞባይል ማስተካከያ CSS ህግጋት */}
       <style>
         {`
           @media (max-width: 768px) {
             .dividend-page-container {
-              marginLeft: 0 !important; /* በስልክ ላይ የጎንዮሽ ክፍተቱን ማጥፋት */
               padding: 15px !important;
+              padding-top: 75px !important; /* በስልክ ላይ የላይኛው ክፍተት መኖሩን ማረጋገጫ */
             }
             .summary-cards-grid {
-              flex-direction: column !important; /* ካርዶቹ በስልክ ላይ ወደ ታች እንዲደረደሩ */
+              flex-direction: column !important;
               gap: 12px !important;
             }
             .table-responsive-wrapper {
               margin-top: 10px;
             }
             th, td {
-              padding: 12px 10px !important; /* በስልክ ላይ የሰንጠረዡ ክፍተት እንዲያንስ */
+              padding: 12px 10px !important;
               font-size: 14px !important;
             }
           }
@@ -161,14 +175,20 @@ export default function Dividend() {
 }
 
 const styles = {
-  container: { marginLeft: "270px", padding: "30px", backgroundColor: "#f8f9fa", minHeight: "100vh", transition: "margin-left 0.3s ease", boxSizing: "border-box" },
+  container: { 
+    padding: "30px", 
+    backgroundColor: "#f8f9fa", 
+    minHeight: "100vh", 
+    transition: "margin-left 0.3s ease", 
+    boxSizing: "border-box" 
+  },
   headerBox: { background: "#fff", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", marginBottom: "20px" },
   summaryGrid: { display: "flex", gap: "20px", marginTop: "15px" },
   statCard: { flex: 1, padding: "20px", background: "#f1f3f5", borderRadius: "10px", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.02)" },
   label: { fontSize: "14px", color: "#6c757d" },
   value: { fontSize: "20px", display: "block", marginTop: "5px" },
   searchInput: { width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", marginBottom: "20px", outline: "none", boxSizing: "border-box" },
-  table: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "600px" }, // በስልክ ላይ እንዳይጨፈለቅ min-width ተሰጥቶታል
+  table: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "600px" }, 
   thRow: { background: "#34495e", color: "#fff" },
   th: { padding: "15px", textAlign: "left" },
   td: { padding: "15px", borderBottom: "1px solid #eee" },

@@ -1,15 +1,31 @@
-import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   FaTachometerAlt, FaUsers, FaPiggyBank, FaHandHoldingUsd,
   FaMoneyCheckAlt, FaWallet, FaChartBar, FaChevronLeft, FaChevronRight,
-  FaQuestionCircle, FaCog, FaCaretDown, FaCaretRight, FaPercentage, FaChartLine
+  FaQuestionCircle, FaCog, FaCaretDown, FaCaretRight, FaPercentage, FaChartLine, FaBars, FaTimes
 } from "react-icons/fa";
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [openProfit, setOpenProfit] = useState(false);
+  
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setIsMobileOpen(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const menuItems = [
     { name: "Dashboard", path: "/", icon: <FaTachometerAlt /> },
@@ -21,183 +37,228 @@ export default function Sidebar() {
     { name: "Reports", path: "/reports", icon: <FaChartBar /> },
   ];
 
-  const isHelpActive = location.pathname === "/Help";
-  const isSettingsActive = location.pathname === "/settings";
+  // HashRouter ስለሆነ በ location.pathname ላይ የሚመጣውን ፓዝ በትክክል ለማመሳሰል
+  const currentPath = location.pathname;
+
+  const isHelpActive = currentPath === "/help" || currentPath === "/Help";
+  const isSettingsActive = currentPath === "/settings";
+
+  // ለ HashRouter ተስማሚ የሆነ ገጽ መቀየሪያ እና የሞባይል ሜኑ መዝጊያ ፈንክሽን
+  const handleNavigation = (path) => {
+    navigate(path); 
+    if (isMobile) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  const dynamicSidebarStyle = {
+    ...styles.sidebar,
+    width: isMobile ? "260px" : (isCollapsed ? "80px" : "260px"),
+    position: isMobile ? "fixed" : "sticky",
+    left: isMobile ? (isMobileOpen ? "0" : "-260px") : "0",
+    height: "100vh",
+    top: 0,
+  };
 
   return (
-    <div className="custom-sidebar" style={{ ...styles.sidebar, width: isCollapsed ? "80px" : "260px" }}>
-      <div style={styles.header}>
-        {!isCollapsed && <h2 style={styles.logoText}>Microfinance Web</h2>}
-        <button onClick={() => setIsCollapsed(!isCollapsed)} style={styles.toggleBtn} className="toggle-sidebar-btn">
-          {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+    <>
+      {isMobile && (
+        <button 
+          onClick={() => setIsMobileOpen(!isMobileOpen)} 
+          style={{
+            position: "fixed",
+            top: "12px",
+            left: "15px",
+            zIndex: 10000,
+            background: "#02020c",
+            color: "#fff",
+            border: "1px solid rgba(255,255,255,0.2)",
+            padding: "10px 12px",
+            borderRadius: "8px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.3)"
+          }}
+        >
+          {isMobileOpen ? <FaTimes size={18} /> : <FaBars size={18} />}
         </button>
-      </div>
+      )}
 
-      <ul style={styles.menu} className="sidebar-menu-list">
-        {menuItems.map((item, index) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <li key={index} style={styles.listItem}>
-              <Link to={item.path} style={{
+      <div className="custom-sidebar" style={dynamicSidebarStyle}>
+        <div style={styles.header}>
+          {(!isCollapsed || isMobile) && <h2 style={styles.logoText}>Microfinance Web</h2>}
+          
+          {!isMobile && (
+            <button onClick={() => setIsCollapsed(!isCollapsed)} style={styles.toggleBtn} className="toggle-sidebar-btn">
+              {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+            </button>
+          )}
+        </div>
+
+        <ul style={styles.menu} className="sidebar-menu-list">
+          {menuItems.map((item, index) => {
+            const isActive = currentPath === item.path;
+            return (
+              <li key={index} style={styles.listItem}>
+                <div 
+                  onClick={() => handleNavigation(item.path)}
+                  style={{
+                    ...styles.link,
+                    cursor: "pointer",
+                    background: isActive ? "#ee2b09" : "transparent",
+                    justifyContent: (isCollapsed && !isMobile) ? "center" : "flex-start"
+                  }}
+                >
+                  <span style={styles.icon}>{item.icon}</span>
+                  {(!isCollapsed || isMobile) && <span>{item.name}</span>}
+                </div>
+              </li>
+            );
+          })}
+
+          <li style={styles.listItem}>
+            <div
+              onClick={() => setOpenProfit(!openProfit)}
+              style={{
                 ...styles.link,
-                background: isActive ? "#ee2b09" : "transparent",
-                justifyContent: isCollapsed ? "center" : "flex-start"
-              }}>
-                <span style={styles.icon}>{item.icon}</span>
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            </li>
-          );
-        })}
+                cursor: "pointer",
+                background: openProfit && (!isCollapsed || isMobile) ? "rgba(238, 43, 9, 0.1)" : "transparent",
+                justifyContent: (isCollapsed && !isMobile) ? "center" : "space-between"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                <span style={styles.icon}><FaChartLine /></span>
+                {(!isCollapsed || isMobile) && <span>Profit Product</span>}
+              </div>
+              {(!isCollapsed || isMobile) && (openProfit ? <FaCaretDown /> : <FaCaretRight />)}
+            </div>
 
-        <li style={styles.listItem}>
-          <div
-            onClick={() => !isCollapsed && setOpenProfit(!openProfit)}
+            {openProfit && (!isCollapsed || isMobile) && (
+              <ul style={styles.subMenu}>
+                <li>
+                  <div 
+                    onClick={() => handleNavigation("/dividend")}
+                    style={{
+                      ...styles.link,
+                      cursor: "pointer",
+                      paddingLeft: "40px",
+                      background: currentPath === "/dividend" ? "#ee2b09" : "transparent"
+                    }}
+                  >
+                    <span style={{...styles.icon, fontSize: "16px"}}><FaPercentage /></span>
+                    Dividend
+                  </div>
+                </li>
+                <li>
+                  <div 
+                    onClick={() => handleNavigation("/profit")}
+                    style={{
+                      ...styles.link,
+                      cursor: "pointer",
+                      paddingLeft: "40px",
+                      background: currentPath === "/profit" ? "#ee2b09" : "transparent"
+                    }}
+                  >
+                    <span style={{...styles.icon, fontSize: "16px"}}><FaChartLine /></span>
+                    Profit
+                  </div>
+                </li>
+              </ul>
+            )}
+          </li>
+        </ul>
+
+        <div style={styles.footer} className="sidebar-footer-section">
+          {/* እዚህ ጋ help የሚለውን በትንሽ ሆሄ ወደ App.js እንዲገጥም አድርገነዋል */}
+          <div 
+            onClick={() => handleNavigation("/help")}
             style={{
-              ...styles.link,
+              ...styles.link, 
               cursor: "pointer",
-              background: openProfit && !isCollapsed ? "rgba(238, 43, 9, 0.1)" : "transparent",
-              justifyContent: isCollapsed ? "center" : "space-between"
+              background: isHelpActive ? "#ee2b09" : "transparent",
+              justifyContent: (isCollapsed && !isMobile) ? "center" : "flex-start"
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
-              <span style={styles.icon}><FaChartLine /></span>
-              {!isCollapsed && <span>Profit Product</span>}
-            </div>
-            {!isCollapsed && (openProfit ? <FaCaretDown /> : <FaCaretRight />)}
+            <FaQuestionCircle style={styles.icon} />
+            {(!isCollapsed || isMobile) && "Help"}
           </div>
-
-          {openProfit && !isCollapsed && (
-            <ul style={styles.subMenu}>
-              <li>
-                <Link to="/dividend" style={{
-                  ...styles.link,
-                  paddingLeft: "40px",
-                  background: location.pathname === "/dividend" ? "#ee2b09" : "transparent"
-                }}>
-                  <span style={{...styles.icon, fontSize: "16px"}}><FaPercentage /></span>
-                  Dividend
-                </Link>
-              </li>
-              <li>
-                <Link to="/profit" style={{
-                  ...styles.link,
-                  paddingLeft: "40px",
-                  background: location.pathname === "/profit" ? "#ee2b09" : "transparent"
-                }}>
-                  <span style={{...styles.icon, fontSize: "16px"}}><FaChartLine /></span>
-                  Profit
-                </Link>
-              </li>
-            </ul>
-          )}
-        </li>
-      </ul>
-
-      <div style={styles.footer} className="sidebar-footer-section">
-        <Link to="/Help" style={{
-          ...styles.link, 
-          background: isHelpActive ? "#ee2b09" : "transparent",
-          justifyContent: isCollapsed ? "center" : "flex-start"
-        }}>
-          <FaQuestionCircle style={styles.icon} />
-          {!isCollapsed && "Help"}
-        </Link>
-        <Link to="/settings" style={{
-          ...styles.link, 
-          background: isSettingsActive ? "#ee2b09" : "transparent",
-          justifyContent: isCollapsed ? "center" : "flex-start",
-          marginTop: "5px"
-        }}>
-          <FaCog style={styles.icon} />
-          {!isCollapsed && "Settings"}
-        </Link>
-        
-        <div style={styles.userProfile} className="sidebar-user-profile">
-          <img src="https://via.placeholder.com/40" alt="user" style={styles.avatar} />
-          {!isCollapsed && (
-            <div style={styles.userInfo}>
-              <p style={styles.userName}>Adefrs S.</p>
-              <p style={styles.userEmail}>adefrs@web.com</p>
-            </div>
-          )}
+          <div 
+            onClick={() => handleNavigation("/settings")}
+            style={{
+              ...styles.link, 
+              cursor: "pointer",
+              background: isSettingsActive ? "#ee2b09" : "transparent",
+              justifyContent: (isCollapsed && !isMobile) ? "center" : "flex-start",
+              marginTop: "5px"
+            }}
+          >
+            <FaCog style={styles.icon} />
+            {(!isCollapsed || isMobile) && "Settings"}
+          </div>
+          
+          <div style={styles.userProfile} className="sidebar-user-profile">
+            <img src="https://via.placeholder.com/40" alt="user" style={styles.avatar} />
+            {(!isCollapsed || isMobile) && (
+              <div style={styles.userInfo}>
+                <p style={styles.userName}>Adefrs S.</p>
+                <p style={styles.userEmail}>adefrs@web.com</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* ለሞባይል ዲቫይስ ብቻ የሚሰራ ልዩ የ CSS ስታይል ህግ */}
-      <style>
-        {`
-          @media (max-width: 768px) {
-            .custom-sidebar {
-              width: 100% !important;
-              height: auto !important;
-              min-height: auto !important;
-              position: relative !important;
-              padding: 10px !important;
-            }
-            .toggle-sidebar-btn {
-              display: none !important; /* በስልክ ላይ የመሰብሰቢያ በተን አያስፈልግም */
-            }
-            .sidebar-menu-list {
-              display: flex !important;
-              flex-wrap: wrap !important;
-              gap: 5px !important;
-              margin-bottom: 10px !important;
-            }
-            .sidebar-menu-list li {
-              margin-bottom: 0 !important;
-            }
-            .sidebar-footer-section {
-              margin-top: 10px !important;
-              border-top: 1px solid rgba(255,255,255,0.1);
-              display: flex !important;
-              flex-direction: row !important;
-              justify-content: space-between !important;
-              align-items: center !important;
-            }
-            .sidebar-user-profile {
-              margin-top: 0 !important;
-              padding: 5px 10px !important;
-            }
-          }
-        `}
-      </style>
-    </div>
+      {isMobile && isMobileOpen && (
+        <div 
+          onClick={() => setIsMobileOpen(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0, 0, 0, 0.5)",
+            zIndex: 9998,
+          }}
+        />
+      )}
+    </>
   );
 }
 
 const styles = {
   sidebar: {
     background: "#02020c",
-    minHeight: "100vh", 
-    padding: "15px",
     color: "#fff",
     display: "flex",
     flexDirection: "column",
-    transition: "width 0.3s ease",
-    position: "sticky",
-    top: 0,
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     boxSizing: "border-box",
+    padding: "15px",
+    zIndex: 9999,
   },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px", padding: "0 10px" },
-  logoText: { fontSize: "20px", fontWeight: "bold" },
-  toggleBtn: { background: "#fff", border: "none", borderRadius: "50%", width: "25px", height: "25px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ee2b09" },
-  menu: { listStyle: "none", padding: 0, flexGrow: 1 },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px", padding: "0 10px", minHeight: "35px" },
+  logoText: { fontSize: "20px", fontWeight: "bold", margin: 0, whiteSpace: "nowrap" },
+  toggleBtn: { background: "#fff", border: "none", borderRadius: "50%", width: "25px", height: "25px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ee2b09", outline: "none" },
+  menu: { listStyle: "none", padding: 0, flexGrow: 1, margin: 0, overflowY: "auto" },
   listItem: { marginBottom: "8px" },
   subMenu: { listStyle: "none", padding: 0, marginTop: "5px" },
   link: {
     display: "flex", alignItems: "center", gap: "15px", padding: "12px", borderRadius: "8px",
     textDecoration: "none", color: "#fff", fontSize: "15px", transition: "all 0.2s",
+    whiteSpace: "nowrap"
   },
-  icon: { fontSize: "20px", minWidth: "25px" },
+  icon: { fontSize: "20px", minWidth: "25px", display: "flex", alignItems: "center", justifyContent: "center" },
   footer: { 
     borderTop: "1px solid rgba(255,255,255,0.1)", 
     paddingTop: "15px",
     marginTop: "auto" 
   },
-  userProfile: { display: "flex", alignItems: "center", gap: "10px", marginTop: "20px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "10px" },
-  avatar: { width: "35px", height: "35px", borderRadius: "50%" },
+  userProfile: { display: "flex", alignItems: "center", gap: "10px", marginTop: "20px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "10px", overflow: "hidden" },
+  avatar: { width: "35px", height: "35px", borderRadius: "50%", flexShrink: 0 },
   userInfo: { overflow: "hidden" },
-  userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
-  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
+  userName: { fontSize: "14px", fontWeight: "bold", margin: 0, whiteSpace: "nowrap", textOverflow: "ellipsis" },
+  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0, whiteSpace: "nowrap", textOverflow: "ellipsis" }
 };

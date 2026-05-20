@@ -1,230 +1,30 @@
-.pd-container {
-  margin-left: 260px;
-  padding: 50px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-}
-
-.pd-glass-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 24px;
-  padding: 40px;
-  width: 100%;
-  max-width: 700px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.pd-header h1 {
-  color: #2d3748;
-  font-size: 2.2rem;
-  margin-bottom: 8px;
-}
-
-.pd-header p {
-  color: #718096;
-  margin-bottom: 30px;
-}
-
-.pd-search-box {
-  position: relative;
-  margin-bottom: 30px;
-}
-
-.pd-search-box label {
-  display: block;
-  font-weight: 600;
-  color: #4a5568;
-  margin-bottom: 10px;
-}
-
-.pd-input-wrapper {
-  position: relative;
-}
-
-.pd-input-wrapper input {
-  width: 100%;
-  padding: 15px 20px;
-  border-radius: 15px;
-  border: 2px solid #edf2f7;
-  font-size: 16px;
-  transition: all 0.3s ease;
-}
-
-.pd-input-wrapper input:focus {
-  border-color: #4299e1;
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(66, 153, 225, 0.1);
-}
-
-.pd-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 15px;
-  margin-top: 8px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 10;
-  list-style: none;
-  padding: 0;
-}
-
-.pd-dropdown li {
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.pd-dropdown li:hover {
-  background: #f7fafc;
-  color: #4299e1;
-}
-
-.pd-result-card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 25px;
-  border: 1px solid #edf2f7;
-  animation: fadeIn 0.5s ease;
-}
-
-.pd-member-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 25px;
-}
-
-.pd-badge {
-  background: #ebf8ff;
-  color: #3182ce;
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-weight: 700;
-}
-
-.pd-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.pd-field label {
-  font-size: 13px;
-  color: #718096;
-  margin-bottom: 8px;
-  display: block;
-}
-
-.pd-field input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-}
-
-.pd-summary {
-  margin-top: 30px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.pd-summary span {
-  color: #a0aec0;
-  font-size: 14px;
-  margin-bottom: 15px;
-}
-
-.pd-submit-btn {
-  width: 100%;
-  padding: 16px;
-  background: linear-gradient(to right, #4299e1, #667eea);
-  color: white;
-  border: none;
-  border-radius: 15px;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.pd-submit-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(66, 153, 225, 0.3);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.pd-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border-radius: 0 0 15px 15px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  max-height: 250px; /* በጣም እንዳይረዝም */
-  overflow-y: auto;
-  z-index: 1000;
-  list-style: none;
-  padding: 5px 0;
-  border: 1px solid #e2e8f0;
-}
-
-.pd-dropdown li {
-  padding: 12px 20px;
-  cursor: pointer;
-  border-bottom: 1px solid #f7fafc;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.pd-dropdown li:hover {
-  background: #edf2f7;
-  color: #3182ce;
-}
-
-.id-tag {
-  background: #e2e8f0;
-  padding: 2px 8px;
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: bold;
-  color: #4a5568;
-}
-
-.no-result {
-  color: #a0aec0;
-  font-style: italic;
-  text-align: center;
-}
+/* ==========================================================================
+   Main Wrapper Base Styling
+   ========================================================================== */
 .pd-main-wrapper {
-  margin-left: 260px;
   padding: 40px;
+  padding-top: 95px; /* ከቶፕ ናቭባር በታች በቂ ክፍተት እንዲኖር */
   background-color: #f4f7fe;
   min-height: 100vh;
   font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+  transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
-/* Top Bar & Search */
+/* Top Bar & Search Layout */
 .pd-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 40px;
+  gap: 20px;
+}
+
+.pd-top-bar h1 {
+  color: #1a2a6c;
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0;
 }
 
 .pd-search-container {
@@ -234,23 +34,33 @@
 
 .pd-search-input {
   width: 100%;
-  padding: 12px 20px;
+  padding: 14px 20px;
   border-radius: 15px;
-  border: none;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  border: 2px solid transparent;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.04);
   font-size: 15px;
+  outline: none;
+  background: white;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.pd-search-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 /* Modern Dropdown */
 .pd-modern-dropdown {
   position: absolute;
-  top: 110%;
+  top: 115%;
   left: 0;
   right: 0;
   background: white;
-  border-radius: 18px;
+  border-radius: 16px;
   box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 250px;
   z-index: 1000;
   border: 1px solid #edf2f7;
 }
@@ -260,17 +70,22 @@
   align-items: center;
   padding: 12px 20px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.pd-dropdown-option:last-child {
+  border-bottom: none;
 }
 
 .pd-dropdown-option:hover {
-  background: #f8faff;
+  background: #f1f5f9;
 }
 
 .pd-opt-avatar {
-  width: 35px;
-  height: 35px;
-  background: #4e73df;
+  width: 38px;
+  height: 38px;
+  background: #3b82f6;
   color: white;
   border-radius: 10px;
   display: flex;
@@ -280,168 +95,225 @@
   margin-right: 12px;
 }
 
+.pd-opt-info {
+  display: flex;
+  flex-direction: column;
+}
+
 .pd-opt-name {
-  display: block;
   font-weight: 600;
-  color: #2d3748;
+  color: #1e293b;
+  font-size: 14px;
 }
 
 .pd-opt-id {
   font-size: 12px;
-  color: #a0aec0;
+  color: #64748b;
 }
 
-/* Card Grid Layout */
+/* ==========================================================================
+   Card Grid Layout (Desktop Layout)
+   ========================================================================== */
 .pd-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(2, 1fr); /* በኮምፒውተር ላይ 2 ሚዛናዊ ዓምድ ያደርገዋል */
   gap: 25px;
   align-items: start;
 }
 
 .pd-card {
   background: white;
-  padding: 25px;
+  padding: 30px;
   border-radius: 24px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
-  transition: 0.3s;
-}
-
-.pd-card:hover {
-  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-sizing: border-box;
 }
 
 .pd-card-small { grid-row: span 1; }
-.pd-card-medium { grid-row: span 2; }
-.pd-card-large { grid-row: span 2; padding: 40px; }
+.pd-card-medium { grid-row: span 1; }
+.pd-card-large { grid-row: span 1; }
 
-/* Styling Elements */
 .pd-card-icon {
-  font-size: 24px;
+  font-size: 26px;
   margin-bottom: 15px;
 }
 
+.pd-card h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pd-emp-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 5px 0;
+}
+
+.pd-emp-id {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
 .pd-amount-text {
-  font-size: 36px;
-  color: #2d3748;
+  font-size: 38px;
+  font-weight: 800;
+  color: #10b981;
   margin: 15px 0;
 }
 
 .pd-amount-text span {
   font-size: 18px;
-  color: #718096;
+  color: #64748b;
+  font-weight: 600;
 }
 
 .pd-progress-container {
-  background: #edf2f7;
+  background: #f1f5f9;
   height: 8px;
   border-radius: 10px;
   margin-bottom: 15px;
 }
 
 .pd-progress-bar {
-  background: linear-gradient(to right, #4e73df, #224abe);
+  background: linear-gradient(to right, #10b981, #059669);
   height: 100%;
   border-radius: 10px;
 }
 
+.pd-hint {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Input Fields */
 .pd-input-group {
   margin-bottom: 20px;
+}
+
+.pd-input-group:last-child {
+  margin-bottom: 0;
 }
 
 .pd-input-group label {
   display: block;
   font-size: 13px;
-  color: #718096;
+  font-weight: 600;
+  color: #475569;
   margin-bottom: 8px;
 }
 
 .pd-input-group input {
   width: 100%;
-  padding: 12px;
+  padding: 12px 15px;
   border-radius: 12px;
-  border: 1px solid #edf2f7;
-  background: #f8faff;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.pd-input-group input:focus {
+  border-color: #3b82f6;
+  background: white;
+}
+
+/* Summary Card */
+.pd-summary-card {
+  background: #1e293b;
+  color: white;
+}
+.pd-summary-card h3 { color: #94a3b8; }
+
+.pd-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.pd-summary-row strong {
+  font-size: 22px;
+  color: #3b82f6;
 }
 
 .pd-confirm-btn {
   width: 100%;
   padding: 15px;
-  background: #1cc88a;
+  background: #10b981;
   color: white;
   border: none;
-  border-radius: 15px;
-  font-weight: bold;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 16px;
   cursor: pointer;
-  margin-top: 15px;
+  margin-top: 25px;
+  transition: background 0.2s;
 }
 
-.pd-summary-card {
-  background: #2d3748;
-  color: white;
+.pd-confirm-btn:hover { background: #059669; }
+
+/* Placeholder Screen */
+.pd-placeholder-container {
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  padding: 50px 20px;
+  border-radius: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 15px;
+  max-width: 500px;
+  margin: 40px auto;
 }
 
-.pd-summary-card h3 { color: #edf2f7; }
+.pd-placeholder-icon {
+  font-size: 32px;
+  margin-bottom: 15px;
+}
 
-/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
+/* ==========================================================================
+   Responsive Media Query (ለሞባይል ስልኮች ፍጹም ተስማሚ ማድረጊያ)
+   ========================================================================== */
 @media (max-width: 768px) {
-  /* የSidebar ክፍተቶችን ማጥፋት እና ሙሉ ስክሪን ማድረግ */
-  .pd-container, 
   .pd-main-wrapper {
-    margin-left: 0 !important;
     padding: 15px !important;
+    padding-top: 85px !important;
+    margin-left: 0px !important;
+    width: 100% !important;
   }
 
-  /* የGlass Card ክፍተትን ለስልክ ማመጣጠን */
-  .pd-glass-card {
-    padding: 25px 15px;
-    border-radius: 18px;
-  }
-
-  .pd-header h1 {
-    font-size: 1.8rem; /* የርዕሱን መጠን በስልክ ላይ ማሳነስ */
-  }
-
-  /* የቶፕ ባር አቀማመጥን ከጎን ለጎን ወደ ታች ማደራደር */
   .pd-top-bar {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: 15px;
     margin-bottom: 25px;
   }
 
-  /* የፍለጋ ሳጥኑን ስፋት ከስክሪኑ ጋር ማስተካከል */
   .pd-search-container {
     width: 100% !important;
   }
 
-  /* ፎርሞች በስልክ 1 ረድፍ ብቻ እንዲሆኑ ማድረግ */
-  .pd-form-grid {
-    grid-template-columns: 1fr !important;
-    gap: 15px;
-  }
-
-  /* የካርድ ግሪዶችን ለስልክ 1 ረድፍ ማድረግ */
+  /* ግሪዱን ወደ 1 ዓምድ መቀየር */
   .pd-card-grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 
-  /* በስልክ ላይ ካርዶቹ በቁመት እንዳይለጠጡ ቁመታቸውን ነፃ ማድረግ */
-  .pd-card-medium, 
-  .pd-card-large {
-    grid-row: span 1 !important;
-    padding: 20px !important;
+  .pd-card {
+    padding: 22px;
+    border-radius: 18px;
   }
 
-  /* የትልቅ አማውንት ጽሑፍ መጠን ማስተካከል */
   .pd-amount-text {
-    font-size: 28px;
-  }
-
-  .pd-submit-btn, 
-  .pd-confirm-btn {
-    padding: 14px;
-    font-size: 16px;
+    font-size: 30px;
   }
 }

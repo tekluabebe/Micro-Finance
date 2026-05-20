@@ -1,7 +1,17 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaInfoCircle, FaQuestionCircle, FaHeadset, FaBook, FaKeyboard, FaShieldAlt, FaClock } from "react-icons/fa";
 
-export default function HelpPage() {
+// ሳይድባሩ የተሰበሰበ መሆኑን ለማወቅ `isCollapsed` ን በ props እንቀበላለን
+export default function HelpPage({ isCollapsed = false }) {
+  // በስክሪን መጠን ለውጥ ላይ ተመስርቶ ገጹን Responsive ለማድረግ
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const faqs = [
     { q: "ለምንድነው ውዝፍ የማይታየው?", a: "ብድሩ ከተወሰደ ገና 2 ወር ካልሞላው የዕፎይታ ጊዜ ስለሆነ ውዝፍ አይታይም።" },
     { q: "የወር ቁጠባዬን ከጨመርኩ ብድር ማግኘት እችላለሁ?", a: "አዎ፣ ሲስተሙ ብድር የሚፈቅደው በወቅታዊ የቁጠባ መጠንዎ 3 እጥፍ ስለሆነ ቁጠባዎ ሲጨምር የመበደር አቅምዎም ይጨምራል።" },
@@ -11,8 +21,18 @@ export default function HelpPage() {
     { q: "የዋስትና ቁጠባ (Guarantor) ጥቅሙ ምንድነው?", a: "አንድ አባል ከቁጠባው በላይ መበደር ሲፈልግ፣ የጎደለውን የገንዘብ መጠን ሌሎች አባላት በቁጠባዎቻቸው ዋስ እንዲሆኑት ያገለግላል።" }
   ];
 
+  // ገጹ ወደ ግራ ሙሉ በሙሉ እንዲጠጋና ከሳይድባሩ ጋር እንዲጣበቅ የተደረገ ተለዋዋጭ ሎጂክ
+  const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "55px" : "130px");
+
+  const dynamicContainerStyle = {
+    ...styles.container,
+    marginLeft: currentLeftMargin,
+    padding: isMobile ? "10px" : "15px 25px 15px 5px", // የግራ ክፍተቱን ወደ 5px በማጥበብ ወደ ግራ አስጠጋነው
+    paddingTop: isMobile ? "75px" : "85px", // ከቋሚ ናቭባሩ በታች እንዲሆን
+  };
+
   return (
-    <div className="help-page-container" style={styles.container}>
+    <div className="help-page-container" style={dynamicContainerStyle}>
       <h1 style={styles.title}><FaQuestionCircle /> Help & Support Center</h1>
       
       <div className="help-grid" style={styles.grid}>
@@ -110,24 +130,31 @@ export default function HelpPage() {
           /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
           @media (max-width: 900px) {
             .help-grid {
-              grid-template-columns: repeat(2, 1fr) !important; /* መካከለኛ ስክሪን ላይ 2 ረድፍ */
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .help-page-container {
+              margin-left: 0 !important;
+              padding: 15px !important;
+              padding-top: 75px !important;
             }
           }
 
           @media (max-width: 600px) {
             .help-page-container {
+              margin-left: 0 !important;
               padding: 15px !important;
+              padding-top: 75px !important;
             }
             .help-grid {
-              grid-template-columns: 1fr !important; /* በስልክ ላይ 1 ረድፍ ብቻ */
+              grid-template-columns: 1fr !important;
               gap: 15px !important;
             }
             .help-card {
-              height: auto !important; /* በስልክ ላይ ቁመቱ እንደ ጽሑፉ እንዲለጠጥ */
+              height: auto !important;
               padding: 20px !important;
             }
             .faq-card-height {
-              height: 350px !important; /* የ FAQ ካርድ ብቻ ስልክ ላይም በውስጡ Scroll እንዲሆን ቋሚ ቁመት ሰጠነው */
+              height: 350px !important;
             }
           }
         `}
@@ -137,7 +164,12 @@ export default function HelpPage() {
 }
 
 const styles = {
-  container: { padding: "30px", backgroundColor: "#f8f9fa", minHeight: "100vh", boxSizing: "border-box" },
+  container: { 
+    backgroundColor: "#f8f9fa", 
+    minHeight: "100vh", 
+    transition: "margin-left 0.3s ease", // ሳይድባሩ ሲዘጋ ገጹ ተንሸራቶ ወደ ግራ እንዲጠጋ
+    boxSizing: "border-box" 
+  },
   title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "35px", color: "#3f47d9", fontSize: "24px" },
   grid: { 
     display: "grid", 
