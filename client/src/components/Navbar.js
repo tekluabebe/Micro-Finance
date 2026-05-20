@@ -3,8 +3,8 @@ import React from "react";
 export default function Navbar() {
   return (
     <div style={styles.navbarContainer}>
-      {/* ክላስ ኔሙን እዚህ ላይ ጨምረነዋል ስለዚህ የሚዲያ ኩዌሪው አሁን በትክክል ይሰራል */}
-      <span className="navbar-text" style={styles.blink}>
+      {/* 💡 ሚዲያ ኳሪው እንዲያገኘው className="navbar-text" ጨምረናል */}
+      <span style={styles.blink} className="navbar-text">
         Microfinance Management System
       </span>
 
@@ -44,9 +44,7 @@ export default function Navbar() {
             .navbar-text {
               font-size: 16px !important; /* በስልክ ላይ የጽሁፉ መጠን እንዲያንስ */
               text-align: center;
-              /* በስልክ በግራ በኩል የሚመጣውን የሀምበርገር በተን ቦታ ላለመግፋት */
-              padding-left: 45px !important; 
-              padding-right: 15px !important;
+              padding: 0 10px;
             }
           }
           @media (max-width: 480px) {
@@ -70,20 +68,15 @@ const styles = {
     width: "100%",
     boxSizing: "border-box",
     
-    // ናቭባሩን ሁልጊዜ ከላይ ለመቆለፍ (Fixed ለማድረግ) የተጨመሩ ስታይሎች
-    position: "fixed",
-    top: 0,
-    left: 0,
-    height: "55px", // የናቭባሩ ቋሚ ቁመት
-    zIndex: 998,   // ከገጹ ይዘቶች (Dashboard) በላይ እንዲንሳፈፍ፣ ከSidebar (9999) በታች እንዲሆን
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)", // ይበልጥ ውብ እንዲሆን ቀጭን ጥላ
+    position: "fixed",  
+    top: 0,             
+    left: 0,            
+    zIndex: 1000,       // 💡 ከሳይድባሩ (1005) በታች እንዲሆን 1000 አደረግነው
+    height: "60px",     
   },
   blink: {
     fontSize: "24px", 
     fontWeight: "bold",
     animation: "glowBlink 2.5s infinite ease-in-out",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis"
   },
 };

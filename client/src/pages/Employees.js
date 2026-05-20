@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 
-// ሳይድባሩ የተሰበሰበ መሆኑን ከላይኛው Layout የሚያውቅ ከሆነ `isCollapsed` ን በ props መቀበል ይቻላል
-export default function Employees({ isCollapsed = false }) {
+// 💡 ከ App.js የሚመጣውን 'isSidebarOpen' በ props ተቀብለናል
+export default function Employees({ isSidebarOpen = true }) {
   const [employees, setEmployees] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState("");
 
-  // በስክሪን መጠን ለውጥ ላይ ተመስርቶ ገጹን በቅጽበት Responsive ለማድረግ
+  // በስክሪን መጠን ለውጥ ላይ ተመስርቶ ገጹን Responsive ለማድረግ
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const initialState = {
@@ -38,7 +38,6 @@ export default function Employees({ isCollapsed = false }) {
   useEffect(() => {
     fetchEmployees();
 
-    // የስክሪን ስፋት ሲቀያየር በቅጽበት እንዲያስተካክል Listener መጫን
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
@@ -106,7 +105,7 @@ export default function Employees({ isCollapsed = false }) {
       if (err.response?.data?.message?.includes("duplicate")) {
         alert("ስህተት: Member ID አስቀድሞ ተይዟል!");
       } else {
-        alert("መረጃውን ማስቀመጥ አልተቻለም膜");
+        alert("መረጃውን ማስቀመጥ አልተቻለም");
       }
     }
   };
@@ -134,22 +133,18 @@ export default function Employees({ isCollapsed = false }) {
     `${e.firstName} ${e.lastName} ${e.phone} ${e.memberId}`.toLowerCase().includes(search.toLowerCase())
   );
 
-  // ገጹ ወደ ግራ ሙሉ በሙሉ እንዲጠጋና ከሳይድባሩ ተንቀሳቃሽነት ጋር እንዲጣበቅ የተደረገ ሎጂክ
-  //const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "90px" : "270px");
-
-// ሳይድባሩ ይበልጥ ተለጥፎ ገጹ ወደ ግራ እንዲጠጋ ቁጥሮቹን ቀንሰናል
-  const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "55px" : "130px");
+  // 🛠️ ማስተካከያ፦ ከ App.js የመጣውን ስቴት ተጠቅመን የኮምፒውተር ማርጅንን ማስተካከል። ስልክ ላይ 0px ይሆናል።
+  const currentLeftMargin = isMobile ? "0px" : (isSidebarOpen ? "130px" : "65px");
 
   const dynamicContainerStyle = {
     ...styles.container,
     marginLeft: currentLeftMargin,
-    padding: isMobile ? "10px" : "15px 25px 15px 5px", // የግራ ክፍተቱን ወደ 5px ብቻ አጠበባንው
-    paddingTop: isMobile ? "75px" : "85px", 
+    width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
   };
 
   const dynamicGridStyle = {
     ...styles.gridStyle,
-    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", // በስልክ 1 ረድፍ፣ ኮምፒውተር ላይ 2 ረድፍ
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", 
   };
 
   const dynamicActionBarStyle = {
@@ -160,12 +155,15 @@ export default function Employees({ isCollapsed = false }) {
 
   return (
     <div className="employees-page-container" style={dynamicContainerStyle}>
-      <h2 style={{ color: "#2c3e50" }}>Employees Management</h2>
+      <h2 style={{ color: "#2c3e50", marginBottom: "20px", fontWeight: "700" }}>Employees Management</h2>
 
       <div className="emp-actions-bar" style={dynamicActionBarStyle}>
         <button onClick={() => {
           setShowForm(!showForm);
-          if(!showForm) setEditingId(null); setFormData(initialState);
+          if(!showForm) {
+            setEditingId(null); 
+            setFormData(initialState);
+          }
         }} style={styles.btnStyle}>
           {showForm ? "Close Form" : editingId ? "Edit Employee" : "Register Employee"}
         </button>
@@ -190,33 +188,53 @@ export default function Employees({ isCollapsed = false }) {
                 <label style={styles.labelStyle}>Login Password</label>
                 <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={styles.inputStyle}/>
             </div>
-            <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={styles.inputStyle}/>
-            <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={styles.inputStyle}/>
-            
-            <select name="gender" value={formData.gender} onChange={handleChange} style={styles.inputStyle}>
-              <option value="">Gender</option>
-              <option>Male</option>
-              <option>Female</option>
-            </select>
-            
-            <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={styles.inputStyle}/>
-            
-            <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={styles.inputStyle}>
-              <option value="">Marital Status</option>
-              <option>Single</option>
-              <option>Married</option>
-            </select>
-
-            <select name="role" value={formData.role} onChange={handleChange} style={styles.inputStyle}>
-              <option>Member</option>
-              <option>Admin</option>
-            </select>
+            <div>
+                <label style={styles.labelStyle}>First Name</label>
+                <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={styles.inputStyle}/>
+            </div>
+            <div>
+                <label style={styles.labelStyle}>Last Name</label>
+                <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={styles.inputStyle}/>
+            </div>
+            <div>
+                <label style={styles.labelStyle}>Gender</label>
+                <select name="gender" value={formData.gender} onChange={handleChange} style={styles.inputStyle}>
+                  <option value="">Gender</option>
+                  <option>Male</option>
+                  <option>Female</option>
+                </select>
+            </div>
+            <div>
+                <label style={styles.labelStyle}>Phone Number</label>
+                <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={styles.inputStyle}/>
+            </div>
+            <div>
+                <label style={styles.labelStyle}>Marital Status</label>
+                <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={styles.inputStyle}>
+                  <option value="">Marital Status</option>
+                  <option>Single</option>
+                  <option>Married</option>
+                </select>
+            </div>
+            <div>
+                <label style={styles.labelStyle}>System Role</label>
+                <select name="role" value={formData.role} onChange={handleChange} style={styles.inputStyle}>
+                  <option>Member</option>
+                  <option>Admin</option>
+                </select>
+            </div>
           </div>
 
           <h3 style={styles.sectionTitle}>Family Info</h3>
           <div className="emp-form-grid" style={dynamicGridStyle}>
-            <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle}/>
-            <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle}/>
+            <div>
+              <label style={styles.labelStyle}>Father Name</label>
+              <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle}/>
+            </div>
+            <div>
+              <label style={styles.labelStyle}>Mother Name</label>
+              <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle}/>
+            </div>
           </div>
 
           {formData.maritalStatus === "Married" && formData.gender === "Male" && (
@@ -264,9 +282,9 @@ export default function Employees({ isCollapsed = false }) {
         </form>
       )}
 
-      <h3 style={{ marginTop: 30, color: "#2c3e50" }}>Employee List</h3>
+      <h3 style={{ marginTop: 30, color: "#2c3e50", fontWeight: "600" }}>Employee List</h3>
       
-      <div className="emp-table-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" }}>
+      <div className="emp-table-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)", background: "#fff" }}>
         <table style={styles.tableStyle}>
           <thead>
             <tr>
@@ -297,13 +315,13 @@ export default function Employees({ isCollapsed = false }) {
                     </span>
                   </td>
                   <td style={styles.tdStyle}>
-                    <button onClick={()=>handleEdit(emp)} style={{ marginRight: 8, cursor: "pointer", border: "none", background: "none", fontSize: "16px" }}>✏️</button>
+                    <button onClick={()=>handleEdit(emp)} style={{ marginRight: 12, cursor: "pointer", border: "none", background: "none", fontSize: "16px" }}>✏️</button>
                     <button onClick={()=>handleDelete(emp._id)} style={{ cursor: "pointer", border: "none", background: "none", fontSize: "16px" }}>❌</button>
                   </td>
                 </tr>
               ))
             ) : (
-              <tr><td colSpan="5" style={{ padding: "20px", textAlign: "center" }}>ምንም ሰራተኛ አልተገኘም</td></tr>
+              <tr><td colSpan="5" style={{ padding: "20px", textAlign: "center", color: "#7f8c8d" }}>ምንም ሰራተኛ አልተገኘም</td></tr>
             )}
           </tbody>
         </table>
@@ -313,14 +331,16 @@ export default function Employees({ isCollapsed = false }) {
         {`
           @media (max-width: 768px) {
             .employees-page-container {
-              padding: 10px !important;
-              padding-top: 75px !important;
+              padding: 15px !important;
+              padding-top: 80px !important;
+              margin-left: 0px !important;
+              width: 100% !important;
             }
             .emp-actions-bar {
               gap: 12px !important;
             }
             th, td {
-              padding: 10px !important;
+              padding: 12px 10px !important;
               font-size: 14px !important;
             }
           }
@@ -330,47 +350,31 @@ export default function Employees({ isCollapsed = false }) {
   );
 }
 
+// =========================
+// STYLES
+// =========================
 const styles = {
   container: { 
     backgroundColor: "#f8f9fa", 
-    minHeight: "100vh", 
-    transition: "margin-left 0.3s ease", // ማውጫው ሲከፈትና ሲዘጋ ገጹ አብሮ በለስላሳ ሁኔታ እንዲንሸራተት
-    boxSizing: "border-box" 
+    minHeight: "100vh",
+    padding: "30px 20px 20px 20px",
+    paddingTop: "85px",
+    transition: "margin-left 0.3s ease, width 0.3s ease", 
+    boxSizing: "border-box"
   },
-  
-  actionBar: { 
-    display: "flex", 
-    gap: "0",
-    justifyContent: "space-between", 
-    marginBottom: "20px", 
-  },
-  
-  searchInput: { 
-    padding: "10px 12px", 
-    borderRadius: "6px", 
-    border: "1px solid #ccc", 
-    outline: "none", 
-    boxSizing: "border-box" 
-  },
-  
-  inputStyle: { padding: "10px", margin: "5px 0", borderRadius: "6px", border: "1px solid #ccc", width: "100%", boxSizing: "border-box", fontSize: "14px" },
-  labelStyle: { fontSize: "12px", fontWeight: "bold", color: "#555", marginLeft: "2px" },
-  gridStyle: { display: "grid", gap: "15px" },
-  formStyle: { 
-    marginTop: "20px", 
-    background: "#fff", 
-    borderRadius: "12px", 
-    border: "1px solid #eee", 
-    boxShadow: "0 4px 10px rgba(0,0,0,0.02)" 
-  },
-  
-  btnStyle: { padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold" },
-  addBtn: { margin: "5px 0 15px", padding: "8px 14px", border: "1px solid #ddd", background: "#fff", cursor: "pointer", borderRadius: "6px", fontSize: "13px", fontWeight: "600" },
+  actionBar: { display: "flex", gap: "10px", justifyContent: "space-between", marginBottom: "20px" },
+  searchInput: { padding: "11px 12px", borderRadius: "6px", border: "1px solid #ced4da", outline: "none", boxSizing: "border-box", fontSize: "14px" },
+  inputStyle: { padding: "11px", margin: "5px 0 12px 0", borderRadius: "6px", border: "1px solid #ced4da", width: "100%", boxSizing: "border-box", fontSize: "14px", outline: "none" },
+  labelStyle: { fontSize: "13px", fontWeight: "600", color: "#495057", marginLeft: "2px" },
+  gridStyle: { display: "grid", gap: "5px 15px" },
+  formStyle: { marginTop: "20px", background: "#fff", borderRadius: "12px", border: "1px solid #e9ecef", boxShadow: "0 4px 12px rgba(0,0,0,0.03)" },
+  btnStyle: { padding: "10px 20px", backgroundColor: "#007bff", color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold", fontSize: "14px" },
+  addBtn: { margin: "5px 0 15px", padding: "8px 14px", border: "1px solid #dee2e6", background: "#fff", cursor: "pointer", borderRadius: "6px", fontSize: "13px", fontWeight: "600", color: "#495057" },
   submitBtn: { padding: "14px", width: "100%", backgroundColor: "#28a745", color: "#fff", border: "none", borderRadius: "8px", fontSize: "16px", fontWeight: "bold", cursor: "pointer", marginTop: "15px" },
   tableStyle: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "650px" },
-  thStyle: { padding: "12px", background: "#34495e", color: "#fff", textAlign: "left", borderBottom: "2px solid #ddd" },
-  tdStyle: { padding: "12px", borderBottom: "1px solid #eee" },
-  spouseBox: { background: "#f1f3f5", padding: "15px", borderRadius: "10px", marginTop: "15px", marginBottom: "15px" },
-  sectionTitle: { borderBottom: "2px solid #007bff", paddingBottom: "5px", color: "#333", marginTop: "20px", marginBottom: "15px", fontSize: "18px" },
-  subSectionTitle: { color: "#495057", marginTop: "15px", marginBottom: "8px" }
+  thStyle: { padding: "14px 12px", background: "#34495e", color: "#fff", textAlign: "left", fontWeight: "600" },
+  tdStyle: { padding: "14px 12px", borderBottom: "1px solid #f1f3f5", color: "#495057" },
+  spouseBox: { background: "#f8f9fa", padding: "15px", borderRadius: "10px", marginTop: "15px", marginBottom: "15px", border: "1px solid #e9ecef" },
+  sectionTitle: { borderBottom: "2px solid #007bff", paddingBottom: "5px", color: "#2c3e50", marginTop: "20px", marginBottom: "15px", fontSize: "17px", fontWeight: "700" },
+  subSectionTitle: { color: "#495057", marginTop: "15px", marginBottom: "8px", fontWeight: "600", fontSize: "15px" }
 };

@@ -6,7 +6,8 @@ import {
   FaQuestionCircle, FaCog, FaCaretDown, FaCaretRight, FaPercentage, FaChartLine, FaBars, FaTimes
 } from "react-icons/fa";
 
-export default function Sidebar() {
+// 💡 isOpen እና setIsSidebarOpen ከ App.js በProps ይመጣሉ
+export default function Sidebar({ isOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -53,8 +54,8 @@ export default function Sidebar() {
 
   const dynamicSidebarStyle = {
     ...styles.sidebar,
-    width: isMobile ? "260px" : (isCollapsed ? "80px" : "260px"),
-    position: isMobile ? "fixed" : "sticky",
+    width: isMobile ? "260px" : (isOpen ? "260px" : "80px"),
+    position: "fixed", 
     left: isMobile ? (isMobileOpen ? "0" : "-260px") : "0",
     height: "100vh",
     top: 0,
@@ -88,11 +89,11 @@ export default function Sidebar() {
 
       <div className="custom-sidebar" style={dynamicSidebarStyle}>
         <div style={styles.header}>
-          {(!isCollapsed || isMobile) && <h2 style={styles.logoText}>Microfinance Web</h2>}
+          {(isOpen || isMobile) && <h2 style={styles.logoText}>Microfinance Web</h2>}
           
           {!isMobile && (
-            <button onClick={() => setIsCollapsed(!isCollapsed)} style={styles.toggleBtn} className="toggle-sidebar-btn">
-              {isCollapsed ? <FaChevronRight /> : <FaChevronLeft />}
+            <button onClick={() => setIsSidebarOpen(!isOpen)} style={styles.toggleBtn} className="toggle-sidebar-btn">
+              {isOpen ? <FaChevronLeft /> : <FaChevronRight />}
             </button>
           )}
         </div>
@@ -115,6 +116,7 @@ export default function Sidebar() {
                   {(!isCollapsed || isMobile) && <span>{item.name}</span>}
                 </div>
               </li>
+              
             );
           })}
 
@@ -124,18 +126,18 @@ export default function Sidebar() {
               style={{
                 ...styles.link,
                 cursor: "pointer",
-                background: openProfit && (!isCollapsed || isMobile) ? "rgba(238, 43, 9, 0.1)" : "transparent",
-                justifyContent: (isCollapsed && !isMobile) ? "center" : "space-between"
+                background: openProfit && (isOpen || isMobile) ? "rgba(238, 43, 9, 0.1)" : "transparent",
+                justifyContent: (!isOpen && !isMobile) ? "center" : "space-between"
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                 <span style={styles.icon}><FaChartLine /></span>
-                {(!isCollapsed || isMobile) && <span>Profit Product</span>}
+                {(isOpen || isMobile) && <span>Profit Product</span>}
               </div>
-              {(!isCollapsed || isMobile) && (openProfit ? <FaCaretDown /> : <FaCaretRight />)}
+              {(isOpen || isMobile) && (openProfit ? <FaCaretDown /> : <FaCaretRight />)}
             </div>
 
-            {openProfit && (!isCollapsed || isMobile) && (
+            {openProfit && (isOpen || isMobile) && (
               <ul style={styles.subMenu}>
                 <li>
                   <div 
@@ -178,7 +180,7 @@ export default function Sidebar() {
               ...styles.link, 
               cursor: "pointer",
               background: isHelpActive ? "#ee2b09" : "transparent",
-              justifyContent: (isCollapsed && !isMobile) ? "center" : "flex-start"
+              justifyContent: (!isOpen && !isMobile) ? "center" : "flex-start"
             }}
           >
             <FaQuestionCircle style={styles.icon} />
@@ -190,7 +192,7 @@ export default function Sidebar() {
               ...styles.link, 
               cursor: "pointer",
               background: isSettingsActive ? "#ee2b09" : "transparent",
-              justifyContent: (isCollapsed && !isMobile) ? "center" : "flex-start",
+              justifyContent: (!isOpen && !isMobile) ? "center" : "flex-start",
               marginTop: "5px"
             }}
           >
@@ -200,7 +202,7 @@ export default function Sidebar() {
           
           <div style={styles.userProfile} className="sidebar-user-profile">
             <img src="https://via.placeholder.com/40" alt="user" style={styles.avatar} />
-            {(!isCollapsed || isMobile) && (
+            {(isOpen || isMobile) && (
               <div style={styles.userInfo}>
                 <p style={styles.userName}>Adefrs S.</p>
                 <p style={styles.userEmail}>adefrs@web.com</p>
@@ -228,37 +230,31 @@ export default function Sidebar() {
   );
 }
 
+// ... styles object ጸንቶ ይቆያል (ምንም ለውጥ የለውም)
 const styles = {
   sidebar: {
     background: "#02020c",
+    padding: "15px",
     color: "#fff",
     display: "flex",
     flexDirection: "column",
-    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    transition: "width 0.3s ease, left 0.3s ease",
     boxSizing: "border-box",
-    padding: "15px",
-    zIndex: 9999,
+    overflowY: "auto",
+    zIndex: 1005,
   },
-  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px", padding: "0 10px", minHeight: "35px" },
-  logoText: { fontSize: "20px", fontWeight: "bold", margin: 0, whiteSpace: "nowrap" },
-  toggleBtn: { background: "#fff", border: "none", borderRadius: "50%", width: "25px", height: "25px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ee2b09", outline: "none" },
-  menu: { listStyle: "none", padding: 0, flexGrow: 1, margin: 0, overflowY: "auto" },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "30px", padding: "0 10px" },
+  logoText: { fontSize: "20px", fontWeight: "bold" },
+  toggleBtn: { background: "#fff", border: "none", borderRadius: "50%", width: "25px", height: "25px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#ee2b09" },
+  menu: { listStyle: "none", padding: 0, flexGrow: 1 },
   listItem: { marginBottom: "8px" },
   subMenu: { listStyle: "none", padding: 0, marginTop: "5px" },
-  link: {
-    display: "flex", alignItems: "center", gap: "15px", padding: "12px", borderRadius: "8px",
-    textDecoration: "none", color: "#fff", fontSize: "15px", transition: "all 0.2s",
-    whiteSpace: "nowrap"
-  },
-  icon: { fontSize: "20px", minWidth: "25px", display: "flex", alignItems: "center", justifyContent: "center" },
-  footer: { 
-    borderTop: "1px solid rgba(255,255,255,0.1)", 
-    paddingTop: "15px",
-    marginTop: "auto" 
-  },
-  userProfile: { display: "flex", alignItems: "center", gap: "10px", marginTop: "20px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "10px", overflow: "hidden" },
-  avatar: { width: "35px", height: "35px", borderRadius: "50%", flexShrink: 0 },
+  link: { display: "flex", alignItems: "center", gap: "15px", padding: "12px", borderRadius: "8px", textDecoration: "none", color: "#fff", fontSize: "15px", transition: "all 0.2s" },
+  icon: { fontSize: "20px", minWidth: "25px" },
+  footer: { borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "15px", marginTop: "auto" },
+  userProfile: { display: "flex", alignItems: "center", gap: "10px", marginTop: "20px", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: "10px" },
+  avatar: { width: "35px", height: "35px", borderRadius: "50%" },
   userInfo: { overflow: "hidden" },
-  userName: { fontSize: "14px", fontWeight: "bold", margin: 0, whiteSpace: "nowrap", textOverflow: "ellipsis" },
-  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0, whiteSpace: "nowrap", textOverflow: "ellipsis" }
+  userName: { fontSize: "14px", fontWeight: "bold", margin: 0 },
+  userEmail: { fontSize: "11px", opacity: 0.7, margin: 0 }
 };

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { FaInfoCircle, FaQuestionCircle, FaHeadset, FaBook, FaKeyboard, FaShieldAlt, FaClock } from "react-icons/fa";
 
-// ሳይድባሩ የተሰበሰበ መሆኑን ለማወቅ `isCollapsed` ን በ props እንቀበላለን
-export default function HelpPage({ isCollapsed = false }) {
+// 💡 ከ App.js ጋር አንድ አይነት እንዲሆን ፕሮፕስ ስሙን 'isSidebarOpen' አድርገነዋል
+export default function HelpPage({ isSidebarOpen = true }) {
   // በስክሪን መጠን ለውጥ ላይ ተመስርቶ ገጹን Responsive ለማድረግ
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -15,20 +15,19 @@ export default function HelpPage({ isCollapsed = false }) {
   const faqs = [
     { q: "ለምንድነው ውዝፍ የማይታየው?", a: "ብድሩ ከተወሰደ ገና 2 ወር ካልሞላው የዕፎይታ ጊዜ ስለሆነ ውዝፍ አይታይም።" },
     { q: "የወር ቁጠባዬን ከጨመርኩ ብድር ማግኘት እችላለሁ?", a: "አዎ፣ ሲስተሙ ብድር የሚፈቅደው በወቅታዊ የቁጠባ መጠንዎ 3 እጥፍ ስለሆነ ቁጠባዎ ሲጨምር የመበደር አቅምዎም ይጨምራል።" },
-    { q: "የይለፍ ቃሌን (Password) ብረሳ ምን ማድረግ አለብኝ?", a: "ወደ ሲስተም አስተዳዳሪው (Admin) በመሄድ ፓስዎርድዎ እንዲቀየር መጠየቅ ይችላሉ።" },
+    { q: "የይለፍ ቃሌን (Password) ብረሳ ምን ማድረግ አለኝ?", a: "ወደ ሲስተም አስተዳዳሪው (Admin) በመሄድ ፓስዎርድዎ እንዲቀየር መጠየቅ ይችላሉ።" },
     { q: "ሪፖርት እንዴት ማውረድ እችላለሁ?", a: "ሪፖርት ገጽ ላይ በመግባት የፈለጉትን ወር እና አመት መርጠው 'Download PDF' የሚለውን ቁልፍ ይጫኑ።" },
     { q: "በቅጣት ላይ ቅጣት ይታሰባል?", a: "አይ፣ ቅጣቱ የሚታሰበው ባመለጠው ወር መጠን እንጂ በቅጣቱ ላይ ተጨማሪ ወለድ አይታሰብም።" },
     { q: "የዋስትና ቁጠባ (Guarantor) ጥቅሙ ምንድነው?", a: "አንድ አባል ከቁጠባው በላይ መበደር ሲፈልግ፣ የጎደለውን የገንዘብ መጠን ሌሎች አባላት በቁጠባዎቻቸው ዋስ እንዲሆኑት ያገለግላል።" }
   ];
 
-  // ገጹ ወደ ግራ ሙሉ በሙሉ እንዲጠጋና ከሳይድባሩ ጋር እንዲጣበቅ የተደረገ ተለዋዋጭ ሎጂክ
-  const currentLeftMargin = isMobile ? "0px" : (isCollapsed ? "55px" : "130px");
+  // 🛠️ ማስተካከያ፦ ከሌሎቹ ማዕከላዊ ገጾች ጋር እኩል የሆነ የሳይድባር ማርጅን ሎጂክ
+  const currentLeftMargin = isMobile ? "0px" : (isSidebarOpen ? "100px" : "65px");
 
   const dynamicContainerStyle = {
     ...styles.container,
     marginLeft: currentLeftMargin,
-    padding: isMobile ? "10px" : "15px 25px 15px 5px", // የግራ ክፍተቱን ወደ 5px በማጥበብ ወደ ግራ አስጠጋነው
-    paddingTop: isMobile ? "75px" : "85px", // ከቋሚ ናቭባሩ በታች እንዲሆን
+    width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
   };
 
   return (
@@ -41,6 +40,7 @@ export default function HelpPage({ isCollapsed = false }) {
           <h3 style={styles.cardTitle}><FaBook /> የብድር አጠቃቀም መመሪያ</h3>
           <ul style={styles.list}>
             <li>ብድር ለመመዝገብ መጀመሪያ ሰራተኛ መምረጥ አለብዎት።</li>
+            <li>### የድርሻ መጠን (%)</li>
             <li>ብድሩ በገባ በ 3ኛው ወር ክፍያ ይጀምራል (2 ወር የዕፎይታ ጊዜ አለው)።</li>
             <li>የመክፈያ ጊዜው ካለፈ ሲስተሙ በወር 50 ብር ቅጣት በራሱ ያሰላል።</li>
           </ul>
@@ -53,7 +53,9 @@ export default function HelpPage({ isCollapsed = false }) {
             {faqs.map((item, index) => (
               <div key={index} style={styles.faqItem}>
                 <strong>ጥያቄ፡</strong> {item.q}<br/>
-                <em style={{color: "#555"}}>መልስ፡</em> {item.a}
+                <div style={{ marginTop: "4px", color: "#4a5568" }}>
+                  <em style={{ fontWeight: "600", fontStyle: "normal", color: "#3f47d9" }}>መልስ፡</em> {item.a}
+                </div>
               </div>
             ))}
           </div>
@@ -72,7 +74,7 @@ export default function HelpPage({ isCollapsed = false }) {
         {/* --- Quick Actions --- */}
         <div style={styles.card} className="help-card">
           <h3 style={styles.cardTitle}><FaKeyboard /> Quick Actions</h3>
-          <p style={{fontSize: "13px", marginBottom: "10px"}}>ለፈጣን ስራ እነዚህን ይጠቀሙ፡</p>
+          <p style={{fontSize: "13px", marginBottom: "10px", color: "#666"}}>ለፈጣን ስራ እነዚህን ይጠቀሙ፡</p>
           <ul style={styles.list}>
             <li><strong>Dashboard:</strong> ዋናውን መረጃ ለማየት</li>
             <li><strong>Reports:</strong> የሪፖርት ፒዲኤፍ (PDF) ለማውረድ</li>
@@ -84,9 +86,9 @@ export default function HelpPage({ isCollapsed = false }) {
         <div style={styles.card} className="help-card">
           <h3 style={styles.cardTitle}><FaHeadset /> Technical Support</h3>
           <div style={{fontSize: "14px", color: "#444", marginBottom: "15px"}}>
-            <p style={{margin: "5px 0"}}><strong>Admin:</strong> Teklu Abebe Temitme</p>
-            <p style={{margin: "5px 0"}}><strong>Email:</strong> tekluabebe0962@gmail.com</p>
-            <p style={{margin: "5px 0"}}><strong>Phone:</strong> +251905698140</p>
+            <p style={{margin: "6px 0"}}><strong>Admin:</strong> Teklu Abebe Temitme</p>
+            <p style={{margin: "6px 0"}}><strong>Email:</strong> tekluabebe0962@gmail.com</p>
+            <p style={{margin: "6px 0"}}><strong>Phone:</strong> +251905698140</p>
           </div>
           <div style={styles.statusBadge}>System Status: Online</div>
         </div>
@@ -111,39 +113,37 @@ export default function HelpPage({ isCollapsed = false }) {
             justify-content: flex-start;
           }
           .help-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 12px 24px rgba(63, 71, 217, 0.15) !important;
+            transform: translateY(-6px);
+            box-shadow: 0 12px 24px rgba(63, 71, 217, 0.12) !important;
             border-bottom: 4px solid #3f47d9;
           }
-          /* Scrollbar ን ውብ ለማድረግ */
+          
           div::-webkit-scrollbar {
             width: 5px;
           }
           div::-webkit-scrollbar-thumb {
-            background: #ccc;
+            background: #e2e8f0;
             border-radius: 10px;
           }
           div::-webkit-scrollbar-thumb:hover {
             background: #3f47d9;
           }
 
-          /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
-          @media (max-width: 900px) {
+          /* --- ታብሌቶች እና መካከለኛ ስክሪኖች --- */
+          @media (max-width: 1024px) {
             .help-grid {
               grid-template-columns: repeat(2, 1fr) !important;
-            }
-            .help-page-container {
-              margin-left: 0 !important;
-              padding: 15px !important;
-              padding-top: 75px !important;
+              gap: 20px !important;
             }
           }
 
-          @media (max-width: 600px) {
+          /* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ --- */
+          @media (max-width: 768px) {
             .help-page-container {
-              margin-left: 0 !important;
               padding: 15px !important;
-              padding-top: 75px !important;
+              padding-top: 80px !important;
+              margin-left: 0px !important;
+              width: 100% !important;
             }
             .help-grid {
               grid-template-columns: 1fr !important;
@@ -163,14 +163,19 @@ export default function HelpPage({ isCollapsed = false }) {
   );
 }
 
+// =========================
+// STYLES
+// =========================
 const styles = {
+  // 💡 የጠፋውን የ container ስታይል ሙሉ በሙሉ ጨምረነዋል
   container: { 
     backgroundColor: "#f8f9fa", 
     minHeight: "100vh", 
-    transition: "margin-left 0.3s ease", // ሳይድባሩ ሲዘጋ ገጹ ተንሸራቶ ወደ ግራ እንዲጠጋ
-    boxSizing: "border-box" 
+    padding: "30px 20px 20px 20px",
+    transition: "margin-left 0.3s ease, width 0.3s ease", 
+    boxSizing: "border-box"
   },
-  title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "35px", color: "#3f47d9", fontSize: "24px" },
+  title: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "30px", color: "#3f47d9", fontSize: "24px", fontWeight: "700" },
   grid: { 
     display: "grid", 
     gridTemplateColumns: "repeat(3, 1fr)", 
@@ -180,14 +185,14 @@ const styles = {
     background: "#fff", 
     padding: "25px", 
     borderRadius: "16px", 
-    boxShadow: "0 4px 12px rgba(0,0,0,0.05)", 
-    border: "1px solid #eee",
-    height: "300px", 
+    boxShadow: "0 4px 12px rgba(0,0,0,0.03)", 
+    border: "1px solid #f1f3f5",
+    height: "280px", 
     overflow: "hidden",
     boxSizing: "border-box"
   },
-  cardTitle: { display: "flex", alignItems: "center", gap: "10px", color: "#3f47d9", marginBottom: "15px", fontSize: "18px", fontWeight: "600" },
-  list: { paddingLeft: "20px", lineHeight: "1.8", margin: 0, fontSize: "14px", color: "#444" },
+  cardTitle: { display: "flex", alignItems: "center", gap: "10px", color: "#3f47d9", marginBottom: "15px", fontSize: "17px", fontWeight: "600" },
+  list: { paddingLeft: "20px", lineHeight: "1.8", margin: 0, fontSize: "14px", color: "#4a5568" },
   
   faqScrollContainer: {
     overflowY: "auto",
@@ -199,11 +204,11 @@ const styles = {
   },
   faqItem: { 
     padding: "12px", 
-    background: "#f0f2ff", 
+    background: "#f4f5ff", 
     borderRadius: "10px", 
     borderLeft: "4px solid #3f47d9", 
     fontSize: "13px",
-    lineHeight: "1.5"
+    lineHeight: "1.6"
   },
   
   statusBadge: { 

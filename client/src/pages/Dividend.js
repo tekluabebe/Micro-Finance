@@ -11,15 +11,8 @@ export default function Dividend() {
   });
   const [searchQuery, setSearchQuery] = useState("");
 
-  // በስልክ እና በኮምፒውተር ላይ ተለዋዋጭ ክፍተት ለመስጠት የስክሪን ስፋት መቆጣጠሪያ
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
   useEffect(() => {
     fetchDividendData();
-
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const fetchDividendData = async () => {
@@ -78,20 +71,17 @@ export default function Dividend() {
     setFilteredMembers(filtered);
   };
 
-  // የናቭባር እና የሳይድባር ለውጥን ያማከለ ተለዋዋጭ ስታይል
-// የናቭባር እና የሳይድባር ለውጥን ያማከለ ተለዋዋጭ ስታይል
-  const containerStyle = {
-    ...styles.container,
-    marginLeft: isMobile ? "0" : "240px", // ከ 270px ወደ 240px ቀነስነው (ወደ ግራ እንዲጠጋ)
-    padding: isMobile ? "10px" : "15px 25px 15px 10px", // የግራ ክፍተቱን 10px ብቻ አደረግነው
-    paddingTop: isMobile ? "75px" : "85px", 
-  };
-
   return (
-    <div className="dividend-page-container" style={containerStyle}>
+    /* 💡 ፔጅ መያዣው አሁን ሙሉ በሙሉ በ App.js ማርጅን ስለሚመራ እዚህ ላይ width: 100% ብቻ ይሆናል */
+    <div className="dividend-page-container" style={{ width: "100%", boxSizing: "border-box" }}>
+      
       <div style={styles.headerBox}>
-        <h2 style={{ color: "#2c3e50", margin: 0, fontSize: "22px" }}>የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)</h2>
-        <div className="summary-cards-grid" style={styles.summaryGrid}>
+        <h2 style={{ color: "#2c3e50", margin: "0 0 15px 0", fontSize: "22px", fontWeight: "700" }}>
+          የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)
+        </h2>
+        
+        {/* 💡 ክላስ ስም ብቻ ሰጥተን ስታይሉን ወደ ታችኛው የ CSS @media አዛውረነዋል (ስልክ ላይ እንዲታጠፍ) */}
+        <div className="summary-cards-grid">
           <div style={styles.statCard}>
             <span style={styles.label}>ጠቅላላ ቁጠባ</span>
             <strong style={styles.value}>{totals.totalSaving.toLocaleString()} ETB</strong>
@@ -115,7 +105,8 @@ export default function Dividend() {
         style={styles.searchInput}
       />
 
-      <div className="table-responsive-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 4px rgba(0,0,0,0.05)" }}>
+      {/* የሰንጠረዥ መያዣ (Responsive Table Wrapper) */}
+      <div className="table-responsive-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", background: "#fff" }}>
         <table style={styles.table}>
           <thead>
             <tr style={styles.thRow}>
@@ -143,29 +134,38 @@ export default function Dividend() {
                 );
               })
             ) : (
-              <tr><td colSpan="4" style={{ padding: "20px", textAlign: "center" }}>ምንም ዳታ አልተገኘም</td></tr>
+              <tr>
+                <td colSpan="4" style={{ padding: "25px", textAlign: "center", color: "#7f8c8d" }}>
+                  ምንም ዳታ አልተገኘም
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
 
+      {/* 🛠️ ፍጹም የሆነ የሞባይል ተኳኋኝነትን የሚያረጋግጥ ማጠናከሪያ CSS */}
       <style>
         {`
+          .summary-cards-grid {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+          }
+
           @media (max-width: 768px) {
-            .dividend-page-container {
-              padding: 15px !important;
-              padding-top: 75px !important; /* በስልክ ላይ የላይኛው ክፍተት መኖሩን ማረጋገጫ */
-            }
             .summary-cards-grid {
               flex-direction: column !important;
               gap: 12px !important;
             }
-            .table-responsive-wrapper {
-              margin-top: 10px;
-            }
+            
             th, td {
               padding: 12px 10px !important;
               font-size: 14px !important;
+            }
+            
+            h2 {
+              font-size: 18px !important;
             }
           }
         `}
@@ -175,21 +175,34 @@ export default function Dividend() {
 }
 
 const styles = {
-  container: { 
-    padding: "30px", 
-    backgroundColor: "#f8f9fa", 
-    minHeight: "100vh", 
-    transition: "margin-left 0.3s ease", 
-    boxSizing: "border-box" 
+  headerBox: { 
+    background: "#fff", 
+    padding: "20px", 
+    borderRadius: "12px", 
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", 
+    marginBottom: "20px" 
   },
-  headerBox: { background: "#fff", padding: "25px", borderRadius: "12px", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", marginBottom: "20px" },
-  summaryGrid: { display: "flex", gap: "20px", marginTop: "15px" },
-  statCard: { flex: 1, padding: "20px", background: "#f1f3f5", borderRadius: "10px", boxShadow: "inset 0 1px 3px rgba(0,0,0,0.02)" },
-  label: { fontSize: "14px", color: "#6c757d" },
-  value: { fontSize: "20px", display: "block", marginTop: "5px" },
-  searchInput: { width: "100%", padding: "12px", borderRadius: "8px", border: "1px solid #ddd", marginBottom: "20px", outline: "none", boxSizing: "border-box" },
+  statCard: { 
+    flex: 1, 
+    padding: "18px", 
+    background: "#f8f9fa", 
+    borderRadius: "10px", 
+    border: "1px solid #e9ecef"
+  },
+  label: { fontSize: "14px", color: "#6c757d", fontWeight: "500" },
+  value: { fontSize: "20px", display: "block", marginTop: "5px", color: "#2c3e50", fontWeight: "600" },
+  searchInput: { 
+    width: "100%", 
+    padding: "12px", 
+    borderRadius: "8px", 
+    border: "1px solid #ced4da", 
+    marginBottom: "20px", 
+    outline: "none", 
+    boxSizing: "border-box",
+    fontSize: "15px"
+  },
   table: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "600px" }, 
   thRow: { background: "#34495e", color: "#fff" },
-  th: { padding: "15px", textAlign: "left" },
-  td: { padding: "15px", borderBottom: "1px solid #eee" },
+  th: { padding: "14px 16px", textAlign: "left", fontWeight: "600" },
+  td: { padding: "14px 16px", borderBottom: "1px solid #f1f3f5", color: "#495057" },
 };

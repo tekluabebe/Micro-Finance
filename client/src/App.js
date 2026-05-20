@@ -15,58 +15,58 @@ import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import HelpPage from "./pages/HelpPage";
 import SettingsPage from "./pages/SettingsPage";
-import Logout from "./pages/Logout";
 
 function App() {
-  // 1. መጀመሪያ ቶክን በ localStorage ውስጥ መኖሩን ቼክ እናደርጋለን
   const [token, setToken] = useState(localStorage.getItem("token"));
+  
+  // 💡 ሳይድባሩ ክፍት መሆኑን የሚቆጣጠር ዋና ስቴት
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // ቶክኑ ሲቀየር (Login ሲደረግ ወይም Logout ሲደረግ) አፑን ለማደስ
   useEffect(() => {
     const handleStorageChange = () => {
       setToken(localStorage.getItem("token"));
     };
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("resize", handleResize);
+    };
   }, []);
 
-  // 2. ቶክን ካለ ገብቷል (true) ካልሆነ ግን አልገባም (false)
+  const isAuthenticated = token !== null && token !== undefined && token !== "";
 
-  // በ App.js ውስጥ
-const isAuthenticated = token !== null && token !== undefined && token !== "";
-
-  // በ App.js ውስጥ
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  // ቶከን ከሌለ በቀጥታ ወደ Login ገጽ እንዲመለስ ያደርጋል
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-};
+  // 🛠️ ሳይድባሩ ሲዘረጋ 260px፣ ሲሰበሰብ 80px ማርጅን ይሰጣል! ለስላሳ እንቅስቃሴ እንዲኖረው transition ተጨምሯል።
+  const currentLeftMargin = isMobile ? "0px" : (isSidebarOpen ? "260px" : "80px");
+  const currentWidth = isMobile ? "100%" : (isSidebarOpen ? "calc(100% - 260px)" : "calc(100% - 80px)");
 
   return (
     <HashRouter>
-      {/* ተጠቃሚው ከገባ ብቻ Navbar እና Sidebar ይታያሉ */}
       {isAuthenticated && <Navbar />}
 
-      <div style={{ display: "flex", minHeight: "100vh" }}>
-        {isAuthenticated && <Sidebar />}
+      <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#f4f7fe" }}>
+        
+        {/* ሳይድባር - አሁን isOpen እና setIsSidebarOpen'ን በprops ይወስዳል */}
+        {isAuthenticated && (
+          <Sidebar isOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+        )}
 
+        {/* 💡 ዋናው ማስተካከያ ፔጅ መያዣ (Main Layout Wrapper) */}
         <div style={{ 
-          padding: isAuthenticated ? "20px" : "0px", 
           flexGrow: 1,
-          width: "100%",
-          background: isAuthenticated ? "#f4f7fe" : "#ffffff" 
+          marginLeft: isAuthenticated ? currentLeftMargin : "0px",
+          width: isAuthenticated ? currentWidth : "100%",
+          transition: "margin-left 0.3s ease, width 0.3s ease", // የሳይድባሩን መዘጋት ተከትሎ በለስላሳ ሁኔታ ይንሸራተታል
+          padding: isAuthenticated ? (isMobile ? "15px" : "25px") : "0px",
+          paddingTop: isAuthenticated ? "85px" : "0px", 
+          boxSizing: "border-box"
         }}>
           <Routes>
-            {/* ተጠቃሚው ካልገባ (Login ካላደረገ) ሁልጊዜ ወደ /login ይላካል */}
-            <Route 
-              path="/login" 
-              element={!isAuthenticated ? <Login /> : <Navigate to="/" />} 
-            />
-
-            {/* Protected Routes: isAuthenticated true ከሆነ ብቻ ይከፈታሉ */}
+            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/" />} />
             <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
             <Route path="/employees" element={isAuthenticated ? <Employees /> : <Navigate to="/login" />} />
             <Route path="/deposits" element={isAuthenticated ? <Deposits /> : <Navigate to="/login" />} />
@@ -79,8 +79,6 @@ const ProtectedRoute = ({ children }) => {
             <Route path="/terminated" element={isAuthenticated ? <TerminatedEmployees /> : <Navigate to="/login" />} />
             <Route path="/help" element={isAuthenticated ? <HelpPage /> : <Navigate to="/login" />} />
             <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
-            
-            {/* ተጠቃሚው የሌለ ገጽ ቢጠይቅ ወይም ገና ሲስተሙ ሲከፈት */}
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} />} />
           </Routes>
         </div>
