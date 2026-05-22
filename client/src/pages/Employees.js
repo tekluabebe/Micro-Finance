@@ -13,6 +13,7 @@ export default function Employees({ isSidebarOpen = true }) {
 
   const initialState = {
     memberId: "",
+    category: "Adult",
     firstName: "",
     lastName: "",
     gender: "",
@@ -69,23 +70,25 @@ export default function Employees({ isSidebarOpen = true }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!editingId) {
-      const exists = employees.some((emp) => emp.memberId === formData.memberId);
-      if (exists) {
-        alert("ስህተት: ይህ Member ID አስቀድሞ ተመዝግቧል!");
-        return;
-      }
-      if (!formData.password) {
-        alert("እባክህ ለተጠቃሚው ፓስወርድ አስገባ!");
-        return;
-      }
+ if (!editingId) {
+    const exists = employees.some((emp) => emp.memberId === formData.memberId);
+    if (exists) {
+      alert("ስህተት: ይህ Member ID አስቀድሞ ተመዝግቧል!");
+      return;
     }
+    // እዚህ ጋር ለሁለቱም ምድብ ፓስወርድ እንደሚያስፈልግ እናረጋግጣለን
+    if (!formData.password) {
+      alert("እባክህ ለተጠቃሚው ፓስወርድ አስገባ!");
+      return;
+    }
+  }
 
     try {
-      const submissionData = {
-        ...formData,
-        role: formData.role.toLowerCase(),
-      };
+     const submissionData = {
+  ...formData,
+  category: formData.category, // ይሄን መስመር ማረጋገጥ
+  role: formData.role.toLowerCase(),
+};
 
       if (editingId) {
         await API.put(`/employees/${editingId}`, submissionData);
@@ -164,7 +167,7 @@ export default function Employees({ isSidebarOpen = true }) {
             setEditingId(null); 
             setFormData(initialState);
           }
-        }} style={styles.btnStyle}>
+          }} style={styles.btnStyle}>
           {showForm ? "Close Form" : editingId ? "Edit Employee" : "Register Employee"}
         </button>
         <input
@@ -175,112 +178,129 @@ export default function Employees({ isSidebarOpen = true }) {
           style={{ ...styles.searchInput, width: isMobile ? "100%" : 300 }}
         />
       </div>
-
-      {showForm && (
-        <form onSubmit={handleSubmit} style={{ ...styles.formStyle, padding: isMobile ? "15px" : "25px" }}>
-          <h3 style={styles.sectionTitle}>Login & Basic Info</h3>
-          <div className="emp-form-grid" style={dynamicGridStyle}>
-            <div>
-                <label style={styles.labelStyle}>Member ID (Username)</label>
-                <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={styles.inputStyle} disabled={editingId} />
-            </div>
-            <div>
-                <label style={styles.labelStyle}>Login Password</label>
-                <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>First Name</label>
-                <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>Last Name</label>
-                <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>Gender</label>
-                <select name="gender" value={formData.gender} onChange={handleChange} style={styles.inputStyle}>
-                  <option value="">Gender</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                </select>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>Phone Number</label>
-                <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>Marital Status</label>
-                <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={styles.inputStyle}>
-                  <option value="">Marital Status</option>
-                  <option>Single</option>
-                  <option>Married</option>
-                </select>
-            </div>
-            <div>
-                <label style={styles.labelStyle}>System Role</label>
-                <select name="role" value={formData.role} onChange={handleChange} style={styles.inputStyle}>
-                  <option>Member</option>
-                  <option>Admin</option>
-                </select>
-            </div>
+{showForm && (
+  <form onSubmit={handleSubmit} style={{ ...styles.formStyle, padding: isMobile ? "15px" : "25px" }}>
+    
+    {/* ክፍል 1: Login & Basic Info */}
+    <div style={styles.sectionContainer}>
+      <h3 style={styles.sectionTitle}>Login & Basic Info</h3>
+      <div className="emp-form-grid" style={dynamicGridStyle}>
+        <div>
+          <label style={styles.labelStyle}>Member ID (Username)</label>
+          <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={styles.inputStyle} disabled={editingId} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>Member Category</label>
+          <select name="category" value={formData.category} onChange={handleChange} style={styles.inputStyle}>
+            <option value="Member">Adult Member</option>
+            <option value="Child">Child Member</option>
+          </select>
+        </div>
+        {formData.category !== "Child" && (
+          <div>
+            <label style={styles.labelStyle}>Marital Status</label>
+            <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={styles.inputStyle}>
+              <option value="">Marital Status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+            </select>
           </div>
+        )}
+        <div>
+          <label style={styles.labelStyle}>Login Password</label>
+          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>First Name</label>
+          <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>Last Name</label>
+          <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>Gender</label>
+          <select name="gender" value={formData.gender} onChange={handleChange} style={styles.inputStyle}>
+            <option value="">Select Gender</option>
+            <option>Male</option>
+            <option>Female</option>
+          </select>
+        </div>
+        <div>
+          <label style={styles.labelStyle}>Phone Number</label>
+          <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>System Role</label>
+          <select name="role" value={formData.role} onChange={handleChange} style={styles.inputStyle}>
+            <option value="Member">Member</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
+    </div>
 
-          <h3 style={styles.sectionTitle}>Family Info</h3>
+    {/* ሰማያዊ መስመር (Blue Divider) */}
+
+    {/* ክፍል 2: Family Info */}
+    <div style={styles.sectionContainer}>
+      <h3 style={styles.sectionTitle}>Family Info</h3>
+      <div className="emp-form-grid" style={dynamicGridStyle}>
+        <div>
+          <label style={styles.labelStyle}>Father Name</label>
+          <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+        <div>
+          <label style={styles.labelStyle}>Mother Name</label>
+          <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle} />
+        </div>
+      </div>
+
+      {/* Spouse Logic */}
+      {formData.category !== "Child" && formData.maritalStatus === "Married" && (
+        <div style={styles.spouseBox}>
+          <h4 style={styles.subSectionTitle}>{formData.gender === "Male" ? "Spouse Info (Wife)" : "Spouse Info (Husband)"}</h4>
           <div className="emp-form-grid" style={dynamicGridStyle}>
-            <div>
-              <label style={styles.labelStyle}>Father Name</label>
-              <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
-            <div>
-              <label style={styles.labelStyle}>Mother Name</label>
-              <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={styles.inputStyle}/>
-            </div>
+            {formData.gender === "Male" ? (
+              <>
+                <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={styles.inputStyle} />
+                <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={styles.inputStyle} />
+                <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={styles.inputStyle} />
+              </>
+            ) : (
+              <>
+                <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={styles.inputStyle} />
+                <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={styles.inputStyle} />
+                <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={styles.inputStyle} />
+              </>
+            )}
           </div>
-
-          {formData.maritalStatus === "Married" && formData.gender === "Male" && (
-            <div style={styles.spouseBox}>
-              <h4 style={styles.subSectionTitle}>Spouse Info (Wife)</h4>
-              <div className="emp-form-grid" style={dynamicGridStyle}>
-                <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={styles.inputStyle}/>
-                <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={styles.inputStyle}/>
-                <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={styles.inputStyle}/>
-              </div>
-            </div>
-          )}
-
-          {formData.maritalStatus === "Married" && formData.gender === "Female" && (
-            <div style={styles.spouseBox}>
-              <h4 style={styles.subSectionTitle}>Spouse Info (Husband)</h4>
-              <div className="emp-form-grid" style={dynamicGridStyle}>
-                <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={styles.inputStyle}/>
-                <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={styles.inputStyle}/>
-                <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={styles.inputStyle}/>
-              </div>
-            </div>
-          )}
-
-          <h4 style={styles.subSectionTitle}>Brothers</h4>
-          {formData.brothers.map((b,i)=>
-            <input key={i} value={b} placeholder="Brother Name" onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={styles.inputStyle}/>
-          )}
-          <button type="button" onClick={()=>addField("brothers")} style={styles.addBtn}>➕ Add Brother</button>
-
-          <h4 style={styles.subSectionTitle}>Sisters</h4>
-          {formData.sisters.map((s,i)=>
-            <input key={i} value={s} placeholder="Sister Name" onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={styles.inputStyle}/>
-          )}
-          <button type="button" onClick={()=>addField("sisters")} style={styles.addBtn}>➕ Add Sister</button>
-
-          <h4 style={styles.subSectionTitle}>Children</h4>
-          {formData.children.map((c,i)=>
-            <input key={i} value={c} placeholder="Child Name" onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={styles.inputStyle}/>
-          )}
-          <button type="button" onClick={()=>addField("children")} style={styles.addBtn}>➕ Add Child</button>
-
-          <br/><br/>
-          <button type="submit" style={styles.submitBtn}>{editingId ? "Update Info" : "Register & Create Account"}</button>
-        </form>
+        </div>
       )}
+
+      <h4 style={styles.subSectionTitle}>Brothers</h4>
+      {formData.brothers.map((b,i)=>
+        <input key={i} value={b} placeholder="Brother Name" onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={styles.inputStyle}/>
+      )}
+      <button type="button" onClick={()=>addField("brothers")} style={styles.addBtn}>➕ Add Brother</button>
+
+      <h4 style={styles.subSectionTitle}>Sisters</h4>
+      {formData.sisters.map((s,i)=>
+        <input key={i} value={s} placeholder="Sister Name" onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={styles.inputStyle}/>
+      )}
+      <button type="button" onClick={()=>addField("sisters")} style={styles.addBtn}>➕ Add Sister</button>
+
+      <h4 style={styles.subSectionTitle}>Children</h4>
+      {formData.children.map((c,i)=>
+        <input key={i} value={c} placeholder="Child Name" onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={styles.inputStyle}/>
+      )}
+      <button type="button" onClick={()=>addField("children")} style={styles.addBtn}>➕ Add Child</button>
+    </div>
+
+    <br/><br/>
+    <button type="submit" style={styles.submitBtn}>{editingId ? "Update Info" : "Register & Create Account"}</button>
+  </form>
+)}
 
       <h3 style={{ marginTop: 30, color: "#2c3e50", fontWeight: "600" }}>Employee List</h3>
       
@@ -289,6 +309,7 @@ export default function Employees({ isSidebarOpen = true }) {
           <thead>
             <tr>
               <th style={styles.thStyle}>Member ID</th>
+              <th style={styles.thStyle}>Category</th>
               <th style={styles.thStyle}>Full Name</th>
               <th style={styles.thStyle}>Phone</th>
               <th style={styles.thStyle}>Role</th>
@@ -300,6 +321,7 @@ export default function Employees({ isSidebarOpen = true }) {
               filteredEmployees.map(emp=>(
                 <tr key={emp._id}>
                   <td style={styles.tdStyle}>{emp.memberId}</td>
+                  <td style={styles.tdStyle}>{emp.category}</td>
                   <td style={styles.tdStyle}>{emp.firstName} {emp.lastName}</td>
                   <td style={styles.tdStyle}>{emp.phone}</td>
                   <td style={styles.tdStyle}>
@@ -311,7 +333,7 @@ export default function Employees({ isSidebarOpen = true }) {
                         color: emp.role === 'admin' ? '#d32f2f' : '#1976d2',
                         fontWeight: 'bold'
                     }}>
-                        {emp.role.toUpperCase()}
+                      {emp.role.toUpperCase()}
                     </span>
                   </td>
                   <td style={styles.tdStyle}>

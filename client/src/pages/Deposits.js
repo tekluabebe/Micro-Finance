@@ -248,30 +248,58 @@ export default function Deposits() {
         )}
 
         {/* የታችኛው ክፍል ግሪድ ቁመትና ስፋቱ እንዲጨምር ተደርጓል */}
-        <div className="deposit-grid">
-          <div className="input-group field-large">
-            <label>AMOUNT TO PAY / NORMAL SAVING (ETB)</label>
-            <input name="normalSaving" type="number" value={data.normalSaving} onChange={handleChange} className="modern-input green-glow" placeholder="Enter amount..." />
-          </div>
-          <div className="input-group field-large">
-            <label>VOLUNTARY SAVING (ETB)</label>
-            <input name="voluntarySaving" type="number" value={data.voluntarySaving} onChange={handleChange} className="modern-input" placeholder="0" />
-          </div>
-          <div className="input-group field-large highlight">
-            <label>SHARED PURCHASE</label>
-            <input name="sharedPurchase" type="number" value={data.sharedPurchase} onChange={handleChange} className="modern-input" placeholder="0" />
-          </div>
-          <div className="input-group field-large">
-            <label>LATE PENALTY (AUTO-CALCULATED)</label>
-            <input name="latePenalty" type="number" value={data.latePenalty} onChange={handleChange} className={`modern-input ${isLate ? "error-border" : ""}`} placeholder="0" />
-          </div>
-          {isNewEmployee && (
-            <div className="input-group field-large success-group">
-              <label>REGISTRATION FEE</label>
-              <input name="registrationFee" type="number" value={data.registrationFee} onChange={handleChange} className="modern-input" />
-            </div>
-          )}
-        </div>
+       {/* የታችኛው ክፍል ግሪድ ቁመትና ስፋቱ እንዲጨምር ተደርጓል */}
+<div className="deposit-grid">
+  <div className="input-group field-large">
+    <label>AMOUNT TO PAY / NORMAL SAVING (ETB)</label>
+    <input name="normalSaving" type="number" value={data.normalSaving} onChange={handleChange} className="modern-input green-glow" placeholder="Enter amount..." />
+  </div>
+  
+  <div className="input-group field-large">
+    <label>VOLUNTARY SAVING (ETB)</label>
+    <input name="voluntarySaving" type="number" value={data.voluntarySaving} onChange={handleChange} className="modern-input" placeholder="0" />
+  </div>
+
+  {/* 🛠️ እዚህ ጋ ነው ለውጡ የተደረገው */}
+<div className="input-group field-large highlight">
+  <label style={{ 
+    color: selectedEmployeeData?.category === "Child" ? "#ef4444" : "#3b82f6", // ቀይ ለልጅ፣ ሰማያዊ ለአዋቂ
+    fontWeight: "bold" 
+  }}>
+    SHARED PURCHASE 
+    <span style={{ fontSize: "13px", marginLeft: "5px" }}>
+      {selectedEmployeeData?.category === "Child" 
+        ? "(ለህጻናት የ አክሲዮን ግዢ አይፈቀድም።)" 
+        : " (አዋቂዎች ቢያንስ 1 አክሲዮን መግዛት አለባችው።)"}
+    </span>
+  </label>
+  
+  <input 
+    name="sharedPurchase" 
+    type="number" 
+    value={selectedEmployeeData?.category === "Child" ? "0" : data.sharedPurchase} 
+    onChange={handleChange} 
+    className="modern-input" 
+    placeholder={selectedEmployeeData?.category === "Child" ? "Inactive" : "Enter amount..."}
+    disabled={selectedEmployeeData?.category === "Child"} 
+    style={{ 
+      borderColor: selectedEmployeeData?.category === "Child" ? "#ef4444" : "#cbd5e1" 
+    }}
+  />
+</div>
+
+  <div className="input-group field-large">
+    <label>LATE PENALTY (AUTO-CALCULATED)</label>
+    <input name="latePenalty" type="number" value={data.latePenalty} onChange={handleChange} className={`modern-input ${isLate ? "error-border" : ""}`} placeholder="0" />
+  </div>
+
+  {isNewEmployee && (
+    <div className="input-group field-large success-group">
+      <label>REGISTRATION FEE</label>
+      <input name="registrationFee" type="number" value={data.registrationFee} onChange={handleChange} className="modern-input" />
+    </div>
+  )}
+</div>
 
         <button onClick={submit} className="submit-btn">
           <FaMoneyBillWave /> Confirm & Complete Deposit

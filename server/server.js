@@ -28,7 +28,8 @@ mongoose.connect(ATLAS_URI)
 // =======================
 const employeeSchema = new mongoose.Schema({
 
-  memberId: String,
+  memberId: { type: String, required: true, unique: true },
+  category: { type: String, required: true },
   firstName: String,
   lastName: String,
   gender: String,
