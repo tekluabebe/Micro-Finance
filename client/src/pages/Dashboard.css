@@ -23,6 +23,17 @@
     z-index:99999;
 }
 
+.notifItem{
+    flex:1;
+    min-width:140px;
+    text-align:center;
+}
+
+.dashboard-right-controls{
+    width:100%;
+    align-items:center !important;
+}
+
 .notification-card{
 
     flex-direction:column;
