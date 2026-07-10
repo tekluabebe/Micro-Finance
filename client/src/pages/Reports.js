@@ -29,10 +29,29 @@ const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [searchEmployee, setSearchEmployee] = useState("");
   const [showMembers, setShowMembers] = useState(false);
+  const userRole =
+  localStorage.getItem("userRole")?.toLowerCase() || "";
 
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
+const isMember = userRole === "member";
+
+const loggedMemberId =
+  localStorage.getItem("memberId") || "";
+
+useEffect(() => {
+  fetchEmployees();
+}, []);
+
+useEffect(() => {
+  if (isMember && employees.length > 0) {
+    const member = employees.find(
+      (emp) => emp.memberId === loggedMemberId
+    );
+
+    if (member) {
+      setEmployeeId(member._id);
+    }
+  }
+}, [employees, isMember, loggedMemberId]);
 
   const fetchEmployees = async () => {
     try {
@@ -45,6 +64,18 @@ const Reports = () => {
   };
 
   const generateReport = async () => {
+    if (
+  isMember &&
+  ![
+    "individual-monthly",
+    "individual-annual",
+  ].includes(reportType)
+) {
+  alert(
+    "You are not authorized to view this report."
+  );
+  return;
+}
     if (reportType.includes("individual") && !employeeId) {
       alert("Please select an employee first");
       return;
@@ -130,8 +161,30 @@ const Reports = () => {
             <FaChartLine />
           </div>
           <div>
-            <h1>Financial Reports Dashboard</h1>
-            <p>Generate precise financial statements from the cloud database</p>
+            <div className="reports-hero">
+  <div className="hero-content">
+    <h1>
+      Financial Intelligence Dashboard
+    </h1>
+
+    <p>
+      Advanced reporting, analytics and
+      cooperative financial insights.
+    </p>
+  </div>
+
+  <div className="hero-stats">
+    <div className="hero-stat">
+      <span>Reports</span>
+      <strong>4 Types</strong>
+    </div>
+
+    <div className="hero-stat">
+      <span>Data Source</span>
+      <strong>Cloud DB</strong>
+    </div>
+  </div>
+</div>
           </div>
         </div>
 
@@ -139,89 +192,242 @@ const Reports = () => {
           <div className="report-type-section">
             <label className="section-title">Choose Report Type</label>
             <div className="report-cards">
-              <div className={`report-card blue ${reportType === "individual-monthly" ? "active" : ""}`} onClick={() => setReportType("individual-monthly")}>
-                <div className="diamond"></div>
-                <div className="report-content">
-                  <h3>Individual Monthly</h3>
-                  <p>Monthly employee savings, loans & deposits</p>
-                </div>
-              </div>
+              
+<div
+  className={`report-card blue ${
+    reportType === "individual-monthly"
+      ? "active"
+      : ""
+  }`}
+  onClick={() =>
+    setReportType("individual-monthly")
+  }
+>
+  <div className="diamond"></div>
+  <div className="report-content">
+    <h3>Individual Monthly (የግለሰብ ወርሃዊ ሪፖርት ዝርዝር)</h3>
+    <p>
+      Monthly employee savings,
+      loans & deposits (ወርሃዊ የአባሉ ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+    </p>
+  </div>
+</div>
 
-              <div className={`report-card purple ${reportType === "individual-annual" ? "active" : ""}`} onClick={() => setReportType("individual-annual")}>
-                <div className="diamond"></div>
-                <div className="report-content">
-                  <h3>Individual Annual</h3>
-                  <p>Annual employee financial summary</p>
-                </div>
-              </div>
+<div
+  className={`report-card purple ${
+    reportType === "individual-annual"
+      ? "active"
+      : ""
+  }`}
+  onClick={() =>
+    setReportType("individual-annual")
+  }
+>
+  
+  <div className="diamond"></div>
+  <div className="report-content">
+    <h3>Individual Annual (የግለሰቡ አመታዊ ረፖርት ዝርዝር)</h3>
+    <p>
+      Annual employee financial
+      summary (አመታዊ የአባሉ ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+    </p>
+  </div>
+</div>
 
-              <div className={`report-card green ${reportType === "total-monthly" ? "active" : ""}`} onClick={() => setReportType("total-monthly")}>
-                <div className="diamond"></div>
-                <div className="report-content">
-                  <h3>Total Monthly</h3>
-                  <p>Overall monthly cooperative transactions</p>
-                </div>
-              </div>
+{/* ADMIN ONLY */}
+{!isMember && (
+  <>
+    <div
+      className={`report-card green ${
+        reportType === "total-monthly"
+          ? "active"
+          : ""
+      }`}
+      onClick={() =>
+        setReportType("total-monthly")
+      }
+    >
+      <div className="diamond"></div>
+      <div className="report-content">
+        <h3>Total Monthly(የማህበሩ አባል ወርሃዊ ረፖርት)</h3>
+        <p>
+          Overall monthly cooperative
+          transactions(ወርሃዊ የሁሉም አባል ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+        </p>
+      </div>
+    </div>
 
-              <div className={`report-card orange ${reportType === "total-annual" ? "active" : ""}`} onClick={() => setReportType("total-annual")}>
-                <div className="diamond"></div>
-                <div className="report-content">
-                  <h3>Total Annual</h3>
-                  <p>Annual cooperative financial performance</p>
-                </div>
-              </div>
+    <div
+      className={`report-card orange ${
+        reportType === "total-annual"
+          ? "active"
+          : ""
+      }`}
+      onClick={() =>
+        setReportType("total-annual")
+      }
+    >
+      <div className="diamond"></div>
+      <div className="report-content">
+        <h3>Total Annual (የማህበሩ አባል አመታዊ ረፖርት)</h3>
+        <p>
+          Annual cooperative financial
+          performance(አመታዊ የሁሉም አባል ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+        </p>
+      </div>
+    </div>
+  </>
+)}
             </div>
           </div>
 
-          <div className="member-select-section">
-            {employeeId ? (
-              <div className="member-trigger-card active-trigger" onClick={() => setShowMembers(!showMembers)}>
-                {employees.filter((emp) => emp._id === employeeId).map((emp) => (
-                  <React.Fragment key={emp._id}>
-                    <div className="selected-member-image-wrapper">
-                      {emp.photo ? <img src={emp.photo} alt="member" className="selected-member-image" /> : <div className="selected-member-placeholder">{emp.firstName?.charAt(0)}</div>}
-                    </div>
-                    <h2>{emp.firstName} {emp.lastName}</h2>
-                    <p className="selected-member-id">ID: {emp.memberId}</p>
-                    <span className="change-member-text">Click to change member</span>
-                  </React.Fragment>
-                ))}
-              </div>
-            ) : (
-              <div className="member-trigger-card" onClick={() => setShowMembers(!showMembers)}>
-                <div className="trigger-icon"><FaUsers /></div>
-                <h2>Select Member</h2>
-                <p>Click here to choose employee for financial reports</p>
-              </div>
-            )}
+         {!isMember && (
+  <div className="member-select-section">
 
-            {showMembers && (
-              <div className="member-dropdown">
-                <div className="employee-search-box">
-                  <input type="text" placeholder="Search employee..." value={searchEmployee} onChange={(e) => setSearchEmployee(e.target.value)} className="employee-search-input" />
-                </div>
-                <div className="employee-list-wrapper">
-                  {filteredEmployees.map((emp) => (
-                    <div key={emp._id} className={`member-row-card ${employeeId === emp._id ? "active-member" : ""}`} onClick={() => { setEmployeeId(emp._id); setShowMembers(false); }}>
-                      <div className="member-image-box">
-                        {emp.photo ? <img src={emp.photo} alt="member" className="member-image" /> : <div className="member-placeholder">{emp.firstName?.charAt(0)}</div>}
-                      </div>
-                      <div className="member-details">
-                        <h3>{emp.firstName} {emp.lastName}</h3>
-                        <p>Member ID: {emp.memberId}</p>
-                      </div>
+    {employeeId ? (
+      <div
+        className="member-trigger-card active-trigger"
+        onClick={() =>
+          setShowMembers(!showMembers)
+        }
+      >
+        {employees
+          .filter(
+            (emp) =>
+              emp._id === employeeId
+          )
+          .map((emp) => (
+            <React.Fragment
+              key={emp._id}
+            >
+              <div className="selected-member-image-wrapper">
+                {emp.photo ? (
+                  <img
+                    src={emp.photo}
+                    alt="member"
+                    className="selected-member-image"
+                  />
+                ) : (
+                  <div className="selected-member-placeholder">
+                    {emp.firstName?.charAt(0)}
+                  </div>
+                )}
+              </div>
+
+              <h2>
+                {emp.firstName}{" "}
+                {emp.lastName}
+              </h2>
+
+              <p className="selected-member-id">
+                ID: {emp.memberId}
+              </p>
+
+              <span className="change-member-text">
+                Click to change member
+              </span>
+            </React.Fragment>
+          ))}
+      </div>
+    ) : (
+      <div
+        className="member-trigger-card"
+        onClick={() =>
+          setShowMembers(!showMembers)
+        }
+      >
+        <div className="member-selector-card">
+
+  <FaUsers className="member-icon" />
+
+  <h3>Select Member</h3>
+
+  <p>
+    Search and choose employee
+    for individual reports
+  </p>
+
+</div>
+      </div>
+    )}
+
+    {showMembers && (
+      <div className="member-dropdown">
+        <div className="report-search-box">
+
+  <FaSearch />
+
+  <input
+    placeholder="Search member..."
+    value={searchEmployee}
+    onChange={(e)=>
+      setSearchEmployee(e.target.value)
+    }
+  />
+
+</div>
+
+        <div className="employee-list-wrapper">
+          {filteredEmployees.map(
+            (emp) => (
+              <div
+                key={emp._id}
+                className={`member-row-card ${
+                  employeeId === emp._id
+                    ? "active-member"
+                    : ""
+                }`}
+                onClick={() => {
+                  setEmployeeId(
+                    emp._id
+                  );
+                  setShowMembers(
+                    false
+                  );
+                }}
+              >
+                <div className="member-image-box">
+                  {emp.photo ? (
+                    <img
+                      src={emp.photo}
+                      alt="member"
+                      className="member-image"
+                    />
+                  ) : (
+                    <div className="member-placeholder">
+                      {emp.firstName?.charAt(
+                        0
+                      )}
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                <div className="member-details">
+                  <h3>
+                    {emp.firstName}{" "}
+                    {emp.lastName}
+                  </h3>
+
+                  <p>
+                    Member ID:{" "}
+                    {emp.memberId}
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
+            )
+          )}
+        </div>
+      </div>
+    )}
+
+  </div>
+)}
 
           <div className="report-controls-wrapper">
             <div className={`date-circle-card ${reportType.endsWith("annual") ? "disabled-circle" : ""}`}>
               <div className="circle-glow"></div>
               <div className="circle-content">
-                <span className="circle-label">Month</span>
+                <span className="circle-label">Month/ወር</span>
                 <select value={month} onChange={(e) => setMonth(e.target.value)} disabled={reportType.endsWith("annual")} className="circle-select">
                   <option value="01">January</option>
                   <option value="02">February</option>
@@ -242,17 +448,23 @@ const Reports = () => {
             <div className="date-circle-card year-card">
               <div className="circle-glow purple"></div>
               <div className="circle-content">
-                <span className="circle-label">Year</span>
+                <span className="circle-label">Year/አመት</span>
                 <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className="circle-input" />
               </div>
             </div>
 
-            <button className="generate-report-premium-btn" onClick={generateReport} disabled={loading}>
-              <div className="generate-inner">
-                <FaSearch className="generate-icon" />
-                <span>{loading ? "Processing..." : "Generate Report"}</span>
-              </div>
-            </button>
+            <button
+  className="generate-report-btn"
+  onClick={generateReport}
+>
+
+  <FaChartLine />
+
+  <span>
+    Generate Financial Report
+  </span>
+
+</button>
           </div>
         </div>
       </div>

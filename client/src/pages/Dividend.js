@@ -1,27 +1,37 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import "./Dividend.css";
 
 export default function Dividend() {
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
+    const [selectedYear, setSelectedYear] = useState(
+  new Date().getFullYear()
+);
+
+const [availableYears, setAvailableYears] = useState([]);
   const [totals, setTotals] = useState({
     totalSaving: 0,
     totalShares: 0,
     totalProfit: 0,
   });
+
+
+
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    fetchDividendData();
-  }, []);
+useEffect(() => {
+  fetchDividendData();
+}, [selectedYear]);
 
   const fetchDividendData = async () => {
     try {
-      const [memRes, depRes] = await Promise.all([
-        API.get("/employees"), 
-        API.get("/deposits"),
-      ]);
-
+    const [memRes, depRes, financialRes] = await Promise.all([
+  API.get("/employees"),
+  API.get("/deposits"),
+   API.get(`/financial-reports?year=${selectedYear}`)
+   
+]);
       const allMembers = memRes.data || [];
       const allDeposits = depRes.data || [];
 
@@ -46,13 +56,64 @@ export default function Dividend() {
       const totalS = processedMembers.reduce((s, m) => s + m.normalSaving + m.voluntarySaving, 0);
       const totalSh = processedMembers.reduce((s, m) => s + m.sharesPurchased, 0);
       
-      const mockProfit = 50000; 
+// ===============================
+// FINANCIAL REPORTS
+// ===============================
+// ===============================
+// FINANCIAL REPORTS
+// ===============================
+console.log("Financial Reports Response:", financialRes.data);
 
-      setTotals({
-        totalSaving: totalS,
-        totalShares: totalSh,
-        totalProfit: mockProfit,
-      });
+// Handle different API response structures
+const financialReports = Array.isArray(financialRes.data)
+  ? financialRes.data
+  : financialRes.data?.data
+  ? financialRes.data.data
+  : financialRes.data?.reports
+  ? financialRes.data.reports
+  : [];
+
+console.log("Reports:", financialReports);
+
+// Build year dropdown
+const years = [
+  ...new Set(
+    financialReports
+      .map((report) => Number(report.year))
+      .filter(Boolean)
+  ),
+].sort((a, b) => b - a);
+
+setAvailableYears(years);
+
+// Calculate total net profit
+console.log("Selected Year:", selectedYear);
+console.log("Financial Reports:", financialReports);
+// Only reports for selected year
+const yearlyReports = financialReports.filter(
+  (report) => Number(report.year) === Number(selectedYear)
+);
+
+console.log("Yearly Reports:", yearlyReports);
+
+// Sum net profit only for selected year
+const netProfit = yearlyReports.reduce(
+  (sum, report) => sum + Number(report.netProfit || 0),
+  0
+);
+
+console.log(
+  `Net Profit for ${selectedYear}:`,
+  netProfit
+);
+
+console.log("Net Profit:", netProfit);
+
+setTotals({
+  totalSaving: totalS,
+  totalShares: totalSh,
+  totalProfit: netProfit,
+});
 
       setMembers(processedMembers);
       setFilteredMembers(processedMembers);
@@ -71,138 +132,138 @@ export default function Dividend() {
     setFilteredMembers(filtered);
   };
 
+const selectedYearExists =
+  availableYears.includes(Number(selectedYear));
+
   return (
-    /* 💡 ፔጅ መያዣው አሁን ሙሉ በሙሉ በ App.js ማርጅን ስለሚመራ እዚህ ላይ width: 100% ብቻ ይሆናል */
-    <div className="dividend-page-container" style={{ width: "100%", boxSizing: "border-box" }}>
-      
-      <div style={styles.headerBox}>
-        <h2 style={{ color: "#2c3e50", margin: "0 0 15px 0", fontSize: "22px", fontWeight: "700" }}>
-          የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)
-        </h2>
-        
-        {/* 💡 ክላስ ስም ብቻ ሰጥተን ስታይሉን ወደ ታችኛው የ CSS @media አዛውረነዋል (ስልክ ላይ እንዲታጠፍ) */}
-        <div className="summary-cards-grid">
-          <div style={styles.statCard}>
-            <span style={styles.label}>ጠቅላላ ቁጠባ</span>
-            <strong style={styles.value}>{totals.totalSaving.toLocaleString()} ETB</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.label}>ጠቅላላ ዕጣ (Shares)</span>
-            <strong style={styles.value}>{totals.totalShares.toLocaleString()}</strong>
-          </div>
-          <div style={{ ...styles.statCard, background: "#2ecc71", color: "#fff" }}>
-            <span style={{ color: "#fff", fontSize: "14px" }}>ሊከፋፈል የሚገባው ትርፍ</span>
-            <strong style={{ fontSize: "20px", display: "block", marginTop: "5px" }}>{totals.totalProfit.toLocaleString()} ETB</strong>
-          </div>
+  <div className="dividend-page-container">
+    <div className="dividend-header-box">
+      <h2 className="dividend-title">
+        የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)
+      </h2>
+
+      <div className="summary-cards-grid">
+        <div className="dividend-stat-card">
+          <span className="dividend-label">ጠቅላላ ቁጠባ</span>
+          <strong className="dividend-value">
+            {totals.totalSaving.toLocaleString()} ETB
+          </strong>
+        </div>
+
+        <div className="dividend-stat-card shares-card">
+          <span className="dividend-label">ጠቅላላ ዕጣ (Shares)</span>
+          <strong className="dividend-value">
+            {totals.totalShares.toLocaleString()}
+          </strong>
+        </div>
+
+        <div className="dividend-stat-card profit-card">
+          <span className="dividend-label">
+            {selectedYear} ዓ.ም ሊከፋፈል የሚገባው ትርፍ
+          </span>
+
+          <strong className="dividend-value">
+            {totals.totalProfit.toLocaleString()} ETB
+          </strong>
         </div>
       </div>
+    </div>
 
-      <input
-        type="text"
-        placeholder="አባል በስም ይፈልጉ..."
-        value={searchQuery}
-        onChange={handleSearch}
-        style={styles.searchInput}
-      />
+    <div className="dividend-controls">
+      <div className="year-filter-box">
+        <label>Select Year:</label>
 
-      {/* የሰንጠረዥ መያዣ (Responsive Table Wrapper) */}
-      <div className="table-responsive-wrapper" style={{ width: "100%", overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", background: "#fff" }}>
-        <table style={styles.table}>
-          <thead>
-            <tr style={styles.thRow}>
-              <th style={styles.th}>የአባሉ ስም</th>
-              <th style={styles.th}>ያለው ዕጣ (Shares)</th>
-              <th style={styles.th}>የድርሻ መጠን (%)</th>
-              <th style={styles.th}>የትርፍ ክፍፍል (Dividend)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredMembers.length > 0 ? (
-              filteredMembers.map((member) => {
-                const shareRatio = totals.totalShares > 0 ? (member.sharesPurchased / totals.totalShares) : 0;
-                const dividendAmount = shareRatio * totals.totalProfit;
-
-                return (
-                  <tr key={member._id} style={styles.tr}>
-                    <td style={styles.td}>{member.fullName}</td>
-                    <td style={styles.td}>{member.sharesPurchased}</td>
-                    <td style={styles.td}>{(shareRatio * 100).toFixed(2)}%</td>
-                    <td style={{ ...styles.td, fontWeight: "bold", color: "#27ae60" }}>
-                      {dividendAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} ETB
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="4" style={{ padding: "25px", textAlign: "center", color: "#7f8c8d" }}>
-                  ምንም ዳታ አልተገኘም
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <select
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(Number(e.target.value))}
+        >
+          {availableYears.length > 0 ? (
+            availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))
+          ) : (
+            <option value="">No Financial Reports Found</option>
+          )}
+        </select>
       </div>
 
-      {/* 🛠️ ፍጹም የሆነ የሞባይል ተኳኋኝነትን የሚያረጋግጥ ማጠናከሪያ CSS */}
-      <style>
-        {`
-          .summary-cards-grid {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-          }
+<div className="search-box">
+  <svg
+    className="search-icon"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
 
-          @media (max-width: 768px) {
-            .summary-cards-grid {
-              flex-direction: column !important;
-              gap: 12px !important;
-            }
-            
-            th, td {
-              padding: 12px 10px !important;
-              font-size: 14px !important;
-            }
-            
-            h2 {
-              font-size: 18px !important;
-            }
-          }
-        `}
-      </style>
+  <input
+    type="text"
+    placeholder="Search members..."
+    value={searchQuery}
+    onChange={handleSearch}
+    className="dividend-search-input"
+  />
+</div>
     </div>
-  );
+
+    <div className="table-responsive-wrapper">
+      <table className="dividend-table">
+        <thead>
+          <tr>
+            <th>የአባሉ ስም</th>
+            <th>ያለው ዕጣ (Shares)</th>
+            <th>የድርሻ መጠን (%)</th>
+            <th>የትርፍ ክፍፍል (Dividend)</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filteredMembers.length > 0 ? (
+            filteredMembers.map((member) => {
+              const shareRatio =
+                totals.totalShares > 0
+                  ? member.sharesPurchased / totals.totalShares
+                  : 0;
+
+              const dividendAmount =
+                shareRatio * totals.totalProfit;
+
+              return (
+                <tr key={member._id}>
+                  <td className="member-name-cell">
+                    {member.fullName}
+                  </td>
+
+                  <td>{member.sharesPurchased}</td>
+
+                  <td>{(shareRatio * 100).toFixed(2)}%</td>
+
+                  <td className="dividend-amount-cell">
+                    {dividendAmount.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                    })}{" "}
+                    ETB
+                  </td>
+                </tr>
+              );
+            })
+          ) : (
+            <tr className="empty-dividend-row">
+              <td colSpan="4">ምንም ዳታ አልተገኘም</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
 }
 
-const styles = {
-  headerBox: { 
-    background: "#fff", 
-    padding: "20px", 
-    borderRadius: "12px", 
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", 
-    marginBottom: "20px" 
-  },
-  statCard: { 
-    flex: 1, 
-    padding: "18px", 
-    background: "#f8f9fa", 
-    borderRadius: "10px", 
-    border: "1px solid #e9ecef"
-  },
-  label: { fontSize: "14px", color: "#6c757d", fontWeight: "500" },
-  value: { fontSize: "20px", display: "block", marginTop: "5px", color: "#2c3e50", fontWeight: "600" },
-  searchInput: { 
-    width: "100%", 
-    padding: "12px", 
-    borderRadius: "8px", 
-    border: "1px solid #ced4da", 
-    marginBottom: "20px", 
-    outline: "none", 
-    boxSizing: "border-box",
-    fontSize: "15px"
-  },
-  table: { width: "100%", borderCollapse: "collapse", background: "#fff", minWidth: "600px" }, 
-  thRow: { background: "#34495e", color: "#fff" },
-  th: { padding: "14px 16px", textAlign: "left", fontWeight: "600" },
-  td: { padding: "14px 16px", borderBottom: "1px solid #f1f3f5", color: "#495057" },
-};

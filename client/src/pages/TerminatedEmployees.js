@@ -1,13 +1,26 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
-import { FaTrashAlt, FaUserTimes } from "react-icons/fa";
 
-export default function TerminatedEmployees() {
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell
+} from "recharts";
+
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
+import { FaTrashAlt, FaUserTimes, FaMoon, FaSun } from "react-icons/fa";
+
+export default function TerminatedEmployeesDashboard() {
   const [data, setData] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
 
-  // =========================
-  // LOAD DATA
-  // =========================
+  // ================= SEARCH + FILTER =================
+  const [search, setSearch] = useState("");
+  const [filterReason, setFilterReason] = useState("all");
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -15,311 +28,539 @@ export default function TerminatedEmployees() {
   const fetchData = async () => {
     try {
       const res = await API.get("/terminated");
-      console.log("TERMINATED DATA:", res.data);
       setData(res.data || []);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // =========================
-  // DELETE FUNCTION
-  // =========================
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete permanently?"
-    );
-
-    if (!confirmDelete) return;
+    if (!window.confirm("Delete permanently?")) return;
 
     try {
       await API.delete(`/terminated/${id}`);
-
-      // remove from UI instantly
-      setData((prev) => prev.filter((item) => item._id !== id));
-
-      alert("Deleted permanently ✅");
+      setData((prev) => prev.filter((x) => x._id !== id));
     } catch (err) {
       console.error(err);
-      alert("Delete failed ❌");
     }
   };
 
-  // =========================
-  // UI
-  // =========================
+
+const handleRestore = async (id) => {
+  if (!window.confirm("Restore this employee?")) return;
+
+  try {
+    await API.post(`/terminated/restore/${id}`);
+
+    setData((prev) => prev.filter((x) => x._id !== id));
+  } catch (err) {
+    console.error(err);
+  }
+};
+  // ================= FILTER LOGIC =================
+  const uniqueReasons = [
+    "all",
+    ...new Set(data.map((item) => item.reason || "Unknown")),
+  ];
+
+  const filteredData = data.filter((item) => {
+    const matchSearch =
+      item.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+      item.memberId?.toLowerCase().includes(search.toLowerCase());
+
+    const matchReason =
+      filterReason === "all" || (item.reason || "Unknown") === filterReason;
+
+    return matchSearch && matchReason;
+  });
+
+  // ================= KPIs =================
+  const total = filteredData.length;
+
+  const totalSaving = filteredData.reduce(
+    (sum, item) => sum + (Number(item.totalSaving) || 0),
+    0
+  );
+
+  const avgSaving = total ? (totalSaving / total).toFixed(0) : 0;
+
+  // ================= CHART DATA =================
+  const chartData = filteredData.map((item, i) => ({
+    name: item.memberId || `M${i + 1}`,
+    saving: Number(item.totalSaving) || 0,
+  }));
+
+  const reasonData = Object.values(
+    filteredData.reduce((acc, item) => {
+      const key = item.reason || "Unknown";
+      acc[key] = acc[key] || { name: key, value: 0 };
+      acc[key].value += 1;
+      return acc;
+    }, {})
+  );
+
+  // ================= EXPORT EXCEL =================
+  const exportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Terminated");
+
+    const buffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const file = new Blob([buffer], { type: "application/octet-stream" });
+
+    saveAs(file, "filtered_terminated_employees.xlsx");
+  };
+
+  // ================= EXPORT PDF =================
+  const exportPDF = () => {
+    const doc = new jsPDF();
+
+    doc.text("Filtered Terminated Employees Report", 14, 10);
+
+    const tableData = filteredData.map((item) => [
+      item.memberId,
+      item.fullName,
+      item.totalSaving,
+      item.reason,
+      item.terminatedAt
+        ? new Date(item.terminatedAt).toLocaleDateString()
+        : "N/A",
+    ]);
+
+    autoTable(doc, {
+      head: [["ID", "Name", "Saving", "Reason", "Date"]],
+      body: tableData,
+    });
+
+    doc.save("filtered_report.pdf");
+  };
+
   return (
-    <div className="terminated-page-container">
-      <h2 className="terminated-title">
-        <FaUserTimes /> Terminated Employees
-      </h2>
+    <div className={`dashboard ${darkMode ? "dark" : ""}`}>
 
-      {data.length === 0 ? (
-        <p className="no-data-text">No terminated employees found.</p>
-      ) : (
-        <div className="table-responsive-wrapper">
-          <table className="modern-terminated-table">
-            <thead>
-              <tr>
-                <th>Member ID</th>
-                <th>Name</th>
-                <th>Total Saving</th>
-                <th>Reason</th>
-                <th>Date</th>
-                <th style={{ textAlign: "center" }}>Action</th>
-              </tr>
-            </thead>
+      {/* HEADER */}
+      <div className="top-bar">
+        <h2>
+          <FaUserTimes /> Terminated Dashboard
+        </h2>
 
-            <tbody>
-              {data.map((item) => (
-                <tr key={item._id}>
-                  <td>
-                    <span className="mobile-label">Member ID:</span>
-                    <span className="cell-value font-mono">{item.employeeData?.memberId || "N/A"}</span>
-                  </td>
+        <button className="toggle" onClick={() => setDarkMode(!darkMode)}>
+          {darkMode ? <FaSun /> : <FaMoon />}
+          {darkMode ? " Light" : " Dark"}
+        </button>
+      </div>
 
-                  <td>
-                    <span className="mobile-label">Name:</span>
-                    <span className="cell-value">
-                      {item.employeeData?.firstName} {item.employeeData?.lastName}
-                    </span>
-                  </td>
+      {/* SEARCH + FILTER */}
+      <div className="filter-bar">
 
-                  <td>
-                    <span className="mobile-label">Total Saving:</span>
-                    <span className="cell-value amount-badge">{item.totalSaving} ETB</span>
-                  </td>
+        <input
+          type="text"
+          placeholder="🔍 Search by name or ID..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="search-input"
+        />
 
-                  <td>
-                    <span className="mobile-label">Reason:</span>
-                    <span className="cell-value reason-text">{item.reason || "Not specified"}</span>
-                  </td>
+        <select
+          value={filterReason}
+          onChange={(e) => setFilterReason(e.target.value)}
+          className="filter-select"
+        >
+          {uniqueReasons.map((r, i) => (
+            <option key={i} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
 
-                  <td>
-                    <span className="mobile-label">Date:</span>
-                    <span className="cell-value">
-                      {item.terminatedAt ? new Date(item.terminatedAt).toLocaleDateString() : "N/A"}
-                    </span>
-                  </td>
+      </div>
 
-                  {/* ✅ DELETE BUTTON */}
-                  <td className="action-cell">
-                    <span className="mobile-label">Action:</span>
-                    <button
-                      onClick={() => handleDelete(item._id)}
-                      className="delete-action-btn"
-                    >
-                      <FaTrashAlt /> Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* KPI CARDS */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <h4>Total Employees</h4>
+          <h2>{total}</h2>
         </div>
-      )}
 
-      <style>
-        {`
-          .terminated-page-container {
-            padding: 30px;
-            max-width: 1200px;
-            margin: 0 auto;
-            box-sizing: border-box;
-            padding-top: 90px; /* ከቶፕ ባር ጋር እንዳይጋጭ */
-          }
+        <div className="kpi-card">
+          <h4>Total Savings</h4>
+          <h2>{totalSaving} ETB</h2>
+        </div>
 
-          .terminated-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: #2c3e50;
-            font-size: 26px;
-            margin-bottom: 25px;
-            margin-top: 0;
-          }
+        <div className="kpi-card highlight">
+          <h4>Average Saving</h4>
+          <h2>{avgSaving} ETB</h2>
+        </div>
+      </div>
 
-          .no-data-text {
-            text-align: center;
-            padding: 40px;
-            background: #fff;
-            border-radius: 12px;
-            color: #7f8c8d;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            font-size: 16px;
-          }
+      {/* EXPORT */}
+      <div className="export-buttons">
+        <button onClick={exportExcel}>Export Excel</button>
+        <button onClick={exportPDF}>Export PDF</button>
+      </div>
 
-          /* Desktop Table Styling */
-          .table-responsive-wrapper {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            overflow: hidden;
-            border: 1px solid rgba(128,128,128,0.1);
-          }
+      {/* CHARTS */}
+      <div className="charts-grid">
+        <div className="chart-card">
+          <h3>Saving Trend</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={chartData}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="saving" stroke="#6366f1" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
 
-          .modern-terminated-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 15px;
-          }
+        <div className="chart-card">
+          <h3>Comparison</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={chartData}>
+              <XAxis dataKey="name" />
+              <Tooltip />
+              <Bar dataKey="saving" fill="#ec4899" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-          .modern-terminated-table th {
-            background-color: #f8fafc;
-            color: #475569;
-            padding: 16px 20px;
-            font-weight: 600;
-            border-bottom: 2px solid #e2e8f0;
-          }
+        <div className="chart-card">
+          <h3>Reasons</h3>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie data={reasonData} dataKey="value" nameKey="name" outerRadius={90} label>
+                {reasonData.map((_, i) => (
+                  <Cell key={i} fill={["#6366f1", "#ec4899", "#f59e0b", "#22c55e"][i % 4]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-          .modern-terminated-table td {
-            padding: 16px 20px;
-            color: #334155;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-          }
+      {/* CARDS */}
+      <div className="card-grid">
+        {filteredData.map((item) => (
+          <div key={item._id} className="card">
 
-          .modern-terminated-table tbody tr:last-child td {
-            border-bottom: none;
-          }
+            <div className="card-header">
+              <span className="badge">{item.memberId}</span>
 
-          .modern-terminated-table tbody tr:hover {
-            background-color: #f8fafc;
-          }
+              <button className="delete" onClick={() => handleDelete(item._id)}>
+                <FaTrashAlt />
+              </button>
+              <button
+  className="restore"
+  onClick={() => handleRestore(item._id)}
+  title="Restore Employee"
+>
+  ♻ Restore
+</button>
+       
+            </div>
 
-          .font-mono {
-            font-family: monospace;
-            font-weight: bold;
-            color: #64748b;
-          }
+            <h3>{item.fullName}</h3>
+            <p>{item.reason || "No reason"}</p>
 
-          .amount-badge {
-            font-weight: 600;
-            color: #0f172a;
-          }
+            <div className="footer">
+              <span className="saving">{item.totalSaving} ETB</span>
+              <span>
+                {item.terminatedAt
+                  ? new Date(item.terminatedAt).toLocaleDateString()
+                  : "N/A"}
+              </span>
+            </div>
 
-          .reason-text {
-            color: #64748b;
-            font-style: italic;
-          }
+          </div>
+        ))}
+      </div>
 
-          .delete-action-btn {
-            background: #fee2e2;
-            color: #ef4444;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 13px;
-            transition: all 0.2s ease;
-          }
+      {/* STYLE (keep your existing CSS + add below) */}
+      <style>{`
+      .restore {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #10b981;
+  font-size: 16px;
+  transition: 0.2s;
+}
 
-          .delete-action-btn:hover {
-            background: #ef4444;
-            color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
-          }
+.restore:hover {
+  transform: scale(1.2);
+  color: #059669;
+}
 
-          /* የሞባይል ሌብሎች በዴስክቶፕ ላይ እንዲደበቁ */
-          .mobile-label {
-            display: none;
-          }
+      .dashboard {
+  padding: 30px;
+  max-width: 1200px;
+  margin: auto;
+  padding-top: 90px;
+  background: linear-gradient(135deg,#fdf2f8,#eef2ff,#ecfeff);
+  min-height: 100vh;
+  transition: all 0.3s ease;
+}
 
-          /* ==========================================================================
-             MOBILE RESPONSIVE BREAKPOINT (ለስልኮች የሚሆን ፍጹም ማስተካከያ)
-             ========================================================================== */
-          @media (max-width: 768px) {
-            .terminated-page-container {
-              padding: 15px;
-              padding-top: 85px;
-            }
+/* =========================
+   DARK MODE BASE
+========================= */
+.dark {
+  background: #0f172a;
+  color: #f9fafb;
+}
 
-            .terminated-title {
-              font-size: 21px;
-              margin-bottom: 18px;
-            }
+/* TOP BAR */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-            /* ጠረጴዛውን ወደ ካርድ መዋቅር (Card Layout) መቀየር */
-            .modern-terminated-table, 
-            .modern-terminated-table thead, 
-            .modern-terminated-table tbody, 
-            .modern-terminated-table th, 
-            .modern-terminated-table tr, 
-            .modern-terminated-table td {
-              display: block;
-              width: 100%;
-            }
+/* TOGGLE BUTTON */
+.toggle {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 10px;
+  background: #111827;
+  color: white;
+  display: flex;
+  gap: 8px;
+  cursor: pointer;
+}
 
-            .table-responsive-wrapper {
-              background: transparent;
-              box-shadow: none;
-              border: none;
-            }
+/* =========================
+   KPI GRID
+========================= */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
 
-            /* የላይኛውን ሄደር መደበቅ */
-            .modern-terminated-table thead {
-              display: none;
-            }
+/* =========================
+   💎 GLASS KPI CARDS (LIGHT)
+========================= */
+.kpi-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 16px;
 
-            /* እያንዳንዱ ረድፍ ራሱን የቻለ ካርድ ይሆናል */
-            .modern-terminated-table tr {
-              background: #fff;
-              border-radius: 14px;
-              padding: 15px;
-              margin-bottom: 15px;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.04);
-              border: 1px solid rgba(128,128,128,0.08);
-              box-sizing: border-box;
-            }
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 
-            .modern-terminated-table td {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 10px 0 !important;
-              border-bottom: 1px solid #f1f5f9;
-              text-align: right;
-            }
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 
-            .modern-terminated-table td:last-child {
-              border-bottom: none;
-              padding-bottom: 5px !important;
-              margin-top: 5px;
-            }
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
 
-            /* የሞባይል ሌብሎችን በግራ በኩል ማሳየት */
-            .mobile-label {
-              display: block;
-              font-weight: 600;
-              color: #64748b;
-              font-size: 13px;
-              text-align: left;
-            }
+/* glowing border effect */
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, #ec4899, #6366f1, #22c55e);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.6;
+}
 
-            .cell-value {
-              font-size: 14px;
-            }
+/* hover effect */
+.kpi-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.15);
+}
 
-            .action-cell {
-              flex-direction: row !important;
-              justify-content: space-between !important;
-              align-items: center !important;
-            }
+/* text */
+.kpi-card h4 {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
 
-            .delete-action-btn {
-              width: auto;
-              padding: 10px 16px;
-              font-size: 14px;
-            }
-          }
-        `}
-      </style>
+.kpi-card h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* highlight card */
+.highlight {
+  background: linear-gradient(135deg, rgba(236,72,153,0.9), rgba(139,92,246,0.9));
+  color: white;
+}
+
+.highlight h4,
+.highlight h2 {
+  color: white;
+}
+
+/* =========================
+   EXPORT BUTTONS
+========================= */
+.export-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.export-buttons button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: linear-gradient(135deg,#6366f1,#ec4899);
+  color: white;
+  font-weight: 600;
+}
+
+/* =========================
+   CHARTS
+========================= */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.chart-card {
+  background: white;
+  padding: 15px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  transition: 0.3s ease;
+}
+
+.chart-card:hover {
+  transform: translateY(-4px);
+}
+
+/* =========================
+   EMPLOYEE CARDS
+========================= */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.card {
+  background: white;
+  padding: 15px;
+  border-radius: 14px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  transition: 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.badge {
+  background: #6366f1;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.delete {
+  border: none;
+  background: transparent;
+  color: red;
+  cursor: pointer;
+}
+
+.saving {
+  font-weight: bold;
+  color: #10b981;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+/* =========================
+   🌙 DARK MODE SUPPORT
+========================= */
+
+.dark .chart-card,
+.dark .card {
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+/* KPI dark glass */
+.dark .kpi-card {
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.dark .kpi-card h4 {
+  color: #cbd5e1;
+}
+
+.dark .kpi-card h2 {
+  color: #ffffff;
+}
+
+/* highlight in dark mode */
+.dark .highlight {
+  background: linear-gradient(135deg,#ec4899,#8b5cf6);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media(max-width:900px){
+  .kpi-grid,
+  .charts-grid,
+  .card-grid{
+    grid-template-columns:1fr;
+  }
+}
+/* FILTER BAR */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.search-input,
+.filter-select {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  outline: none;
+}
+
+.dark .search-input,
+.dark .filter-select {
+  background: #1f2937;
+  color: white;
+  border: 1px solid #374151;
+}
+`}</style>
+
     </div>
   );
 }

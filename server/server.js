@@ -30,6 +30,8 @@ const employeeSchema = new mongoose.Schema({
 
   memberId: { type: String, required: true, unique: true },
   category: { type: String, required: true },
+  age: Number,
+  birthDate: Date,
   firstName: String,
   lastName: String,
   gender: String,
@@ -58,6 +60,46 @@ const employeeSchema = new mongoose.Schema({
 const Employee = mongoose.model(
   "Employee",
   employeeSchema
+);
+
+
+// =======================
+// PASSWORD RESET REQUEST
+// =======================
+const passwordResetRequestSchema = new mongoose.Schema({
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    required: true
+  },
+
+  memberId: {
+    type: String,
+    required: true
+  },
+
+  fullName: String,
+
+  status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
+
+  requestedAt: {
+    type: Date,
+    default: Date.now
+  },
+  isRead: {
+  type: Boolean,
+  default: false
+},
+
+}, { timestamps: true });
+
+const PasswordResetRequest = mongoose.model(
+  "PasswordResetRequest",
+  passwordResetRequestSchema
 );
 
 // =======================
@@ -200,18 +242,14 @@ const Withdrawal = mongoose.model(
 // TERMINATED SCHEMA
 // =======================
 const terminatedSchema = new mongoose.Schema({
-
-  employeeData: Object,
-
+  memberId: String,
+  fullName: String,
   totalSaving: Number,
-
   reason: String,
-
   terminatedAt: {
     type: Date,
     default: Date.now
   }
-
 });
 
 const Terminated = mongoose.model(
@@ -228,24 +266,46 @@ const loanSchema = new mongoose.Schema({
     ref: "Employee",
     required: true
   },
-  principalAmount: Number,
+
+  principalAmount: {
+    type: Number,
+    required: true
+  },
+
+  interestRate: {
+    type: Number,
+    default: 0
+  },
+
+  totalAmount: {
+    type: Number,
+    required: true
+  },
+
   loanType: String,
   durationMonths: String,
-  // እዚህ ጋር ወደ Array ቀይረነዋል
+
   guarantors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee"
   }],
+
   isRead: {
     type: Boolean,
     default: false
   },
+
   status: {
     type: String,
     enum: ["pending", "approved", "rejected", "completed"],
     default: "pending"
   },
-  remainingAmount: Number
+
+  remainingAmount: {
+    type: Number,
+    required: true
+  }
+
 }, { timestamps: true });
 
 const Loan = mongoose.model("Loan", loanSchema);
@@ -253,28 +313,15 @@ const Loan = mongoose.model("Loan", loanSchema);
 // LOAN PAYMENT SCHEMA
 // =======================
 const loanPaymentSchema = new mongoose.Schema({
-
-  loanId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Loan",
-    required: true
-  },
-
-  employeeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
-    required: true
-  },
-
-  amountPaid: Number,
-
-  penalty: {
-    type: Number,
-    default: 0
-  },
-
-  totalPaid: Number
-
+  loanId: { type: mongoose.Schema.Types.ObjectId, ref: "Loan", required: true },
+  employeeId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee", required: true },
+  
+  // አዲስ የተጨመሩ መስኮች
+  monthYear: { type: String, required: true }, // ለምሳሌ "May 2026"
+  amountPaid: Number,      // የተከፈለ Principal
+  interestPaid: Number,    // የተከፈለ የወለድ ድርሻ
+  penalty: { type: Number, default: 0 },
+  totalPaid: Number        // (amountPaid + interestPaid + penalty)
 }, { timestamps: true });
 
 const LoanPayment = mongoose.model(
@@ -295,110 +342,208 @@ const LoanPayment = mongoose.model(
 // =======================
 app.post("/api/auth/login", async (req, res) => {
   try {
+    const { memberId, password, role } = req.body;
 
-    let { memberId, password, role } = req.body;
+    const user = await Employee.findOne({ memberId });
 
-    // Clean input
-    memberId = memberId.trim();
-    role = role.trim().toLowerCase();
-
-    console.log("LOGIN DATA:", {
-      memberId,
-      password,
-      role
-    });
-
-    // Find user
-    const user = await Employee.findOne({
-      memberId: memberId
-    });
-
-    console.log("FOUND USER:", user);
-
-    // User not found
     if (!user) {
-      return res.status(401).json({
-        message: "Member ID not found ❌"
-      });
+      return res.status(401).json({ message: "Member not found ❌" });
     }
 
-    // Password check
-    if (String(user.password).trim() !== String(password).trim()) {
-      return res.status(401).json({
-        message: "Incorrect password ❌"
-      });
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: "Incorrect password ❌" });
     }
 
-    // Role check
-    if (
-      String(user.role).trim().toLowerCase() !== role
-    ) {
-      return res.status(401).json({
-        message: `You are not registered as ${role} ❌`
-      });
+    if (user.role.toLowerCase() !== role.toLowerCase()) {
+      return res.status(401).json({ message: "Wrong role ❌" });
     }
 
-    // Success
-    res.json({
-      success: true,
-
-      token: "fake-token-" + user._id,
-
-      user: {
-        id: user._id,
-        memberId: user.memberId,
-        fullName:
-          user.firstName + " " + user.lastName,
-        role: user.role
-      }
-    });
-
-  } catch (err) {
-
-    console.error("LOGIN ERROR:", err);
-
-    res.status(500).json({
-      message: "Server error ❌"
-    });
+  res.json({
+    success:true,
+  
+  user:{
+    memberId: user.memberId,
+    fullName: user.fullName,
+    role: user.role
   }
 });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 // =======================
 // EMPLOYEE ROUTES
 // =======================
+function calculateAge(birthDate) {
+  if (!birthDate) return 0;
+
+  const today = new Date();
+  const birth = new Date(birthDate);
+
+  let age = today.getFullYear() - birth.getFullYear();
+
+  const m = today.getMonth() - birth.getMonth();
+
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+
+  return age;
+}
+
 app.get("/api/employees", async (req, res) => {
-
-  const employees = await Employee.find();
-
-  res.json(employees);
-});
-
-app.post("/api/employees", async (req, res) => {
   try {
-    // አዲስ ሰው ሲመዘገብ memberId እና password መኖሩን እናረጋግጣለን
-    const { memberId, password, firstName, lastName, role } = req.body;
-    
-    if(!memberId || !password) {
-      return res.status(400).json({ message: "መታወቂያ እና የይለፍ ቃል ያስፈልጋል!" });
+
+    const employees = await Employee.find();
+
+    for (const emp of employees) {
+
+      const age = calculateAge(emp.birthDate);
+      const category = age >= 18 ? "Adult" : "Child";
+
+      if (emp.age !== age || emp.category !== category) {
+        emp.age = age;
+        emp.category = category;
+        await emp.save();
+      }
     }
 
-    const newEmp = new Employee(req.body);
-    await newEmp.save();
-    res.status(201).json(newEmp);
+    const updatedEmployees = await Employee.find();
+
+    res.json(updatedEmployees);
+
   } catch (err) {
-    res.status(400).json({ message: "ምዝገባው አልተሳካም፡ " + err.message });
+    res.status(500).json({
+      message: err.message
+    });
   }
 });
 
+const bcrypt = require("bcryptjs");
+
+app.post("/api/employees", async (req, res) => {
+  try {
+    const { password, birthDate, memberId } = req.body;
+
+    // 1. Check duplicate memberId
+    const exists = await Employee.findOne({ memberId });
+    if (exists) {
+      return res.status(400).json({ message: "duplicate memberId" });
+    }
+
+    // 2. Validate password
+    if (!password) {
+      return res.status(400).json({ message: "Password required" });
+    }
+
+    // 3. Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 4. Calculate age (BACKEND ONLY)
+    let age = 0;
+    let category = "Child";
+
+    if (birthDate) {
+      const today = new Date();
+      const birth = new Date(birthDate);
+
+      age = today.getFullYear() - birth.getFullYear();
+
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+
+      category = age >= 18 ? "Adult" : "Child";
+    }
+
+    // 5. Create employee
+ const newEmp = new Employee({
+  ...req.body,
+
+  password: hashedPassword,
+  age,
+  category,
+  role: (req.body.role || "member").toLowerCase(),
+});
+
+    await newEmp.save();
+
+    res.status(201).json(newEmp);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+//new update
 app.put("/api/employees/:id", async (req, res) => {
+  try {
+    if (req.body.birthDate) {
+      const today = new Date();
+      const birth = new Date(req.body.birthDate);
 
-  const emp = await Employee.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true }
-  );
+      let age = today.getFullYear() - birth.getFullYear();
 
-  res.json(emp);
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+
+      req.body.age = age;
+      req.body.category = age >= 18 ? "Adult" : "Child";
+    }
+
+    const updated = await Employee.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/employees/:id/terminate", async (req, res) => {
+  try {
+    const employee = await Employee.findById(req.params.id);
+
+    if (!employee) {
+      return res.status(404).json({
+        message: "Employee not found"
+      });
+    }
+
+    const withdrawal = await Withdrawal.findOne({
+      employeeId: req.params.id
+    }).sort({ createdAt: -1 });
+
+await Terminated.create({
+  memberId: employee.memberId,
+  fullName: `${employee.firstName} ${employee.lastName}`,
+  totalSaving: withdrawal?.totalSaving || 0,
+  reason: withdrawal?.reason || "Not specified",
+  terminatedAt: new Date()
+});
+
+    await Employee.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: err.message
+    });
+  }
 });
 
 app.delete("/api/employees/:id", async (req, res) => {
@@ -523,6 +668,293 @@ app.post("/api/deposits", async (req, res) => {
   }
 });
 
+// =======================
+// REQUEST PASSWORD RESET
+// =======================
+app.post("/api/password-reset-request", async (req, res) => {
+  try {
+    const { memberId } = req.body;
+
+    const employee = await Employee.findOne({ memberId });
+
+    if (!employee) {
+      return res.status(404).json({
+        message: "Member not found"
+      });
+    }
+
+    // =========================
+    // 🔥 ADMIN FLOW → DIRECT RESET
+    // =========================
+    if (employee.role?.toLowerCase() === "admin") {
+
+      return res.json({
+        success: true,
+        isAdmin: true,
+        message: "Admin detected. Redirecting to reset page",
+        redirect: `/reset-password?memberId=${employee.memberId}`
+      });
+    }
+
+    // =========================
+    // 👤 MEMBER FLOW → NOTIFY ADMIN
+    // =========================
+    const existing = await PasswordResetRequest.findOne({
+      memberId,
+      status: "pending"
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        message: "Password reset request already submitted"
+      });
+    }
+
+    const request = new PasswordResetRequest({
+      employeeId: employee._id,
+      memberId: employee.memberId,
+      fullName: employee.firstName + " " + employee.lastName,
+      status: "pending",
+      isRead: false
+    });
+
+    await request.save();
+
+    res.json({
+      success: true,
+      isAdmin: false,
+      message: "Request sent to admin successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+app.post("/api/auth/admin-reset-password", async (req, res) => {
+  try {
+    const { memberId, newPassword, requesterRole } = req.body;
+
+    const employee = await Employee.findOne({ memberId });
+
+    if (!employee) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    // =========================
+    // 🚨 SECURITY CHECK HERE
+    // =========================
+    if (employee.role === "admin" && requesterRole !== "admin") {
+      return res.status(403).json({
+        message: "Not allowed to reset admin password"
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    employee.password = hashedPassword;
+    await employee.save();
+
+    res.json({
+      success: true,
+      message: "Password updated successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+app.get("/api/password-reset-request/unread-count", async (req, res) => {
+  const count = await PasswordResetRequest.countDocuments({
+    isRead: false
+  });
+
+  res.json({ count });
+});
+// =======================
+// GET RESET REQUESTS
+// =======================
+app.get("/api/password-reset-request", async (req, res) => {
+  try {
+
+    const requests =
+      await PasswordResetRequest.find()
+      .sort({ createdAt: -1 });
+
+    res.json(requests);
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+app.put("/api/password-reset-request/:id/read", async (req, res) => {
+  const updated = await PasswordResetRequest.findByIdAndUpdate(
+    req.params.id,
+    { isRead: true },
+    { new: true }
+  );
+
+  res.json(updated);
+});
+
+//const bcrypt = require("bcryptjs");
+
+// RESET PASSWORD
+app.post("/api/auth/reset-password", async (req, res) => {
+  try {
+    const { memberId, newPassword } = req.body;
+
+    console.log("RESET REQUEST:", req.body);
+
+    const employee = await Employee.findOne({ memberId });
+
+    console.log("FOUND EMPLOYEE:", employee);
+
+    if (!employee) {
+      return res.status(404).json({
+        message: "Employee not found"
+      });
+    }
+
+    // 🔐 HASH PASSWORD HERE
+  const salt = await bcrypt.genSalt(10);
+const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+employee.password = hashedPassword;
+await employee.save();
+
+    res.json({
+      success: true,
+      message: "Password reset successfully"
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+//const bcrypt = require("bcryptjs");
+
+// =======================
+// APPROVE PASSWORD RESET
+// =======================
+app.put("/api/password-reset-request/:id/approve",
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { newPassword } = req.body;
+
+      const request =
+        await PasswordResetRequest.findById(id);
+
+      if (!request) {
+        return res.status(404).json({
+          message: "Request not found",
+        });
+      }
+
+      const employee =
+        await Employee.findOne({
+          memberId: request.memberId,
+        });
+
+      if (!employee) {
+        return res.status(404).json({
+          message: "Employee not found",
+        });
+      }
+
+      // HASH PASSWORD
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword =
+        await bcrypt.hash(newPassword, salt);
+
+      // SAVE HASHED PASSWORD
+      employee.password = hashedPassword;
+      await employee.save();
+
+      request.status = "approved";
+      request.isRead = true;
+      await request.save();
+
+      res.json({
+        message:
+          "Password reset approved successfully",
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        message: "Server error",
+      });
+    }
+  }
+);
+
+// =======================
+// REJECT PASSWORD RESET
+// =======================
+app.put("/api/password-reset-request/:id/reject",
+  async (req, res) => {
+
+    try {
+
+      const request =
+        await PasswordResetRequest.findById(
+          req.params.id
+        );
+
+      if (!request) {
+        return res.status(404).json({
+          message: "Request not found"
+        });
+      }
+
+      request.status = "rejected";
+
+      await request.save();
+
+      res.json({
+        success: true,
+        message:
+          "Password reset request rejected"
+      });
+
+    } catch (err) {
+
+      res.status(500).json({
+        message: err.message
+      });
+    }
+  }
+);
+
+app.put("/api/password-reset-request/:id/read",
+  async (req, res) => {
+
+    const request =
+      await PasswordResetRequest.findByIdAndUpdate(
+        req.params.id,
+        { isRead: true },
+        { new: true }
+      );
+
+    res.json(request);
+  }
+);
 // GET DEPOSITS
 app.get("/api/deposits", async (req, res) => {
 
@@ -595,33 +1027,56 @@ app.get("/api/late-penalties", async (req, res) => {
 // WITHDRAWAL ROUTES
 // =======================
 app.post("/api/withdrawals", async (req, res) => {
-
   const w = new Withdrawal(req.body);
-
   await w.save();
-
   res.json(w);
 });
 
 app.get("/api/withdrawals", async (req, res) => {
-
-  const data = await Withdrawal.find()
-    .populate("employeeId");
-
+  const data = await Withdrawal.find().populate("employeeId");
   res.json(data);
 });
 
-app.put("/api/withdrawals/:id/read", async (req, res) => {
 
+app.put("/api/withdrawals/:id/read", async (req, res) => {
   const w = await Withdrawal.findByIdAndUpdate(
     req.params.id,
     { isRead: true },
     { new: true }
   );
-
   res.json(w);
 });
 
+app.get("/api/withdrawals/unread-count", async (req, res) => {
+  try {
+    const count = await Withdrawal.countDocuments({ isRead: false });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.get("/api/withdrawals/filter", async (req, res) => {
+  try {
+    const { type } = req.query;
+
+    let query = {};
+
+    if (type === "unread") query.isRead = false;
+    if (type === "seen") query.isRead = true;
+    if (type === "pending") query.status = "pending";
+    if (type === "approved") query.status = "approved";
+    if (type === "rejected") query.status = "rejected";
+
+    const data = await Withdrawal.find(query)
+      .populate("employeeId")
+      .sort({ createdAt: -1 });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 app.put("/api/withdrawals/:id/approve", async (req, res) => {
 
   const w = await Withdrawal.findByIdAndUpdate(
@@ -639,6 +1094,26 @@ app.put("/api/withdrawals/:id/approve", async (req, res) => {
 
   res.json(w);
 });
+
+app.put("/api/withdrawals/:id/approve", async (req, res) => {
+  try {
+    const withdrawal = await Withdrawal.findById(req.params.id);
+
+    if (!withdrawal) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    withdrawal.status = "approved";
+    withdrawal.isRead = true;
+
+    await withdrawal.save();
+
+    res.json(withdrawal);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 
 app.put("/api/withdrawals/:id/reject", async (req, res) => {
 
@@ -787,15 +1262,114 @@ app.post("/api/loans", async (req, res) => {
     }
 
     // 4. ብድሩን መመዝገብ
-    const loan = new Loan({
-      employeeId,
-      guarantors: gap > 0 ? guarantors : [], 
-      principalAmount: amount,
-      loanType,
-      durationMonths: String(durationMonths),
-      status: "pending",
-      remainingAmount: amount
-    });
+// 4. ብድሩን መመዝገብ
+
+let interestRate;
+let totalAmount;
+
+// =========================
+// NORMAL LOAN (15% COMPOUND)
+// =========================
+if (loanType === "normal") {
+  interestRate = 0.15;
+
+  const monthlyRate = interestRate / 12;
+
+  totalAmount =
+    amount *
+    Math.pow(
+      1 + monthlyRate,
+      Number(durationMonths)
+    );
+}
+
+// =========================
+// HOLIDAY LOAN (8% FLAT)
+// =========================
+else if (loanType === "holiday") {
+  interestRate = 0.08;
+
+  totalAmount =
+    amount * (1 + interestRate);
+}
+
+// =========================
+// INVALID TYPE
+// =========================
+else {
+  return res.status(400).json({
+    message: "Invalid loan type ❌"
+  });
+}
+
+// round to nearest birr
+// Always round UP
+totalAmount = Math.ceil(totalAmount);
+
+// Monthly installment
+const monthlyInstallment =
+  Math.ceil(
+    totalAmount / Number(durationMonths)
+  );
+
+// dates
+const loanDate = new Date();
+
+const paymentStartDate = new Date();
+paymentStartDate.setMonth(
+  paymentStartDate.getMonth() + 2
+);
+
+const loanEndDate = new Date();
+loanEndDate.setMonth(
+  loanEndDate.getMonth() + Number(durationMonths)
+);
+
+// create loan
+const loan = new Loan({
+  employeeId,
+
+  guarantors:
+    gap > 0 ? guarantors : [],
+
+  principalAmount: amount,
+
+  interestRate,
+
+  totalAmount,
+
+  loanType,
+
+  durationMonths: String(durationMonths),
+
+  monthlyInstallment,
+
+  loanStartDate: loanDate,
+
+  paymentStartDate,
+
+  loanEndDate,
+
+  status: "pending",
+
+  remainingAmount: totalAmount
+});
+
+// debug log
+console.log({
+  principalAmount: amount,
+  durationMonths,
+  interestRate,
+  totalAmount,
+  monthlyInstallment
+});
+
+await loan.save();
+
+res.status(201).json({
+  message: "Loan created successfully ✅",
+  loan
+});
 
     await loan.save();
     res.status(201).json(loan);
@@ -805,6 +1379,8 @@ app.post("/api/loans", async (req, res) => {
     res.status(500).json({ message: "ስህተት ተፈጥሯል፡ " + err.message });
   }
 });
+
+
 // GET LOANS (Populate ለማድረግ)
 // በ server.js ወይም በ loans route ውስጥ እንዲህ መሆን አለበት
 app.get("/api/loans", async (req, res) => {
@@ -819,7 +1395,28 @@ app.get("/api/loans", async (req, res) => {
   }
 });
 
+/*app.put("/api/loans/:id/read", async (req, res) => {
+  try {
+    const loan = await Loan.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
 
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found"
+      });
+    }
+
+    res.json(loan);
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});*/
 
 //reports
 // =======================
@@ -1219,6 +1816,65 @@ app.get("/api/reports/individual-annual", async (req, res) => {
   }
 });
 
+
+
+
+//restore data
+
+
+// POST /terminated/restore/:id
+app.post("/api/terminated/restore/:id", async (req, res) => {
+  try {
+    const terminatedEmp = await Terminated.findById(req.params.id);
+
+    if (!terminatedEmp) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    // 🔁 recreate FULL employee
+ const restored = new Employee({
+  memberId: terminatedEmp.memberId,
+  firstName: terminatedEmp.firstName,
+  lastName: terminatedEmp.lastName,
+  fullName: `${terminatedEmp.firstName || ""} ${terminatedEmp.lastName || ""}`.trim(),
+
+  gender: terminatedEmp.gender,
+  birthDate: terminatedEmp.birthDate,
+  age: terminatedEmp.age,
+
+  category: terminatedEmp.category || (terminatedEmp.age >= 18 ? "Adult" : "Child"),
+
+  phone: terminatedEmp.phone,
+  maritalStatus: terminatedEmp.maritalStatus,
+  role: terminatedEmp.role,
+  password: terminatedEmp.password,
+
+  fatherName: terminatedEmp.fatherName,
+  motherName: terminatedEmp.motherName,
+  wifeName: terminatedEmp.wifeName,
+  wifeFatherName: terminatedEmp.wifeFatherName,
+  wifeMotherName: terminatedEmp.wifeMotherName,
+  husbandName: terminatedEmp.husbandName,
+  husbandFatherName: terminatedEmp.husbandFatherName,
+  husbandMotherName: terminatedEmp.husbandMotherName,
+
+  brothers: terminatedEmp.brothers || [],
+  sisters: terminatedEmp.sisters || [],
+  children: terminatedEmp.children || []
+});
+
+    await restored.save();
+
+    // ❌ remove from terminated
+    await Terminated.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Employee restored successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Restore failed" });
+  }
+});
+
 // =========================================
 // TOTAL MEMBERS REPORT
 // =========================================
@@ -1362,63 +2018,396 @@ app.put("/api/loans/:id/reject", async (req, res) => {
 // LOAN PAYMENTS
 // =======================
 app.post("/api/loan-payments", async (req, res) => {
-
   try {
-
     const {
       loanId,
       employeeId,
-      amountPaid,
-      penalty
+      amountPaid,     // Principal
+      interestPaid,   // Interest
+      penalty,
+      monthYear
     } = req.body;
 
     const loan = await Loan.findById(loanId);
 
     if (!loan) {
-
       return res.status(404).json({
-        message: "Loan not found ❌"
+        message: "Loan not found"
       });
     }
 
-    loan.remainingAmount = Math.max(
-      0,
-      loan.remainingAmount - Number(amountPaid)
-    );
+    const principalPaid = Number(amountPaid || 0);
+    const monthlyInterest = Number(interestPaid || 0);
+    const monthlyPenalty = Number(penalty || 0);
+
+    const totalMonthlyPaid =
+      principalPaid +
+      monthlyInterest +
+      monthlyPenalty;
+
+    console.log("========== PAYMENT ==========");
+    console.log("Loan ID:", loanId);
+    console.log("Before:", loan.remainingAmount);
+    console.log("Principal:", principalPaid);
+    console.log("Interest:", monthlyInterest);
+    console.log("Penalty:", monthlyPenalty);
+    console.log("Total:", totalMonthlyPaid);
+
+    // Prevent overpayment
+    if (totalMonthlyPaid > loan.remainingAmount) {
+      return res.status(400).json({
+        message: `Cannot pay more than remaining balance (${loan.remainingAmount})`
+      });
+    }
+
+    // Save payment record
+    const payment = new LoanPayment({
+      loanId,
+      employeeId,
+      monthYear,
+      amountPaid: principalPaid,
+      interestPaid: monthlyInterest,
+      penalty: monthlyPenalty,
+      totalPaid: totalMonthlyPaid
+    });
+
+    await payment.save();
+
+    // Update loan balance
+    loan.remainingAmount =
+      Number(loan.remainingAmount) -
+      totalMonthlyPaid;
+
+    if (loan.remainingAmount < 0) {
+      loan.remainingAmount = 0;
+    }
 
     if (loan.remainingAmount === 0) {
-
       loan.status = "completed";
     }
 
     await loan.save();
 
-    const payment = new LoanPayment({
+    // Verify saved value
+    const updatedLoan = await Loan.findById(loanId);
 
-      loanId,
+    console.log("After:", updatedLoan.remainingAmount);
+    console.log("============================");
 
-      employeeId,
+    res.status(200).json({
+      success: true,
+      message: "Payment recorded successfully",
+      remainingAmount: updatedLoan.remainingAmount,
+      loanStatus: updatedLoan.status
+    });
 
-      amountPaid:
-        Number(amountPaid),
+  } catch (err) {
+    console.error("Loan Payment Error:", err);
 
-      penalty:
-        Number(penalty) || 0,
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
 
-      totalPaid:
-        Number(amountPaid) +
-        Number(penalty || 0)
+//IncomeExpense logicapp.get("/loan-payments", async (req, res) => {
+
+
+// ==========================================
+// FINANCIAL REPORT SCHEMA
+// ==========================================
+const financialReportSchema = new mongoose.Schema({
+
+  year: {
+    type: Number,
+    required: true,
+    unique: true
+  },
+
+  registrationFees: {
+    type: Number,
+    default: 0
+  },
+
+  lateDepositPenalty: {
+    type: Number,
+    default: 0
+  },
+
+  loanInterestPaid: {
+    type: Number,
+    default: 0
+  },
+
+  lateLoanPenalty: {
+    type: Number,
+    default: 0
+  },
+
+  bankIncomes: [
+    {
+      name: String,
+      amount: {
+        type: Number,
+        default: 0
+      }
+    }
+  ],
+
+  otherIncomes: [
+    {
+      name: String,
+      amount: {
+        type: Number,
+        default: 0
+      }
+    }
+  ],
+
+  expenses: [
+    {
+      title: String,
+      amount: {
+        type: Number,
+        default: 0
+      }
+    }
+  ],
+
+  totalIncome: {
+    type: Number,
+    default: 0
+  },
+
+  totalExpense: {
+    type: Number,
+    default: 0
+  },
+
+  netProfit: {
+    type: Number,
+    default: 0
+  }
+
+}, { timestamps: true });
+
+const FinancialReport = mongoose.model(
+  "FinancialReport",
+  financialReportSchema
+);
+
+
+// ==========================================
+// SAVE FINANCIAL REPORT
+// ==========================================
+app.post("/api/financial-reports", async (req, res) => {
+
+  try {
+
+    const {
+
+      year,
+
+      registrationFees,
+      lateDepositPenalty,
+      loanInterestPaid,
+      lateLoanPenalty,
+
+      bankIncomes,
+      otherIncomes,
+      expenses,
+
+      totalIncome,
+      totalExpense,
+      netProfit
+
+    } = req.body;
+
+    // CHECK IF YEAR ALREADY EXISTS
+    const existingReport =
+      await FinancialReport.findOne({ year });
+
+    // ==================================
+    // UPDATE EXISTING YEAR REPORT
+    // ==================================
+    if (existingReport) {
+
+      existingReport.registrationFees =
+        registrationFees || 0;
+
+      existingReport.lateDepositPenalty =
+        lateDepositPenalty || 0;
+
+      existingReport.loanInterestPaid =
+        loanInterestPaid || 0;
+
+      existingReport.lateLoanPenalty =
+        lateLoanPenalty || 0;
+
+      existingReport.bankIncomes =
+        bankIncomes || [];
+
+      existingReport.otherIncomes =
+        otherIncomes || [];
+
+      existingReport.expenses =
+        expenses || [];
+
+      existingReport.totalIncome =
+        totalIncome || 0;
+
+      existingReport.totalExpense =
+        totalExpense || 0;
+
+      existingReport.netProfit =
+        netProfit || 0;
+
+      await existingReport.save();
+
+      return res.json({
+        success: true,
+        message: "Financial report updated successfully ✅",
+        report: existingReport
+      });
+    }
+
+    // ==================================
+    // CREATE NEW REPORT
+    // ==================================
+    const report = new FinancialReport({
+
+      year,
+
+      registrationFees,
+      lateDepositPenalty,
+      loanInterestPaid,
+      lateLoanPenalty,
+
+      bankIncomes,
+      otherIncomes,
+
+      expenses,
+
+      totalIncome,
+      totalExpense,
+      netProfit
 
     });
 
-    await payment.save();
+    await report.save();
 
-    res.json({
-      message: "Payment successful ✅"
+    res.status(201).json({
+      success: true,
+      message: "Financial report saved successfully ✅",
+      report
     });
 
   } catch (err) {
 
+    console.error("FINANCIAL REPORT ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to save financial report ❌",
+      error: err.message
+    });
+  }
+});
+
+
+// ==========================================
+// GET ALL FINANCIAL REPORTS
+// ==========================================
+app.get("/api/financial-reports", async (req, res) => {
+  try {
+    const { year } = req.query;
+
+    let query = {};
+
+    if (year) {
+      query.year = Number(year);
+    }
+
+    const reports = await FinancialReport.find(query);
+
+    res.json(reports);
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+app.put("/api/loans/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found"
+      });
+    }
+
+    loan.status = status;
+
+    await loan.save();
+
+    res.json({
+      success: true,
+      loan
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+app.delete("/api/loans/:id", async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found"
+      });
+    }
+
+    // Allow deleting completed loans
+    if (loan.status !== "completed") {
+      const paymentStarted =
+        Number(loan.remainingAmount || 0) <
+        Number(loan.totalAmount || 0);
+
+      if (paymentStarted) {
+        return res.status(400).json({
+          message:
+            "Cannot delete loan because payment has started"
+        });
+      }
+    }
+
+    // delete related payments too
+    await LoanPayment.deleteMany({
+      loanId: loan._id
+    });
+
+    await Loan.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Loan deleted successfully ✅"
+    });
+
+  } catch (err) {
     console.error(err);
 
     res.status(500).json({
@@ -1427,12 +2416,459 @@ app.post("/api/loan-payments", async (req, res) => {
   }
 });
 
-// GET LOAN PAYMENTS
-app.get("/api/loan-payments", async (req, res) => {
-  const payments = await LoanPayment.find().populate("employeeId");
-  res.json(payments);
+
+// =======================
+// PROFIT DISTRIBUTION SCHEMA
+// =======================
+const profitDistributionSchema = new mongoose.Schema({
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    required: true,
+  },
+
+  year: {
+    type: Number,
+    required: true,
+  },
+
+  dividendAmount: {
+    type: Number,
+    default: 0,
+  },
+
+  savingAmount: {
+    type: Number,
+    default: 0,
+  },
+
+  shareAmount: {
+    type: Number,
+    default: 0,
+  },
+
+  sharesAdded: {
+    type: Number,
+    default: 0,
+  }
+
+}, { timestamps: true });
+
+const ProfitDistribution = mongoose.model(
+  "ProfitDistribution",
+  profitDistributionSchema
+);
+
+
+//total loan interest paid
+
+// =======================
+// GET ALL LOAN PAYMENTS FOR FINANCIAL REPORT
+// =======================
+app.get("/api/loan-payments/all", async (req, res) => {
+
+  try {
+
+    const payments = await LoanPayment.find();
+
+
+    res.json(payments);
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Failed to load all loan payments"
+    });
+
+  }
+
+});
+// =======================
+// TOTAL SHARES
+// =======================
+app.get("/api/deposits/total-shares", async (req, res) => {
+  try {
+    const deposits = await Deposit.find();
+
+    const totalShares = deposits.reduce(
+      (sum, d) => sum + Number(d.sharedPurchase || 0),
+      0
+    );
+
+    res.json({
+      totalShares
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
 });
 
+
+// =======================
+// GET PROFIT DISTRIBUTIONS
+// =======================
+app.get("/api/profit-distributions", async (req, res) => {
+  try {
+
+    const data = await ProfitDistribution.find()
+      .populate("employeeId")
+      .sort({ createdAt: -1 });
+
+    res.json(data);
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+// =======================
+// SAVE PROFIT DISTRIBUTION
+// =======================
+app.post("/api/profit-distributions", async (req, res) => {
+  try {
+
+    const {
+      employeeId,
+      year,
+      dividendAmount,
+      savingAmount,
+      shareAmount
+    } = req.body;
+
+    const sharesAdded = Math.floor(
+      Number(shareAmount || 0) / 500
+    );
+
+    const record = new ProfitDistribution({
+      employeeId,
+      year,
+      dividendAmount,
+      savingAmount,
+      shareAmount,
+      sharesAdded
+    });
+
+    await record.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Profit distributed successfully",
+      data: record
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+});
+
+app.get("/api/financial-reports/net-profit/:year", async (req, res) => {
+  try {
+    const year = Number(req.params.year);
+
+    const report = await FinancialReport.findOne({ year });
+
+    if (!report) {
+      return res.json({ netProfit: 0 });
+    }
+
+    res.json({
+      netProfit: report.netProfit || 0,
+    });
+
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
+
+
+app.get("/api/profit-distribution/year-summary/:year", async (req, res) => {
+  try {
+    const year = Number(req.params.year);
+
+    const report = await FinancialReport.findOne({ year });
+
+    res.json({
+      year,
+      netProfit: report?.netProfit || 0,
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+    });
+  }
+});
+
+// ==========================================
+// GET REPORT BY YEAR
+// ==========================================
+app.get("/api/financial-reports/:year", async (req, res) => {
+
+  try {
+
+    const report =
+      await FinancialReport.findOne({
+        year: Number(req.params.year)
+      });
+
+    if (!report) {
+
+      return res.status(404).json({
+        message: "Financial report not found"
+      });
+    }
+
+    res.json(report);
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+// ==========================================
+// DELETE FINANCIAL REPORT
+// ==========================================
+app.delete("/api/financial-reports/:id", async (req, res) => {
+
+  try {
+
+    await FinancialReport.findByIdAndDelete(
+      req.params.id
+    );
+
+    res.json({
+      success: true,
+      message: "Financial report deleted ✅"
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+// ==========================================
+// UPDATE FINANCIAL REPORT
+// ==========================================
+app.put("/api/financial-reports/:id", async (req, res) => {
+
+  try {
+
+    const updated =
+      await FinancialReport.findByIdAndUpdate(
+
+        req.params.id,
+
+        req.body,
+
+        { new: true }
+
+      );
+
+    res.json({
+      success: true,
+      message: "Financial report updated ✅",
+      report: updated
+    });
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+
+
+// GET LOAN PAYMENTS
+
+
+app.get("/api/loan-payments/check", async (req, res) => {
+  const { loanId, month } = req.query;
+  const existing = await LoanPayment.findOne({ loanId, monthYear: month });
+  
+  if (existing) {
+    res.json({ 
+      exists: true, 
+      paymentId: existing._id, 
+      currentAmount: existing.amountPaid || 0,
+      currentInterest: existing.interestPaid || 0, // ስሙን አረጋግጥ
+      currentPenalty: existing.penalty || 0 
+    });
+  } else {
+    res.json({ exists: false });
+  }
+});
+
+// =======================
+// GET ALL LOAN PAYMENTS
+// =======================
+app.get("/api/loan-payments", async (req, res) => {
+
+  try {
+
+    const { loanId, employeeId } = req.query;
+
+
+    const payments = await LoanPayment.find({
+      loanId: loanId,
+      employeeId: employeeId
+    });
+
+
+    res.json(payments);
+
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      message: "Failed to load payment history"
+    });
+
+  }
+
+});
+
+
+app.get("/api/employees/:memberId", async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ memberId: req.params.memberId });
+    console.log("Found Employee in DB:", employee); // 💡 ሰርቨሩ ላይ ዳታው መገኘቱን እይ
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+    res.json(employee);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/employees/profile/:memberId", async (req, res) => {
+  try {
+
+    const { phone, password } = req.body;
+
+    const updatedEmployee =
+      await Employee.findOneAndUpdate(
+
+        { memberId: req.params.memberId },
+
+        {
+          $set: {
+            phone,
+            password
+          }
+        },
+
+        { new: true }
+      );
+
+    if (!updatedEmployee) {
+
+      return res.status(404).json({
+        message: "Employee not found"
+      });
+    }
+
+    res.json(updatedEmployee);
+
+  } catch (err) {
+
+    res.status(500).json({
+      message: err.message
+    });
+  }
+});
+
+
+// UPDATE EXISTING MONTHLY PAYMENT
+app.put("/api/loan-payments/:id", async (req, res) => {
+  try {
+    const { amountPaid, interestPaid, penalty } = req.body;
+
+    // safe numbers
+    const pPaid = Number(amountPaid) || 0;
+    const iPaid = Number(interestPaid) || 0;
+    const pen = Number(penalty) || 0;
+
+    const existingPayment = await LoanPayment.findById(req.params.id);
+    if (!existingPayment)
+      return res.status(404).json({ message: "Not found" });
+
+    const loan = await Loan.findById(existingPayment.loanId);
+    if (!loan)
+      return res.status(404).json({ message: "Loan not found" });
+
+    // ====================================
+    // STEP 1: OLD TOTAL PAYMENT
+    // ====================================
+    const oldTotal =
+      Number(existingPayment.amountPaid || 0) +
+      Number(existingPayment.interestPaid || 0) +
+      Number(existingPayment.penalty || 0);
+
+    // ====================================
+    // STEP 2: NEW TOTAL PAYMENT
+    // ====================================
+    const newTotal = pPaid + iPaid + pen;
+
+    // ====================================
+    // STEP 3: RESTORE THEN APPLY
+    // ====================================
+    loan.remainingAmount = loan.remainingAmount + oldTotal;
+    loan.remainingAmount = loan.remainingAmount - newTotal;
+
+    loan.remainingAmount = Math.max(0, loan.remainingAmount);
+
+    if (loan.remainingAmount <= 0) {
+      loan.status = "completed";
+    }
+
+    await loan.save();
+
+    // ====================================
+    // UPDATE PAYMENT RECORD
+    // ====================================
+    existingPayment.amountPaid = pPaid;
+    existingPayment.interestPaid = iPaid;
+    existingPayment.penalty = pen;
+    existingPayment.totalPaid = newTotal;
+
+    await existingPayment.save();
+
+    res.json({
+      message: "Updated successfully ✅",
+      payment: existingPayment,
+    });
+
+  } catch (err) {
+    console.error("DEBUG ERROR:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // server.js
 
@@ -1688,6 +3124,7 @@ app.delete("/api/terminated/:id", async (req, res) => {
 // START SERVER
 // =======================
 const path = require("path");
+//const { default: IncomeExpense } = require("../client/src/pages/IncomeExpense");
 
 // ሰርቨሩ ካለበት ፎልደር አንድ እርምጃ ወደ ኋላ ወጥቶ ወደ client/build እንዲገባ ያደርጋል
 const buildPath = path.join(__dirname, "..", "client", "build");

@@ -1,24 +1,27 @@
-import React from "react";
+import "./Dashboard.css";
 
-export default function DashboardCard({title,value}){
+export default function DashboardCard({
+  title,
+  value,
+  icon
+}) {
+  return (
+    <div className="dashboard-card">
 
-return(
+      <div className="card-icon">
+        {icon}
+      </div>
 
-<div style={{
-background:"white",
-padding:"20px",
-margin:"10px",
-border:"1px solid #ccc",
-width:"200px"
+      <div>
+        <p className="card-title">
+          {title}
+        </p>
 
-}}>
+        <h2 className="card-value">
+          {value}
+        </h2>
+      </div>
 
-<h4>{title}</h4>
-
-<h2>{value}</h2>
-
-</div>
-
-)
-
+    </div>
+  );
 }

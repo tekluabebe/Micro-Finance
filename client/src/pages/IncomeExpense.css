@@ -1,0 +1,1812 @@
+/* =====================================================
+   INCOME EXPENSE DASHBOARD
+   ISOLATED STYLES ONLY
+===================================================== */
+/* ==========================================
+   GLOBAL TEXT
+========================================== */
+
+.income-expense-container{
+    color:#ffffff;
+}
+
+/* ==========================================
+   MAIN TITLE
+========================================== */
+
+.main-title{
+    color:#ffffff;
+    text-shadow:0 3px 10px rgba(0,0,0,.45);
+}
+
+/* ==========================================
+   CARD TITLES
+========================================== */
+
+.report-title{
+    color:#ffffff;
+}
+
+.report-card h4{
+    color:#7dd3fc;
+    font-weight:700;
+}
+
+/* ==========================================
+   ROWS
+========================================== */
+
+.table-row{
+    color:#ffffff;
+}
+
+.table-row span:first-child{
+    color:#f3f4f6;
+    font-weight:600;
+}
+
+.table-row span:last-child{
+    color:#ffffff;
+    font-weight:700;
+}
+
+/* ==========================================
+   INPUTS
+========================================== */
+
+.table-row input{
+    background:rgba(255,255,255,.12);
+    color:#ffffff;
+    border:1px solid rgba(255,255,255,.20);
+}
+
+.table-row input::placeholder{
+    color:#d1d5db;
+}
+
+.table-row input:focus{
+    color:#ffffff;
+}
+
+/* ==========================================
+   SELECT
+========================================== */
+
+.filter-container select{
+    color:#ffffff;
+}
+
+.filter-container option{
+    background:#14213d;
+    color:#ffffff;
+}
+
+/* ==========================================
+   TOTAL ROW
+========================================== */
+
+.total-row{
+    color:#ffffff;
+}
+
+.total-row span{
+    color:#ffffff;
+}
+
+/* ==========================================
+   KPI
+========================================== */
+
+.kpi-card h4{
+    color:#ffffff;
+}
+
+.kpi-card p{
+    color:#ffffff;
+}
+
+/* ==========================================
+   BUTTONS
+========================================== */
+
+button{
+    color:#ffffff;
+}
+
+/* ==========================================
+   RECHARTS TEXT
+========================================== */
+
+.recharts-cartesian-axis-tick-value{
+    fill:#ffffff !important;
+    font-weight:600;
+}
+
+.recharts-text{
+    fill:#ffffff !important;
+}
+
+.recharts-tooltip-wrapper{
+    color:#111827;
+}
+
+/* ==========================================
+   TOOLTIP
+========================================== */
+
+.recharts-default-tooltip{
+    background:#ffffff !important;
+    border:none !important;
+    border-radius:10px;
+}
+
+.recharts-tooltip-label,
+.recharts-tooltip-item{
+    color:#111827 !important;
+}
+
+/* ==========================================
+   REMOVE DIM TEXT
+========================================== */
+
+.report-card,
+.report-card *,
+.kpi-card,
+.kpi-card *{
+    color:inherit;
+}
+
+.income-expense-container,
+.income-expense-container *,
+.income-expense-container *::before,
+.income-expense-container *::after {
+
+    box-sizing: border-box;
+
+}
+
+
+
+/* =====================================================
+   MAIN PAGE
+===================================================== */
+
+
+.income-expense-container {
+
+    min-height:100vh;
+
+    padding:30px;
+
+
+    background:
+
+    radial-gradient(
+        circle at top left,
+        rgba(34,197,94,0.15),
+        transparent 30%
+    ),
+
+    radial-gradient(
+        circle at bottom right,
+        rgba(37,99,235,0.18),
+        transparent 35%
+    ),
+
+    linear-gradient(
+        135deg,
+        #f8fafc,
+        #eef2ff
+    );
+
+
+    font-family:
+    "Segoe UI",
+    Arial,
+    sans-serif;
+
+
+    color:#1e293b;
+
+}
+
+
+
+/* =====================================================
+   TITLE
+===================================================== */
+
+
+.income-expense-container .main-title {
+
+
+    text-align:center;
+
+
+    margin-bottom:30px;
+
+
+    font-size:32px;
+
+
+    font-weight:800;
+
+
+    letter-spacing:.5px;
+
+
+    background:
+
+    linear-gradient(
+        90deg,
+        #16a34a,
+        #2563eb
+    );
+
+
+    -webkit-background-clip:text;
+
+
+    background-clip:text;
+
+
+    color:transparent;
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   FILTER SECTION
+===================================================== */
+
+
+.income-expense-container .filter-container {
+
+
+    display:flex;
+
+
+    justify-content:flex-end;
+
+
+    margin-bottom:25px;
+
+
+}
+
+
+
+.income-expense-container 
+.filter-container select {
+
+
+    padding:12px 18px;
+
+
+    border-radius:14px;
+
+
+    border:1px solid #cbd5e1;
+
+
+    background:white;
+
+
+    color:#334155;
+
+
+    font-size:15px;
+
+
+    font-weight:700;
+
+
+    cursor:pointer;
+
+
+    outline:none;
+
+
+    transition:.3s;
+
+
+    box-shadow:
+
+    0 5px 15px rgba(0,0,0,.05);
+
+
+}
+
+
+
+.income-expense-container 
+.filter-container select:hover {
+
+
+    border-color:#2563eb;
+
+
+    box-shadow:
+
+    0 0 15px rgba(37,99,235,.25);
+
+
+}
+
+
+
+
+
+/* =====================================================
+   CHART AREA
+===================================================== */
+
+
+.income-expense-container 
+.chart-container {
+
+
+    width:100%;
+
+
+    height:320px;
+
+
+    background:white;
+
+
+    border-radius:22px;
+
+
+    padding:20px;
+
+
+    margin-bottom:30px;
+
+
+    box-shadow:
+
+    0 10px 30px rgba(0,0,0,.08);
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   REPORT GRID
+===================================================== */
+
+
+.income-expense-container .report-grid {
+
+
+    display:grid;
+
+
+    grid-template-columns:
+
+    repeat(
+        auto-fit,
+        minmax(380px,1fr)
+    );
+
+
+    gap:25px;
+
+
+    align-items:stretch;
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   REPORT CARD
+===================================================== */
+
+
+.income-expense-container .report-card {
+
+
+    background:
+
+    rgba(255,255,255,.85);
+
+
+    backdrop-filter:
+
+    blur(12px);
+
+
+
+    border-radius:24px;
+
+
+    padding:25px;
+
+
+    border:
+
+    1px solid rgba(255,255,255,.7);
+
+
+
+    box-shadow:
+
+
+    0 15px 35px rgba(15,23,42,.08);
+
+
+
+    transition:.35s;
+
+
+
+    display:flex;
+
+
+    flex-direction:column;
+
+
+}
+
+
+
+.income-expense-container 
+.report-card:hover {
+
+
+    transform:
+
+    translateY(-6px);
+
+
+
+    box-shadow:
+
+
+    0 20px 45px rgba(15,23,42,.15);
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   REPORT TITLE
+===================================================== */
+
+
+.income-expense-container .report-title {
+
+
+    margin:0 0 20px;
+
+
+    font-size:22px;
+
+
+    font-weight:900;
+
+
+    display:flex;
+
+
+    align-items:center;
+
+
+    gap:10px;
+
+
+}
+
+
+
+
+
+/*
+   Income title
+*/
+
+
+.income-expense-container 
+.report-card:first-child 
+.report-title {
+
+
+    color:#16a34a !important;
+
+
+}
+
+
+
+
+
+/*
+   Expense title
+*/
+
+
+.income-expense-container 
+.report-card:nth-child(2)
+.report-title {
+
+
+    color:#dc2626 !important;
+
+
+}
+
+
+
+
+
+
+
+/* =====================================================
+   TABLE ROWS
+===================================================== */
+
+
+.income-expense-container .table-row {
+
+
+    display:grid;
+
+
+    grid-template-columns:
+
+    1fr auto;
+
+
+
+    align-items:center;
+
+
+    gap:15px;
+
+
+    padding:13px 0;
+
+
+    border-bottom:
+
+    1px dashed #dbeafe;
+
+
+
+    min-height:48px;
+
+
+    font-size:15px;
+
+
+    font-weight:700;
+
+
+    color:#334155;
+
+
+}
+
+
+
+
+.income-expense-container 
+.table-row:last-child {
+
+
+    border-bottom:none;
+
+
+}
+
+
+
+
+
+.income-expense-container 
+.table-row span:first-child {
+
+
+    max-width:100%;
+
+
+}
+
+
+
+
+
+/* =====================================================
+   INCOME SECTION COLORS
+===================================================== */
+
+
+.income-expense-container
+.report-card:first-child
+.table-row span:last-child {
+
+
+    color:#15803d;
+
+
+    font-weight:800;
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   EXPENSE SECTION COLORS
+===================================================== */
+
+
+.income-expense-container
+.report-card:nth-child(2)
+.table-row span:last-child {
+
+
+    color:#dc2626;
+
+
+    font-weight:800;
+
+
+}
+
+
+
+
+
+
+/* =====================================================
+   SECTION HEADINGS
+===================================================== */
+
+
+.income-expense-container h4 {
+
+
+    margin-top:25px;
+
+
+    margin-bottom:12px;
+
+
+    font-size:17px;
+
+
+    font-weight:800;
+
+
+    color:#334155;
+
+
+}
+
+/* =====================================================
+   INPUTS
+===================================================== */
+
+.income-expense-container .table-row input{
+
+    width:150px;
+
+    padding:10px 14px;
+
+    border:1px solid #d1d5db;
+
+    border-radius:10px;
+
+    background:#fff;
+
+    color:#1e293b;
+
+    font-size:14px;
+
+    font-weight:700;
+
+    text-align:right;
+
+    transition:.25s;
+
+    outline:none;
+
+}
+
+
+.income-expense-container .table-row input:focus{
+
+    border-color:#2563eb;
+
+    box-shadow:
+    0 0 0 4px rgba(37,99,235,.12);
+
+}
+
+
+.income-expense-container
+.table-row input::placeholder{
+
+    color:#94a3b8;
+
+}
+
+
+
+
+
+/* =====================================================
+   BUTTON GROUP
+===================================================== */
+
+
+.income-expense-container .button-group{
+
+    display:flex;
+
+    gap:14px;
+
+    flex-wrap:wrap;
+
+    margin-bottom:28px;
+
+}
+
+
+
+
+
+/* =====================================================
+   ALL BUTTONS
+===================================================== */
+
+
+.income-expense-container button{
+
+    border:none;
+
+    cursor:pointer;
+
+    border-radius:12px;
+
+    font-weight:700;
+
+    transition:.25s;
+
+}
+
+
+
+
+
+/* =====================================================
+   SAVE BUTTON
+===================================================== */
+
+
+.income-expense-container .save-btn{
+
+    padding:12px 22px;
+
+    color:white;
+
+    background:
+
+    linear-gradient(
+        90deg,
+        #16a34a,
+        #22c55e
+    );
+
+    box-shadow:
+
+    0 10px 20px rgba(34,197,94,.25);
+
+}
+
+
+.income-expense-container .save-btn:hover{
+
+    transform:translateY(-2px);
+
+    box-shadow:
+
+    0 15px 28px rgba(34,197,94,.35);
+
+}
+
+
+
+
+
+/* =====================================================
+   PDF BUTTON
+===================================================== */
+
+
+.income-expense-container .pdf-btn{
+
+    padding:12px 22px;
+
+    color:white;
+
+    background:
+
+    linear-gradient(
+        90deg,
+        #dc2626,
+        #ef4444
+    );
+
+}
+
+
+.income-expense-container .pdf-btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+
+
+
+
+/* =====================================================
+   EXCEL BUTTON
+===================================================== */
+
+
+.income-expense-container .excel-btn{
+
+    padding:12px 22px;
+
+    color:white;
+
+    background:
+
+    linear-gradient(
+        90deg,
+        #2563eb,
+        #3b82f6
+    );
+
+}
+
+
+.income-expense-container .excel-btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+
+
+
+
+/* =====================================================
+   ADD BUTTON
+===================================================== */
+
+
+.income-expense-container .add-income-btn{
+
+    margin-top:18px;
+
+    padding:12px 18px;
+
+    width:100%;
+
+    background:
+
+    linear-gradient(
+        90deg,
+        #0ea5e9,
+        #2563eb
+    );
+
+    color:white;
+
+}
+
+
+.income-expense-container
+.add-income-btn:hover{
+
+    transform:translateY(-2px);
+
+}
+
+
+
+
+
+/* =====================================================
+   REMOVE BUTTON
+===================================================== */
+
+
+.income-expense-container .remove-btn{
+
+    width:42px;
+
+    height:42px;
+
+    border-radius:10px;
+
+    background:#ef4444;
+
+    color:white;
+
+    font-size:16px;
+
+}
+
+
+.income-expense-container
+.remove-btn:hover{
+
+    background:#dc2626;
+
+}
+
+
+
+
+
+/* =====================================================
+   TOTAL ROW
+===================================================== */
+
+
+.income-expense-container .total-row{
+
+    margin-top:auto;
+
+    padding-top:20px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    font-size:18px;
+
+    font-weight:800;
+
+    border-top:
+
+    2px solid #dbeafe;
+
+}
+
+
+.income-expense-container
+.report-card:first-child
+.total-row{
+
+    color:#15803d;
+
+}
+
+
+.income-expense-container
+.report-card:nth-child(2)
+.total-row{
+
+    color:#dc2626;
+
+}
+
+
+
+
+
+/* =====================================================
+   KPI
+===================================================== */
+
+
+.income-expense-container .kpi-container{
+
+    display:grid;
+
+    grid-template-columns:
+
+    repeat(auto-fit,minmax(240px,1fr));
+
+    gap:22px;
+
+    margin-top:35px;
+
+}
+
+
+
+
+
+.income-expense-container .kpi-card{
+
+    border-radius:22px;
+
+    padding:26px;
+
+    color:white;
+
+    text-align:center;
+
+    box-shadow:
+
+    0 15px 35px rgba(15,23,42,.12);
+
+    transition:.35s;
+
+}
+
+
+.income-expense-container
+.kpi-card:hover{
+
+    transform:
+
+    translateY(-6px);
+
+}
+
+
+
+
+
+.income-expense-container
+.kpi-card h4{
+
+    font-size:17px;
+
+    margin-bottom:12px;
+
+    color:white;
+
+}
+
+
+
+
+
+.income-expense-container
+.kpi-card p{
+
+    margin:0;
+
+    font-size:28px;
+
+    font-weight:900;
+
+}
+
+
+
+
+
+.income-expense-container .income-bg{
+
+    background:
+
+    linear-gradient(
+        135deg,
+        #16a34a,
+        #22c55e
+    );
+
+}
+
+
+
+
+
+.income-expense-container .expense-bg{
+
+    background:
+
+    linear-gradient(
+        135deg,
+        #dc2626,
+        #ef4444
+    );
+
+}
+
+
+
+
+
+.income-expense-container .profit-bg{
+
+    background:
+
+    linear-gradient(
+        135deg,
+        #2563eb,
+        #3b82f6
+    );
+
+}
+
+
+
+
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+/* ==========================================================
+   MODERN FINANCIAL DASHBOARD
+========================================================== */
+
+.income-expense-container{
+    min-height:100vh;
+    padding:35px;
+    color:#e8eefc;
+
+    background:
+        radial-gradient(circle at top left,#3b82f6 0%,transparent 28%),
+        radial-gradient(circle at top right,#7c3aed 0%,transparent 32%),
+        radial-gradient(circle at bottom left,#10b981 0%,transparent 30%),
+        linear-gradient(135deg,#08111f,#0b1730,#111c3b);
+
+    font-family:"Segoe UI",sans-serif;
+}
+
+/* ========================================================== */
+
+.main-title{
+    text-align:center;
+    font-size:34px;
+    font-weight:800;
+    color:white;
+    margin-bottom:30px;
+    letter-spacing:.5px;
+    text-shadow:0 4px 18px rgba(0,0,0,.4);
+}
+
+/* ========================================================== */
+
+.filter-container{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:25px;
+}
+
+.filter-container select{
+
+    background:rgba(255,255,255,.08);
+    color:white;
+
+    border:1px solid rgba(255,255,255,.15);
+
+    border-radius:12px;
+
+    padding:12px 18px;
+
+    backdrop-filter:blur(12px);
+
+    transition:.3s;
+
+}
+
+.filter-container select:hover{
+
+    border-color:#38bdf8;
+
+    box-shadow:
+    0 0 18px rgba(56,189,248,.35);
+
+}
+
+/* ========================================================== */
+
+.report-grid{
+
+    display:grid;
+
+    grid-template-columns:
+    repeat(auto-fit,minmax(460px,1fr));
+
+    gap:25px;
+
+}
+
+/* ========================================================== */
+
+/* ==========================================================
+   REPORT CARDS
+========================================================== */
+
+.report-card{
+
+    position:relative;
+
+    overflow:hidden;
+
+    border-radius:10px;
+
+    padding:28px;
+
+    backdrop-filter:blur(16px);
+
+    transition:.35s;
+
+    box-shadow:
+    0 18px 40px rgba(0,0,0,.28);
+
+}
+
+/* ===========================
+   INCOME CARD
+=========================== */
+
+.report-card:first-child{
+
+    background:
+    linear-gradient(
+        145deg,
+        #065f46 0%,
+        #047857 45%,
+        #059669 100%
+    );
+
+    border:2px solid #34d399;
+
+    
+
+    box-shadow:
+        0 18px 40px rgba(5,150,105,.35);
+
+}
+/* ===========================
+   EXPENSE CARD
+=========================== */
+
+.report-card:nth-child(2){
+
+    background:
+    linear-gradient(
+        145deg,
+        #371919 0%,
+        #231313 55%,
+        #0e0606 100%
+    );
+
+    border:2px solid #fb7185;
+
+}
+
+.report-card:hover{
+
+    transform:translateY(-8px);
+
+    box-shadow:
+    0 24px 55px rgba(0,0,0,.25);
+
+}
+
+/* ==========================================================
+   TITLES
+========================================================== */
+
+.report-card:first-child .report-title{
+
+    color:#047857;
+
+    border-bottom:2px solid rgba(5,150,105,.25);
+
+}
+
+.report-card:nth-child(2) .report-title{
+
+    color:#b91c1c;
+
+    border-bottom:2px solid rgba(220,38,38,.25);
+
+}
+
+/* ==========================================================
+   SUB HEADINGS
+========================================================== */
+
+.report-card h4{
+
+    color:#334155;
+
+    font-size:17px;
+
+    font-weight:700;
+
+}
+
+/* ==========================================================
+   TABLE ROWS
+========================================================== */
+
+.table-row{
+
+    display:grid;
+
+    grid-template-columns:1fr auto;
+
+    gap:15px;
+
+    align-items:center;
+
+    padding:13px 0;
+
+    border-bottom:1px solid rgba(0,0,0,.08);
+
+}
+
+.table-row:hover{
+
+    background:rgba(255,255,255,.45);
+
+    border-radius:10px;
+
+    padding-left:10px;
+
+}
+
+/* Left Labels */
+
+.table-row span:first-child{
+
+    color:#1e293b;
+
+    font-weight:600;
+
+}
+
+/* Income Values */
+
+.report-card:first-child
+.table-row span:last-child{
+
+    color:#047857;
+
+    font-weight:800;
+
+}
+
+/* Expense Values */
+
+.report-card:nth-child(2)
+.table-row span:last-child{
+
+    color:#b91c1c;
+
+    font-weight:800;
+
+}
+
+/* ==========================================================
+   INPUTS
+========================================================== */
+
+.table-row input{
+
+    width:150px;
+
+    padding:10px 14px;
+
+    border-radius:10px;
+
+    border:1px solid #cbd5e1;
+
+    background:white;
+
+    color:#0f172a;
+
+    font-weight:700;
+
+}
+
+.table-row input:focus{
+
+    outline:none;
+
+    border-color:#2563eb;
+
+    box-shadow:
+    0 0 0 4px rgba(37,99,235,.15);
+
+}
+
+/* ==========================================================
+   TOTAL ROW
+========================================================== */
+
+.report-card:first-child .total-row{
+
+    border-top:2px solid #6ee7b7;
+
+    color:#047857;
+
+}
+
+.report-card:nth-child(2) .total-row{
+
+    border-top:2px solid #fca5a5;
+
+    color:#b91c1c;
+
+}
+
+.total-row{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-top:20px;
+
+    padding-top:18px;
+
+    font-size:19px;
+
+    font-weight:800;
+
+}
+
+.table-row:hover{
+
+padding-left:10px;
+
+background:
+rgba(255,255,255,.03);
+
+border-radius:10px;
+
+}
+
+.table-row span:first-child{
+
+color:#b9c8ef;
+
+}
+
+.table-row span:last-child{
+
+font-weight:700;
+
+color:white;
+
+}
+
+/* ========================================================== */
+
+.table-row input{
+
+width:150px;
+
+padding:11px 14px;
+
+border-radius:10px;
+
+border:
+1px solid rgba(255,255,255,.12);
+
+background:
+rgba(255,255,255,.06);
+
+color:white;
+
+font-size:15px;
+
+text-align:right;
+
+transition:.3s;
+
+}
+
+.table-row input::placeholder{
+
+color:#8ca2d7;
+
+}
+
+.table-row input:focus{
+
+outline:none;
+
+border-color:#38bdf8;
+
+background:
+rgba(255,255,255,.1);
+
+box-shadow:
+0 0 20px rgba(56,189,248,.35);
+
+}
+
+/* ========================================================== */
+
+.total-row{
+
+margin-top:20px;
+
+display:flex;
+
+justify-content:space-between;
+
+padding-top:16px;
+
+border-top:
+2px solid rgba(255,255,255,.12);
+
+font-size:18px;
+
+font-weight:800;
+
+color:white;
+
+}
+
+/* ========================================================== */
+
+.kpi-container{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(260px,1fr));
+
+gap:22px;
+
+margin-top:35px;
+
+}
+
+.kpi-card{
+
+padding:28px;
+
+border-radius:24px;
+
+color:white;
+
+text-align:center;
+
+transition:.35s;
+
+box-shadow:
+0 20px 45px rgba(0,0,0,.35);
+
+}
+
+.kpi-card:hover{
+
+transform:translateY(-8px);
+
+}
+
+.kpi-card h4{
+
+font-size:18px;
+
+margin-bottom:10px;
+
+font-weight:600;
+
+opacity:.9;
+
+}
+
+.kpi-card p{
+
+font-size:34px;
+
+font-weight:800;
+
+margin-top:8px;
+
+}
+
+/* ========================================================== */
+
+.income-bg{
+
+background:
+linear-gradient(
+135deg,
+#10b981,
+#22c55e,
+#34d399
+);
+
+}
+
+.expense-bg{
+
+background:
+linear-gradient(
+135deg,
+#ef4444,
+#dc2626,
+#f97316
+);
+
+}
+
+.profit-bg{
+
+background:
+linear-gradient(
+135deg,
+#3b82f6,
+#6366f1,
+#8b5cf6
+);
+
+}
+
+/* ========================================================== */
+
+button{
+
+padding:11px 18px;
+
+border:none;
+
+border-radius:12px;
+
+cursor:pointer;
+
+font-weight:700;
+
+transition:.3s;
+
+color:white;
+
+}
+
+/* Save */
+
+button:nth-child(1){
+
+background:
+linear-gradient(135deg,#10b981,#059669);
+
+}
+
+/* PDF */
+
+button:nth-child(2){
+
+background:
+linear-gradient(135deg,#ef4444,#dc2626);
+
+}
+
+/* Excel */
+
+button:nth-child(3){
+
+background:
+linear-gradient(135deg,#2563eb,#4f46e5);
+
+}
+
+button:hover{
+
+transform:translateY(-3px);
+
+filter:brightness(1.05);
+
+}
+
+/* ========================================================== */
+
+.recharts-wrapper{
+
+background:
+rgba(18,28,52,.72);
+
+border-radius:24px;
+
+padding:18px;
+
+box-shadow:
+0 15px 40px rgba(0,0,0,.3);
+
+border:
+1px solid rgba(255,255,255,.08);
+
+margin-bottom:30px;
+
+}
+
+/* ========================================================== */
+
+::-webkit-scrollbar{
+
+width:10px;
+
+}
+
+::-webkit-scrollbar-track{
+
+background:#08111f;
+
+}
+
+::-webkit-scrollbar-thumb{
+
+background:#4f46e5;
+
+border-radius:20px;
+
+}
+
+::-webkit-scrollbar-thumb:hover{
+
+background:#6366f1;
+
+}
+
+/* ========================================================== */
+
+@media(max-width:900px){
+
+.income-expense-container{
+
+padding:20px;
+
+}
+
+.report-grid{
+
+grid-template-columns:1fr;
+
+}
+
+.main-title{
+
+font-size:28px;
+
+}
+
+.table-row{
+
+grid-template-columns:1fr;
+
+}
+
+.table-row input{
+
+width:100%;
+
+}
+
+}
+

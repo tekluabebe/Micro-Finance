@@ -3,7 +3,7 @@
    ========================================================================== */
 .loan-payment-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  background: linear-gradient(135deg, #7393ce 0%, #cfdef3 100%);
   display: block; 
   padding: 40px 30px;
   padding-top: 95px; /* ከቋሚ ናቭባሩ በታች በቂ ክፍተት እንዲኖር */

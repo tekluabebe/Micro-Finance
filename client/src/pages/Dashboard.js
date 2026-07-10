@@ -2,13 +2,28 @@ import React, { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import API from "../services/api";
 
+
 export default function Dashboard() {
+const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
+const isMember = userRole === "member";
+const [passwordRequests, setPasswordRequests] = useState([]);
+const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
 
   const [withdrawals, setWithdrawals] = useState([]);
   const [loans, setLoans] = useState([]);
 
   const [openWithdrawals, setOpenWithdrawals] = useState(false);
   const [openLoans, setOpenLoans] = useState(false);
+  const [notifFilter, setNotifFilter] = useState("all"); 
+  const [darkMode, setDarkMode] = useState(true);
+const user = JSON.parse(localStorage.getItem("user"));
+
+console.log(user.fullName);
+
+const fullName =
+  `${user.firstName || ""} ${user.lastName || ""}`;
+
+
 
   // =========================
   // FILTERS
@@ -40,18 +55,25 @@ export default function Dashboard() {
     "July", "August", "September", "October", "November", "December"
   ];
 
+  
   // =========================
   // LOAD NOTIFICATIONS
   // =========================
-  useEffect(() => {
-    API.get("/withdrawals")
-      .then((res) => setWithdrawals(res.data || []))
-      .catch(() => setWithdrawals([]));
+useEffect(() => {
+  API.get("/withdrawals")
+    .then((res) => setWithdrawals(res.data || []))
+    .catch(() => setWithdrawals([]));
 
-    API.get("/loans")
-      .then((res) => setLoans(res.data || []))
-      .catch(() => setLoans([]));
-  }, []);
+  API.get("/loans")
+    .then((res) => setLoans(res.data || []))
+    .catch(() => setLoans([]));
+
+  API.get("/password-reset-request")
+    .then((res) => setPasswordRequests(res.data || []))
+    .catch(() => setPasswordRequests([]));
+
+},  []);
+
 
   // =========================
   // FETCH DASHBOARD STATS
@@ -107,8 +129,26 @@ export default function Dashboard() {
   // =========================
   // NOTIFICATION COUNTS
   // =========================
-  const unreadWithdrawals = withdrawals.filter((w) => w.isRead !== true).length;
-  const unreadLoans = loans.filter((l) => l.isRead !== true).length;
+ const unreadWithdrawals = withdrawals.filter(
+  (w) =>
+    w.isRead !== true &&
+    w.status !== "approved" &&
+    w.status !== "rejected"
+).length;
+
+const unreadLoans = loans.filter(
+  (l) =>
+    l.isRead !== true &&
+    l.status !== "approved" &&
+    l.status !== "rejected"
+).length;
+
+const unreadPasswordRequests = passwordRequests.filter(
+  (p) =>
+    p.isRead !== true &&
+    p.status !== "approved" &&
+    p.status !== "rejected"
+).length;
 
   const markAsRead = async (type, id) => {
     await API.put(`/${type}/${id}/read`);
@@ -119,29 +159,229 @@ export default function Dashboard() {
     }
   };
 
-  const handleApprove = async (type, id) => {
-    try {
-      await API.put(`/${type}/${id}/approve`);
-      if (type === "loans") {
-        setLoans((prev) => prev.filter((l) => l._id !== id));
-        setStats((prev) => ({ ...prev, activeLoans: prev.activeLoans + 1 }));
-      }
-    } catch (err) {
-      console.error("Approve error:", err);
-    }
-  };
+  const markAllPasswordRequestsRead = async () => {
+  try {
 
-  const handleReject = async (type, id) => {
-    try {
-      await API.put(`/${type}/${id}/reject`);
-      if (type === "loans") {
-        setLoans((prev) => prev.filter((l) => l._id !== id));
-      }
-    } catch (err) {
-      console.error("Reject error:", err);
-    }
-  };
+    await Promise.all(
+      passwordRequests
+        .filter((p) => !p.isRead)
+        .map((p) =>
+          API.put(
+            `/password-reset-request/${p._id}/read`
+          )
+        )
+    );
 
+setPasswordRequests([]);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
+const handleApprove = async (type, id) => {
+  try {
+    await API.put(`/${type}/${id}/approve`);
+
+    if (type === "withdrawals") {
+      const withdrawal = withdrawals.find(
+        (w) => w._id === id
+      );
+
+      if (!withdrawal) return;
+
+      const employeeId =
+        withdrawal.employeeId?._id ||
+        withdrawal.employeeId;
+
+      console.log(
+        "Terminate URL:",
+        `/employees/${employeeId}/terminate`
+      );
+
+      await API.put(
+        `/employees/${employeeId}/terminate`
+      );
+
+      setWithdrawals((prev) =>
+        prev.filter((w) => w._id !== id)
+      );
+    }
+
+    if (type === "loans") {
+      setLoans((prev) =>
+        prev.filter((l) => l._id !== id)
+      );
+    }
+
+  } catch (err) {
+    console.error(
+      "Approve Error:",
+      err.response?.data || err.message
+    );
+  }
+};
+    // =========================
+    // LOANS
+    // =========================
+  
+
+const handleReject = async (type, id) => {
+  try {
+    await API.put(`/${type}/${id}/reject`);
+
+    if (type === "withdrawals") {
+      setWithdrawals(prev => prev.filter(w => w._id !== id));
+    }
+
+    if (type === "loans") {
+      setLoans(prev => prev.filter(l => l._id !== id));
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+  const markPasswordResetRead = async (id) => {
+  try {
+    await API.put(
+      `/password-reset-request/${id}/read`
+    );
+
+    setPasswordRequests(prev =>
+  prev.filter(
+    p => p._id !== id
+  )
+);
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+const approvePasswordReset = async (id) => {
+  const newPassword = prompt(
+    "Enter temporary password"
+  );
+
+  if (!newPassword) return;
+
+  try {
+    await API.put(
+      `/password-reset-request/${id}/approve`,
+      { newPassword }
+    );
+
+    setPasswordRequests((prev) =>
+      prev.filter((p) => p._id !== id)
+    );
+
+    alert("Password reset successful");
+
+  } catch (err) {
+    alert(
+      err.response?.data?.message ||
+      "Password reset failed"
+    );
+  }
+};
+const rejectPasswordReset = async (id) => {
+  try {
+    await API.put(
+      `/password-reset-request/${id}/reject`
+    );
+
+    setPasswordRequests((prev) =>
+      prev.filter((p) => p._id !== id)
+    );
+
+  } catch (err) {
+    alert(
+      err.response?.data?.message ||
+      "Reject failed"
+    );
+  }
+};
+
+const renderPasswordRequests = () => {
+
+  const pending = passwordRequests.filter(
+    p =>
+      p.status !== "approved" &&
+      p.status !== "rejected"
+  );
+
+  if (!pending.length) {
+    return (
+      <p style={styles.empty}>
+        No password reset requests
+      </p>
+    );
+  }
+
+  return pending.map(item => (
+
+    <div
+      key={item._id}
+      style={styles.notificationCard}
+    >
+      <div style={styles.notificationIcon}>
+        🔑
+      </div>
+
+      <div style={{ flex: 1 }}>
+        <strong>
+          Password Reset Request
+        </strong>
+
+        <p style={styles.notificationText}>
+          Member ID: {item.memberId}
+        </p>
+
+        <p style={styles.notificationText}>
+          {item.fullName}
+        </p>
+
+        <p style={styles.notificationTime}>
+          Password reset requested
+        </p>
+      </div>
+
+      <div style={styles.actions}>
+
+        <button
+          style={styles.readBtn}
+          onClick={() =>
+            markPasswordResetRead(item._id)
+          }
+        >
+          👁
+        </button>
+
+        <button
+          style={styles.approve}
+          onClick={() =>
+            approvePasswordReset(item._id)
+          }
+        >
+          ✔
+        </button>
+
+        <button
+          style={styles.reject}
+          onClick={() =>
+            rejectPasswordReset(item._id)
+          }
+        >
+          ✖
+        </button>
+
+      </div>
+    </div>
+  ));
+};
   const renderNotifications = (items, type) => {
     const unreadItems = items.filter((i) => i.isRead !== true && i.status !== "Rejected");
     if (!unreadItems.length) return <p style={styles.empty}>No notifications</p>;
@@ -182,7 +422,6 @@ export default function Dashboard() {
           )}
         </div>
         <div style={styles.actions}>
-          <button onClick={() => markAsRead(type, item._id)} style={styles.readBtn}>✔</button>
           <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
           <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
         </div>
@@ -191,102 +430,235 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="dashboard-main-container" style={styles.container}>
-
+<div
+  className={`dashboard-main-container ${
+    darkMode ? "dark-dashboard" : "light-dashboard"
+  }`}
+>     
       {/* ================= 🛠️ ራስጌ (Header) ================= */}
       <div className="dashboard-header-block" style={styles.dashboardHeader}>
-        <h2 className="dashboard-title-text" style={styles.title}>Micro-finance Dashboard</h2>
+<div className="welcome-section">
+  <div className="welcome-left">
+    <h1 className="welcome-title">
+      👋 Welcome to Micro-finance Dashboard
+    </h1>
+
+    
+  </div>
+
+  <div className="user-profile-box">
+  <img
+    src="/avator.jpg"
+    alt="User Avatar"
+    className="user-avatar"
+  />
+
+  <div>
+   
+    <h3>{fullName}</h3>
+    <span>{userRole}</span>
+  </div>
+</div>
+</div>
 
         <div className="dashboard-right-controls" style={styles.headerRightSection}>
-          <div style={styles.topBar}>
-            <div style={styles.notifItem} onClick={() => setOpenWithdrawals(!openWithdrawals)}>
-              🔔 Withdrawals {unreadWithdrawals > 0 && <span style={styles.badge}>{unreadWithdrawals}</span>}
-            </div>
-            <div style={styles.notifItem} onClick={() => setOpenLoans(!openLoans)}>
-              💰 Loans {unreadLoans > 0 && <span style={styles.badge}>{unreadLoans}</span>}
-            </div>
-          </div>
+        
+       {!isMember && (
+  <div style={styles.topBar}>
+    <div
+  className="notifItem"
+  onClick={() => setOpenWithdrawals(!openWithdrawals)}
+>
+      🔔 Withdrawals
+      {unreadWithdrawals > 0 && (
+       <span className="badge">
+          {unreadWithdrawals}
+        </span>
+      )}
+    </div>
+
+    <div
+      className="notifItem"
+      onClick={() => setOpenLoans(!openLoans)}
+    >
+      💰 Loans
+      {unreadLoans > 0 && (
+        <span className="badge">
+          {unreadLoans}
+        </span>
+      )}
+    </div>
+
+    <div
+      className="notifItem"
+      onClick={() =>
+        setOpenPasswordRequests(!openPasswordRequests)
+      }
+    >
+      🔑 Password Reset
+
+      {unreadPasswordRequests > 0 && (
+        <span className="badge">
+          {unreadPasswordRequests}
+        </span>
+      )}
+    </div>
+     
+  </div>
+)}
+
 
           <div style={styles.filterBar}>
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={styles.selectInput}>
+            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="selectInput">
               {months.map((m) => <option key={m}>{m}</option>)}
             </select>
 
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} style={styles.selectInput}>
+            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="selectInput">
               {Array.from({ length: 10 }, (_, i) => {
                 const y = new Date().getFullYear() - i;
                 return <option key={y}>{y}</option>;
               })}
             </select>
+             <div className={darkMode ? "dark-dashboard" : "light-dashboard"}>
+            <button
+  onClick={() => setDarkMode(!darkMode)}
+  className="theme-toggle"
+>
+  {darkMode ? "☀️ Light" : "🌙 Dark"}
+</button> </div>
           </div>
         </div>
       </div>
 
       {/* ================= DROPDOWNS ================= */}
-      {openWithdrawals && (
+      {!isMember && openWithdrawals && (
         <div className="dashboard-notif-dropdown" style={styles.dropdown}>
           {renderNotifications(withdrawals, "withdrawals")}
         </div>
       )}
 
-      {openLoans && (
+      {!isMember && openLoans && (
         <div className="dashboard-notif-dropdown" style={{ ...styles.dropdown, right: openWithdrawals ? 20 : "auto" }}>
           {renderNotifications(loans, "loans")}
         </div>
       )}
+  {!isMember && openPasswordRequests && (
+  <div style={styles.notificationPanel}>
+    <div style={styles.notificationHeader}>
+      <h4 style={{ margin: 0 }}>Notifications</h4>
 
+      <span
+        style={styles.markAll}
+        onClick={markAllPasswordRequestsRead}
+      >
+        Mark all as read
+      </span>
+    </div>
+
+    <div style={styles.notificationTabs}>
+  <button
+    onClick={() => setNotifFilter("all")}
+    style={notifFilter === "all" ? styles.activeTab : styles.tab}
+  >
+    All
+  </button>
+
+  <button
+    onClick={() => setNotifFilter("unread")}
+    style={notifFilter === "unread" ? styles.activeTab : styles.tab}
+  >
+    Unread
+  </button>
+
+  <button
+    onClick={() => setNotifFilter("seen")}
+    style={notifFilter === "seen" ? styles.activeTab : styles.tab}
+  >
+    Seen
+  </button>
+</div>
+
+    <div style={styles.notificationList}>
+      {renderPasswordRequests()}
+    </div>
+  </div>
+)}
       {/* ================= CARDS ================= */}
-      <div className="dashboard-cards-grid" style={styles.cardContainer}>
-        <DashboardCard title="Employees" value={stats.employees} />
-        <DashboardCard title="Total Savings" value={`${stats.totalSavings} ETB`} />
-        <DashboardCard title="Active Loans" value={stats.activeLoans} />
-        <DashboardCard title={`Deposits (${selectedMonth})`} value={`${stats.monthlyDeposits} ETB`} />
-        <DashboardCard title="Registration Fees" value={`${stats.totalRegistrationFees} ETB`} />
-        <DashboardCard title="Late Penalties" value={`${stats.totalLatePenalties} ETB`} />
-      </div>
+      {/* ================= DASHBOARD STATS ================= */}
 
+<div className="stats-grid">
+
+  <DashboardCard
+    title="Employees"
+    value={stats.employees}
+    icon="👥"
+  />
+
+  <DashboardCard
+    title="Total Savings"
+    value={`${stats.totalSavings} ETB`}
+    icon="💰"
+  />
+
+  <DashboardCard
+    title="Active Loans"
+    value={stats.activeLoans}
+    icon="🏦"
+  />
+
+  <DashboardCard
+    title={`Deposits (${selectedMonth})`}
+    value={`${stats.monthlyDeposits} ETB`}
+    icon="📈"
+  />
+
+  <DashboardCard
+    title="Registration Fees"
+    value={`${stats.totalRegistrationFees} ETB`}
+    icon="📝"
+  />
+
+  <DashboardCard
+    title="Late Penalties"
+    value={`${stats.totalLatePenalties} ETB`}
+    icon="⚠️"
+  />
+
+</div>
+
+{/* ================= ANALYTICS ================= */}
+
+<div className="analytics-grid">
+
+  <div className="analytics-card analytics-large">
+    <div className="card-header">
+      <h3>Savings Analytics</h3>
+      <span>Current Year</span>
+    </div>
+
+    <div className="fake-chart">
+      <div className="line-chart"></div>
+    </div>
+  </div>
+
+  <div className="analytics-card">
+    <div className="card-header">
+      <h3>Loan Distribution</h3>
+    </div>
+
+    <div className="bars">
+      <span style={{height:"70%"}}></span>
+      <span style={{height:"90%"}}></span>
+      <span style={{height:"60%"}}></span>
+      <span style={{height:"95%"}}></span>
+      <span style={{height:"80%"}}></span>
+      <span style={{height:"100%"}}></span>
+    </div>
+  </div>
+
+</div>
       {/* ================= 📱 የሞባይል ማስተካከያ (CSS Media Queries) ================= */}
-      <style>
-        {`
-          @media (max-width: 768px) {
-            .dashboard-main-container {
-              padding: 10px 15px !important;
-            }
-            .dashboard-header-block {
-              flex-direction: column !important;
-              align-items: flex-start !important;
-              gap: 15px !important;
-              margin-bottom: 20px !important;
-            }
-            .dashboard-title-text {
-              font-size: 20px !important;
-              text-align: left !important;
-              width: 100%;
-            }
-            .dashboard-right-controls {
-              align-items: flex-start !important;
-              width: 100%;
-              gap: 10px !important;
-            }
-            .dashboard-cards-grid {
-              grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
-              gap: 15px !important;
-            }
-            .dashboard-notif-dropdown {
-              width: calc(100% - 30px) !important;
-              right: 15px !important;
-              left: 15px !important;
-              box-sizing: border-box !important;
-              top: 145px !important;
-            }
-          }
-          @media (max-width: 480px) {
-            .dashboard-cards-grid {
-              grid-template-columns: 1fr !important; /* በጣም ጠባብ ስክሪን ላይ 1 ረድፍ ብቻ ይሆናሉ */
-            }
-          }
-        `}
-      </style>
+    
     </div>
   );
 }
@@ -295,28 +667,24 @@ export default function Dashboard() {
 // 🛠️ ቋሚ ስታይሎች
 // =========================
 const styles = {
-  container: {
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "10px 20px",
-    position: "relative"
-  },
-  dashboardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "30px",
-    borderBottom: "1px solid #e2e8f0",
-    paddingBottom: "15px",
-    flexWrap: "wrap",
-    gap: "15px"
-  },
-  title: { 
-    color: "#3498db", 
-    margin: 0,
-    fontWeight: "bold",
-    fontSize: "26px"
-  },
+
+  
+
+ dashboardHeader: {
+  background:
+    "linear-gradient(135deg,#1e3a8a,#4f46e5)",
+  padding: "25px 30px",
+  borderRadius: "24px",
+  boxShadow:
+    "0 15px 40px rgba(79,70,229,.25)",
+  marginBottom: "30px"
+},
+ title: {
+  color: "#fff",
+  fontSize: "32px",
+  fontWeight: "800",
+  letterSpacing: ".5px"
+},
   headerRightSection: {
     display: "flex",
     flexDirection: "column",
@@ -324,8 +692,7 @@ const styles = {
     gap: "8px"
   },
   topBar: { display: "flex", gap: 15 },
-  notifItem: { position: "relative", cursor: "pointer", padding: "8px 12px", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: 8, fontWeight: "bold", fontSize: "14px", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
-  badge: { position: "absolute", top: -6, right: -10, background: "red", color: "#fff", borderRadius: "50%", padding: "2px 6px", fontSize: 11, fontWeight: "bold" },
+
   filterBar: { display: "flex", gap: 10, alignItems: "center" },
   selectInput: {
     padding: "6px 10px",
@@ -363,4 +730,104 @@ const styles = {
   },
   empty: { textAlign: "center", color: "#888", fontSize: "13px" },
   text: { margin: "2px 0", fontSize: "12px", color: "#666" },
+
+  
+
+ notificationPanel: {
+  position: "absolute",
+  top: 90,
+  right: 20,
+  width: 430,
+  maxHeight: 600,
+  overflowY: "auto",
+
+  backdropFilter: "blur(20px)",
+
+  background:
+    "rgba(255,255,255,.85)",
+
+  border:
+    "1px solid rgba(255,255,255,.4)",
+
+  borderRadius: "24px",
+
+  boxShadow:
+    "0 25px 50px rgba(0,0,0,.15)",
+
+  zIndex: 9999
+},
+
+notificationHeader: {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "15px",
+  borderBottom: "1px solid #eee"
+},
+
+markAll: {
+  color: "#4f46e5",
+  cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: 600
+},
+
+notificationTabs: {
+  padding: "10px 15px"
+},
+
+activeTab: {
+  background: "#4f46e5",
+  color: "#fff",
+  border: "none",
+  padding: "8px 18px",
+  borderRadius: "8px",
+  cursor: "pointer"
+},
+
+notificationList: {
+  padding: "10px"
+},
+
+notificationCard: {
+  display: "flex",
+  gap: "12px",
+  padding: "15px",
+  borderBottom: "1px solid #eee",
+  alignItems: "flex-start"
+},
+
+notificationIcon: {
+  width: "45px",
+  height: "45px",
+  borderRadius: "50%",
+  background: "#f3f4f6",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "20px"
+},
+
+
+
+notificationText: {
+  margin: "4px 0",
+  fontSize: "13px",
+  color: "#555"
+},
+
+notificationTime: {
+  marginTop: "6px",
+  fontSize: "12px",
+  color: "#999"
+},
+tab: {
+  background: "#f1f5f9",
+  color: "#333",
+  border: "none",
+  padding: "8px 18px",
+  borderRadius: "8px",
+  cursor: "pointer",
+  marginRight: "8px"
+},
 };

@@ -2,8 +2,11 @@ import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { FaUserMinus, FaListUl, FaMoneyCheckAlt } from "react-icons/fa";
+import './withdrawals.css';
 
 export default function Withdrawals() {
+  const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
+  const isMember = userRole === "member";
   const [employees, setEmployees] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loans, setLoans] = useState([]); 
@@ -15,6 +18,14 @@ export default function Withdrawals() {
     totalSaving: "",
     reason: "",
   });
+
+ // const userRole =
+  //localStorage.getItem("userRole")?.toLowerCase() || "member";
+
+//const isMember = userRole === "member";
+
+const loggedInMemberId =
+  localStorage.getItem("memberId");
 
   // =======================
   // LOAD DATA
@@ -36,6 +47,30 @@ export default function Withdrawals() {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+  if (
+    isMember &&
+    loggedInMemberId &&
+    employees.length > 0
+  ) {
+    const employee = employees.find(
+      (emp) =>
+        String(emp.memberId) === String(loggedInMemberId)
+    );
+
+    if (employee) {
+      const total = calculateSaving(employee._id);
+
+      setData({
+        employeeId: employee._id,
+        fullName: `${employee.firstName} ${employee.lastName}`,
+        totalSaving: total,
+        reason: "",
+      });
+    }
+  }
+}, [employees, deposits]);
 
   // =======================
   // CHECK ACTIVE LOAN
@@ -110,21 +145,18 @@ export default function Withdrawals() {
     try {
       const emp = employees.find((e) => e._id === data.employeeId);
 
-      await API.post("/terminated", {
-        employeeData: emp,
-        totalSaving: data.totalSaving,
-        reason: data.reason,
-      });
+    
 
-      await API.post("/withdrawals", {
-        employeeId: data.employeeId,
-        fullName: data.fullName,
-        totalSaving: data.totalSaving,
-        reason: data.reason,
-        isRead: false,
-      });
+  await API.post("/withdrawals", {
+  employeeId: data.employeeId,
+  fullName: data.fullName,
+  totalSaving: data.totalSaving,
+  reason: data.reason,
+  status: "pending",
+  isRead: false,
+});
 
-      await API.delete(`/employees/${data.employeeId}`);
+      //await API.delete(`/employees/${data.employeeId}`);
 
       alert("Employee moved to terminated list ✅");
 
@@ -149,40 +181,72 @@ export default function Withdrawals() {
     <div className="withdraw-container">
       <div className="withdraw-card">
         
-        <div className="top-bar">
-          <button
-            onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
-            className="view-btn"
-          >
-            <FaListUl /> View Terminated
-          </button>
-        </div>
+       {!isMember && (
+  <div className="top-bar">
+    <button
+      onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
+      className="view-btn"
+    >
+      <FaListUl /> View Terminated
+    </button>
+  </div>
+)}
 
         <h2 className="withdraw-title">
-          <FaUserMinus color="#8e44ad" /> Member Withdrawal
+          <FaUserMinus color="#8e44ad" /> 
+          Leave Request Form/የመውጫ ፎርም
         </h2>
 
         {/* EMPLOYEE */}
-        <div className="input-field-group">
-          <label className="field-label">Select Employee *</label>
-          <select
-            name="employeeId"
-            value={data.employeeId}
-            onChange={handleChange}
-            className="modern-select"
+      <div className="input-field-group">
+  <label className="field-label">
+    Select Employee 
+  </label>
+
+  <select
+    name="employeeId"
+    value={data.employeeId}
+    onChange={handleChange}
+    className="modern-select"
+    disabled={isMember}
+  >
+    {!isMember ? (
+      <>
+        <option value="">
+          Choose an employee...
+        </option>
+
+        {employees.map((emp) => (
+          <option
+            key={emp._id}
+            value={emp._id}
           >
-            <option value="">Choose an employee...</option>
-            {employees.map((emp) => (
-              <option
-                key={emp._id}
-                value={emp._id}
-              >
-                {emp.memberId} - {emp.firstName} {emp.lastName}
-                {hasActiveLoan(emp._id) ? " (Active Loan ❌)" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
+            {emp.memberId} - {emp.firstName}{" "}
+            {emp.lastName}
+            {hasActiveLoan(emp._id)
+              ? " (Active Loan ❌)"
+              : ""}
+          </option>
+        ))}
+      </>
+    ) : (
+      employees
+        .filter(
+          (emp) =>
+            String(emp.memberId) ===
+            String(loggedInMemberId)
+        )
+        .map((emp) => (
+          <option
+            key={emp._id}
+            value={emp._id}
+          >
+            {emp.firstName} {emp.lastName}
+          </option>
+        ))
+    )}
+  </select>
+</div>
 
         {/* FULL NAME */}
         <div className="input-field-group">
@@ -223,202 +287,7 @@ export default function Withdrawals() {
 
       </div>
 
-      <style>
-        {`
-          .withdraw-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #f4f7fb;
-            padding: 20px;
-            box-sizing: border-box;
-            padding-top: 10px; /* ወደ ላይ ስፋቱ እንዲጨምር እና ከቶፕባር ጋር እንዳይጋጭ */
-            padding-bottom: 40px;
-          }
-
-          /* 🛠️ እዚህ ጋ ነው ሳጥኑ ሰፊ የተደረገው እና የውስጥ ፓዲንጉ የቀነሰው */
-          .withdraw-card {
-            background: #fff;
-            padding: 20px 25px; /* የውስጥ ክፍተት (Padding) አነስ ተደርጓል */
-            width: 100%;
-            max-width: 800px; /* ወደ ጎን በደንብ እንዲሰፋ (ከ 540px ወደ 680px አድጓል) */
-            min-height: 700px; /* ወደ ላይ ቁመቱ እንዲጨምር ተደርጓል */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
-            border: 1px solid rgba(128,128,128,0.08);
-            box-sizing: border-box;
-          }
-
-          .withdraw-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            color: #2c3e50;
-            font-size: 24px;
-            margin-top: 0;
-          }
-
-          .top-bar {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 10px;
-          }
-
-          .view-btn {
-            padding: 10px 16px;
-            background: #2ecc71;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-          }
-
-          .view-btn:hover {
-            background: #27ae60;
-            transform: translateY(-1px);
-          }
-
-          .input-field-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-bottom: 14px;
-            width: 100%;
-          }
-
-          .field-label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #64748b;
-          }
-
-          .modern-input,
-          .modern-select,
-          .modern-textarea {
-            width: 100%;
-            padding: 11px 14px;
-            border-radius: 10px;
-            border: 1.5px solid #e2e8f0;
-            font-size: 14px;
-            color: #334155;
-            background-color: #fff;
-            outline: none;
-            box-sizing: border-box;
-            transition: all 0.2s ease;
-          }
-
-          .modern-input:focus,
-          .modern-select:focus,
-          .modern-textarea:focus {
-            border-color: #8e44ad;
-            box-shadow: 0 0 0 3px rgba(142,68,173,0.15);
-          }
-
-          .readonly {
-            background-color: #f8fafc;
-            color: #64748b;
-            cursor: not-allowed;
-          }
-
-          .info.success {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #f5f3ff;
-            border: 1px solid #ddd6fe;
-            border-radius: 10px;
-            margin-bottom: 16px;
-            box-sizing: border-box;
-          }
-
-          .info-icon-title {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #6d28d9;
-            font-size: 14px;
-            font-weight: 500;
-          }
-
-          .amount-highlight {
-            font-size: 16px;
-            color: #5b21b6;
-          }
-
-          .modern-textarea {
-            min-height: 100px; /* ቴክስት ኤሪያው ወደ ላይ ሰፋ እንዲል */
-            resize: vertical;
-          }
-
-          .withdraw-btn {
-            width: 100%;
-            padding: 14px;
-            background: #8e44ad;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px rgba(142, 68, 173, 0.2);
-          }
-
-          .withdraw-btn:hover {
-            background: #732d91;
-            transform: translateY(-1px);
-          }
-
-          /* ==========================================================================
-             MOBILE RESPONSIVE QUERIES
-             ========================================================================== */
-          @media (max-width: 768px) {
-            .withdraw-container {
-              padding: 12px;
-              padding-top: 85px;
-            }
-
-            .withdraw-card {
-              padding: 20px 15px;
-              max-width: 100%;
-              min-height: auto;
-            }
-
-            .top-bar {
-              margin-bottom: 12px;
-            }
-
-            .view-btn {
-              width: 100%;
-              justify-content: center;
-              padding: 12px;
-            }
-
-            .info.success {
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 6px;
-            }
-
-            .amount-highlight {
-              align-self: flex-end;
-            }
-          }
-        `}
-      </style>
+    
     </div>
   );
 }

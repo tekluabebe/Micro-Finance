@@ -1,107 +1,259 @@
+/* ==========================================
+   LOGIN PAGE
+========================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
 .login-container {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f0f2f5;
+  background:
+    linear-gradient(
+      135deg,
+      #0f172a,
+      #1e293b,
+      #334155
+    );
+  padding: 20px;
 }
 
 .login-card {
-  background: white;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   width: 100%;
-  max-width: 400px;
-  text-align: center;
+  max-width: 450px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow:
+    0 20px 40px rgba(0,0,0,0.15),
+    0 10px 20px rgba(0,0,0,0.08);
+  animation: fadeIn 0.5s ease;
 }
+
+.login-card h2 {
+  text-align: center;
+  color: #1e293b;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 30px;
+}
+
+/* ==========================================
+   ROLE SELECTOR
+========================================== */
 
 .role-selector {
   display: flex;
-  margin-bottom: 25px;
-  background: #eee;
-  border-radius: 8px;
+  background: #f1f5f9;
   padding: 5px;
+  color: #1e293b;
+  border-radius: 14px;
+  margin-bottom: 25px;
 }
 
 .role-selector button {
   flex: 1;
   border: none;
-  padding: 10px;
-  cursor: pointer;
-  border-radius: 6px;
   background: transparent;
+  padding: 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
   transition: 0.3s;
+  color: #8d163c;
 }
 
 .role-selector button.active {
-  background: #1abc9c;
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #1d4ed8
+  );
   color: white;
-  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.25);
 }
 
+/* ==========================================
+   INPUTS
+========================================== */
+
 .input-group {
-  text-align: left;
-  margin-bottom: 15px;
+  margin-bottom: 18px;
 }
 
 .input-group label {
   display: block;
-  margin-bottom: 5px;
-  color: #555;
+  margin-bottom: 8px;
+  color: #334155;
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .input-group input {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-sizing: border-box;
+  height: 55px;
+  padding: 0 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  font-size: 15px;
+  transition: all 0.3s ease;
 }
+
+.input-group input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.15);
+}
+
+/* ==========================================
+   LOGIN BUTTON
+========================================== */
 
 .login-btn {
   width: 100%;
-  padding: 12px;
-  background: #2c3e50;
-  color: white;
+  height: 55px;
   border: none;
-  border-radius: 6px;
+  border-radius: 14px;
+  background:
+    linear-gradient(
+      135deg,
+      #2563eb,
+      #1d4ed8
+    );
+  color: white;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  margin-top: 10px;
+  transition: 0.3s;
+  margin-top: 8px;
 }
 
-.login-btn:hover { background: #34495e; }
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(37,99,235,0.25);
+}
 
-.error-msg { color: red; font-size: 14px; margin-top: 10px; }
+.login-btn:active {
+  transform: translateY(0);
+}
 
-/* --- ለሞባይል ስልኮች የሚሆን ማስተካከያ (Responsive Media Query) --- */
-@media (max-width: 480px) {
-  .login-container {
-    padding: 15px; /* በስልኩ ስክሪን ዙሪያ ያለውን ክፍተት በመጠበቅ ካርዱ ከስክሪኑ እንዳይወጣ ይረዳል */
-  }
+/* ==========================================
+   FORGOT PASSWORD
+========================================== */
 
+.forgot-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  margin-top: 15px;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.forgot-btn:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+/* ==========================================
+   ERROR MESSAGE
+========================================== */
+
+.error-msg {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ==========================================
+   MOBILE
+========================================== */
+
+@media (max-width: 768px) {
   .login-card {
-    padding: 30px 20px; /* የውስጥ ክፍተቱን በመቀነስ ለሳጥኖቹ እና ለፅሁፎቹ ሰፊ ቦታ መስጠት */
-    border-radius: 16px; /* በስልክ ላይ ማዕዘኑ ይበልጥ እንዲጠጋጋ */
+    padding: 30px;
   }
 
   .login-card h2 {
-    font-size: 22px; /* የርዕሱን መጠን ለስልክ ተስማሚ ማድረግ */
+    font-size: 1.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 15px;
+  }
+
+  .login-card {
+    padding: 25px 20px;
+    border-radius: 18px;
+  }
+
+  .login-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
   }
 
   .role-selector button {
-    padding: 8px; /* በስልክ ጣት ለመንካት ምቹ እንዲሆን የታቦቹን ቁመት ማስተካከል */
     font-size: 14px;
+    padding: 10px;
   }
 
   .input-group input {
-    padding: 10px; /* የኢንፑት ሳጥኖቹን ቁመት በስልክ ማመጣጠን */
+    height: 50px;
     font-size: 14px;
   }
 
   .login-btn {
-    padding: 11px;
+    height: 50px;
     font-size: 15px;
   }
+
+  .forgot-btn {
+    font-size: 13px;
+  }
+}
+
+/* ==========================================
+   ANIMATION
+========================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#2563eb,#1d4ed8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: white;
+  box-shadow: 0 10px 20px rgba(37,99,235,0.25);
 }

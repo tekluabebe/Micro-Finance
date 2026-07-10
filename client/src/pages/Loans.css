@@ -30,11 +30,14 @@
 
 .loan-title {
   text-align: center;
-  color: #1a2a6c;
-  font-size: 26px;
-  font-weight: 800;
+  color: #22c55e;          /* Green */
+  font-size: 28px;
+  font-weight: 900;        /* Extra bold */
   margin-bottom: 35px;
-  letter-spacing: -0.5px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+  background-color: #2563eb;
 }
 
 /* 💡 ዋናው ባለ 2 ዓምድ መከፈያ ግሪድ */
@@ -154,6 +157,8 @@
 
 .badge-success { background: #d1fae5; color: #065f46; }
 .badge-danger { background: #fee2e2; color: #991b1b; }
+
+
 
 /* ==========================================================================
    Guarantor Section
@@ -296,4 +301,363 @@
     padding: 14px;
     font-size: 15px;
   }
+}
+
+.loan-card h2{
+  color: #1d4ed8;
+}
+
+/* ==========================
+   LOAN HISTORY DESIGN
+========================== */
+
+.loan-history-card {
+  margin-top: 25px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+  overflow-x: auto;
+}
+
+.loan-history-title {
+  text-align: center;
+  color: #1e3a8a;
+  margin-bottom: 25px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.loan-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.loan-history-table thead tr {
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #1e40af
+  );
+  color: white;
+}
+
+.loan-history-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.loan-history-table td {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.loan-history-table tbody tr {
+  transition: all .25s ease;
+}
+
+.loan-history-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.member-name {
+  display: block;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.member-id {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.status-approved {
+  background: #dcfce7;
+  color: #15803d;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-rejected {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-pending {
+  background: #fef3c7;
+  color: #ca8a04;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status-completed {
+  background: #dbeafe;
+  color: #2563eb;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.history-select {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgb(141, 68, 55);
+}
+
+.history-select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.payment-started {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.loan-history-table td:nth-child(2) {
+  font-weight: 700;
+  color: #76270f;
+}
+
+.loan-history-table td:nth-child(5) {
+  font-weight: 700;
+  color: #dc2626;
+}
+
+@media (max-width: 768px) {
+  .loan-history-card {
+    padding: 15px;
+  }
+
+  .loan-history-title {
+    font-size: 22px;
+  }
+}
+
+.delete-btn {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-2px);
+}
+
+.disabled-delete-btn {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.disabled-delete-btn:hover {
+  transform: none;
+}
+
+.payment-completed {
+  background: #d1fae5;
+  color: #047857;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-weight: 400;
+  display: inline-block;
+}
+
+.payment-started {
+  background: #ceec61;
+  color: #6b7280;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 1000;
+  display: inline-block;
+}
+
+/* ===================================================
+   GLOBAL TEXT COLOR
+=================================================== */
+
+/* Light sections → Dark text */
+.loan-container,
+.loan-card,
+.loan-history-card,
+.loan-form-section,
+.loan-input-group,
+.guarantor-card,
+.empty-summary {
+    color: #0f172a;
+}
+
+/* Dark sections → White text */
+.summary-card,
+.summary-card *,
+.loan-title,
+.loan-btn,
+.loan-btn *,
+.loan-history-table thead,
+.loan-history-table thead *,
+.success-box.dark,
+.limit-box.dark,
+.danger-box.dark {
+    color: #ffffff !important;
+}
+
+/* Labels */
+.loan-input-group label{
+    color:#334155;
+    font-weight:700;
+}
+
+/* Inputs */
+.loan-input-group input,
+.loan-input-group select{
+    color:#0f172a;
+    font-weight:600;
+}
+
+.loan-input-group input::placeholder{
+    color:#64748b;
+}
+
+/* Dropdown */
+.loan-input-group select option{
+    color:#0f172a;
+    background:#ffffff;
+}
+
+/* Summary Card */
+.summary-card{
+    background:#1e293b;
+    color:#fff;
+}
+
+.summary-card .summary-row{
+    color:#fff;
+}
+
+.summary-card strong,
+.summary-card span,
+.summary-card p,
+.summary-card h3,
+.summary-card h4{
+    color:#fff;
+}
+
+/* Loan History */
+.loan-history-card{
+    color:#0f172a;
+}
+
+.loan-history-table td{
+    color:#0f172a;
+}
+
+.loan-history-table th{
+    color:#fff;
+}
+
+/* Info Boxes */
+.success-box{
+    background:#dcfce7;
+    color:#166534;
+    font-weight:700;
+}
+
+.limit-box{
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-weight:700;
+}
+
+.danger-box{
+    background:#fee2e2;
+    color:#b91c1c;
+    font-weight:700;
+}
+
+/* Guarantor */
+.guarantor-card{
+    color:#0f172a;
+}
+
+.guarantor-card h3,
+.guarantor-card h4,
+.guarantor-card p,
+.guarantor-card label{
+    color:#0f172a;
+}
+
+.guarantor-item{
+    color:#0f172a;
+}
+
+/* Buttons */
+.loan-btn{
+    color:#fff;
+    font-weight:700;
+}
+
+.remove-guarantor-btn{
+    color:#fff;
+}
+
+.delete-btn{
+    color:#fff;
+}
+
+/* Badges */
+.badge-success{
+    color:#065f46;
+}
+
+.badge-danger{
+    color:#991b1b;
+}
+
+.status-approved{
+    color:#15803d;
+}
+
+.status-rejected{
+    color:#dc2626;
+}
+
+.status-pending{
+    color:#ca8a04;
+}
+
+.status-completed{
+    color:#2563eb;
+}
+
+/* Payment Status */
+.payment-completed{
+    color:#047857;
+    font-weight:700;
+}
+
+.payment-started{
+    color:#92400e;
+    font-weight:700;
 }

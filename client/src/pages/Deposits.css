@@ -3,27 +3,35 @@
   box-sizing: border-box;
 }
 
-.deposit-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 90vh;
-  background: #f0f2f5;
-  padding: 20px;
+.deposit-container{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+
+     background:#3d5586;
+
+    color:#ac8f8f;
+
+    padding:30px 20px;
 }
 
-.deposit-card {
-  background: #ffffff;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  width: 100%;
-  max-width: 650px;
-  border-top: 5px solid #3498db;
+.deposit-card{
+
+    background:#868b95;
+
+    border:1px solid #243244;
+
+    border-radius:12px;
+
+    color:white;
+
+    box-shadow:none;
+
 }
 
 .form-title {
-  color: #2c3e50;
+      color:white;
   margin-bottom: 25px;
   text-align: center;
   font-weight: 700;
@@ -32,9 +40,10 @@
 }
 
 .selection-section {
-  background: #f8f9fa;
+  background:#182233;
+
+ border:1px solid #2b3a55;
   padding: 15px;
-  border-radius: 12px;
   margin-bottom: 20px;
 }
 
@@ -54,14 +63,25 @@
 .input-group label {
   font-size: 13px;
   font-weight: 600;
-  color: #7f8c8d;
+  color:#9CA3AF;
   margin-bottom: 5px;
   margin-left: 5px;
 }
+input,
+select{
 
+    background:#6c7894;
+
+    color:white;
+
+    border:1px solid #334155;
+
+}
 .input-group input, .input-group select {
   padding: 12px;
-  border: 1.5px solid #dcdde1;
+  background:#0f172a;
+  color:white;
+  border:1px solid #334155;
   border-radius: 8px;
   font-size: 15px;
   transition: all 0.3s ease;
@@ -70,19 +90,35 @@
 }
 
 .input-group input:focus, .input-group select:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.2);
+    border-color:#3b82f6;
+
+    box-shadow:0 0 8px rgba(59,130,246,.35);
+}
+.input-group input::placeholder{
+
+    color:#94a3b8;
+
 }
 
+.input-group select option{
+
+    background:#0f172a;
+
+    color:white;
+
+}
 .deposit-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 15px;
 }
 
-.highlight input {
-  background-color: #fff9e6;
-  border-color: #f1c40f;
+.highlight input{
+
+    background:#13263f;
+
+    border-color:#2563eb;
+
 }
 
 .alert-box {
@@ -92,16 +128,20 @@
   font-size: 14px;
 }
 
-.warning {
-  background: #fff3cd;
-  color: #856404;
-  border-left: 5px solid #ffc107;
+.warning{
+
+    background:#3a2d11;
+
+    color:#ffd166;
+
+    border-left:5px solid #f59e0b;
+
 }
 
 .submit-btn {
   width: 100%;
   padding: 15px;
-  background: #3498db;
+      background:#2563EB;
   color: white;
   border: none;
   border-radius: 10px;
@@ -113,7 +153,7 @@
 }
 
 .submit-btn:hover {
-  background: #2980b9;
+  background:#1d4ed8;
   transform: translateY(-1px);
 }
 
@@ -145,10 +185,7 @@
     gap: 10px;
   }
 
-  .form-title {
-    font-size: 18px; 
-    margin-bottom: 15px;
-  }
+
 
   .submit-btn {
     padding: 12px;
@@ -157,8 +194,11 @@
 }
 
 .error-banner {
-  background-color: #ff4d4d;
-  color: white;
+ background:#7f1d1d;
+
+    border:1px solid #ef4444;
+
+    color:#fecaca;
   padding: 12px;
   border-radius: 6px;
   margin-bottom: 15px;
@@ -176,4 +216,208 @@
 
 .error-border {
   border: 2px solid red !important;
+}
+
+.deposit-card,
+.selection-section{
+
+    background:#182235;
+
+    border:1px solid #283548;
+
+}
+
+.status-display-box{
+    background:#111827;
+    border:1px solid #334155;
+    border-radius:12px;
+    padding:20px;
+    min-height:250px;
+    width:100%;
+}
+.status-title{
+    color:white;
+    text-align:center;
+    margin-bottom:20px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.member-status-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:15px;
+}
+
+.status-card{
+    padding:18px;
+    border-radius:12px;
+    color:white;
+    transition:.3s;
+}
+
+.status-card:hover{
+    transform:translateY(-3px);
+}
+
+.status-label{
+    display:block;
+    font-size:13px;
+    opacity:.8;
+    margin-bottom:8px;
+}
+
+.status-card h4{
+    margin:0;
+    font-size:18px;
+    font-weight:700;
+}
+
+.blue-card{
+    background:#2563eb;
+}
+
+.purple-card{
+    background:#7c3aed;
+}
+
+.green-card{
+    background:#059669;
+}
+
+.success-card{
+    background:#16a34a;
+}
+
+.red-card{
+    background:#dc2626;
+}
+
+.status-placeholder{
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:white;
+    text-align:center;
+}
+
+.info-icon-wrapper{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:#1e3a8a;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-bottom:15px;
+}
+@media(max-width:768px){
+
+.member-status-grid{
+    grid-template-columns:1fr;
+}
+
+.status-display-box{
+    margin-top:20px;
+}
+
+}
+.field-large{
+
+    background:#182235;
+
+    border:1px solid #283548;
+
+    padding:18px;
+
+    border-radius:12px;
+
+}
+.deposit-card::before{
+
+    content:"";
+
+    display:block;
+
+    width:100%;
+
+    height:3px;
+
+    background:linear-gradient(90deg,#2563eb,#3b82f6,#2563eb);
+
+    margin:-30px -30px 25px;
+
+}
+/* ===== WHITE & BOLD TEXT FOR THE ENTIRE CARD ===== */
+
+.deposit-card,
+.deposit-card * {
+    color: #ffffff !important;
+}
+
+.deposit-card h1,
+.deposit-card h2,
+.deposit-card h3,
+.deposit-card h4,
+.deposit-card h5,
+.deposit-card h6,
+.deposit-card p,
+.deposit-card span,
+.deposit-card label,
+.deposit-card small,
+.deposit-card strong,
+.deposit-card div {
+    color: #ffffff !important;
+    font-weight: 400 !important;
+}
+
+/* Inputs & Selects */
+.deposit-card input,
+.deposit-card select,
+.deposit-card textarea {
+    color: #ffffff !important;
+    font-weight: 400 !important;
+}
+
+/* Placeholder */
+.deposit-card input::placeholder,
+.deposit-card textarea::placeholder {
+    color: #cbd5e1 !important;
+    font-weight: 300;
+}
+
+/* Dropdown options */
+.deposit-card select option {
+    background: #0f172a;
+    color: #ffffff;
+    font-weight: 400;
+}
+
+/* Status box */
+.status-display-box,
+.status-display-box * {
+    color: #ffffff !important;
+    font-weight: 400 !important;
+}
+
+/* Alert text */
+.alert-box,
+.alert-box * {
+    color: #c92f2f !important;
+    font-weight: 600 !important;
+}
+
+/* Error banner */
+.error-banner,
+.error-banner * {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+
+/* Button */
+.submit-btn {
+    color: #ffffff !important;
+    font-weight: 700;
 }

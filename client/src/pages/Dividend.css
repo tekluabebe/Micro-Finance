@@ -1,0 +1,404 @@
+/* =====================================================
+   DIVIDEND PAGE
+===================================================== */
+.dividend-page-container {
+  min-height: 100vh;
+  padding: 95px 32px 45px;
+background: linear-gradient(
+    180deg,
+    #14213d 0%,
+    #0f1c38 100%
+);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* =====================================================
+   HERO / HEADER
+===================================================== */
+.dividend-header-box {
+  max-width: 1250px;
+  margin: 0 auto 25px;
+  padding: 34px 38px;
+  border-radius: 24px;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 36, 142, 0.96),
+    rgba(63, 55, 180, 0.9)
+  );
+  box-shadow: 0 20px 48px rgba(8, 12, 78, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dividend-title {
+  margin: 0 0 25px;
+  color: #ffffff;
+  font-size: clamp(23px, 3vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* =====================================================
+   SUMMARY CARDS
+===================================================== */
+.summary-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+.dividend-stat-card {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid rgba(230, 235, 255, 0.9);
+  box-shadow: 0 12px 25px rgba(8, 12, 78, 0.16);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.dividend-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 18px 32px rgba(8, 12, 78, 0.25);
+}
+
+.dividend-stat-card::before {
+  content: "";
+  position: absolute;
+  width: 85px;
+  height: 85px;
+  border-radius: 50%;
+  top: -35px;
+  right: -25px;
+  background: rgba(47, 118, 245, 0.1);
+}
+
+.dividend-stat-card.shares-card::before {
+  background: rgba(129, 91, 255, 0.12);
+}
+
+.dividend-stat-card.profit-card {
+  background: linear-gradient(135deg, #2878f0, #5544cf);
+  border: none;
+  color: #ffffff;
+}
+
+.dividend-stat-card.profit-card::before {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dividend-label {
+  display: block;
+  color: #697598;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 9px;
+}
+
+.dividend-value {
+  display: block;
+  color: #252d75;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.profit-card .dividend-label,
+.profit-card .dividend-value {
+  color: #ffffff;
+}
+
+/* =====================================================
+   FILTER BAR
+===================================================== */
+.dividend-controls {
+  max-width: 1250px;
+  margin: 0 auto 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.year-filter-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(8, 12, 78, 0.18);
+}
+
+.year-filter-box label {
+  color: #252d75;
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.year-filter-box select {
+  padding: 10px 14px;
+  border: 1px solid #dbe3f5;
+  border-radius: 9px;
+  background: #f8faff;
+  color: #29316e;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+}
+
+.year-filter-box select:focus {
+  border-color: #2d7df6;
+  box-shadow: 0 0 0 4px rgba(45, 125, 246, 0.12);
+}
+
+/* =====================================================
+   PREMIUM SEARCH BAR
+===================================================== */
+
+.search-box {
+  position: relative;
+  width: min(430px, 100%);
+}
+
+.search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: #7a84b8;
+  pointer-events: none;
+  transition: all .35s ease;
+}
+
+.dividend-search-input {
+  width: 100%;
+  height: 58px;
+  padding: 0 22px 0 55px;
+
+  border: none;
+  outline: none;
+
+  border-radius: 18px;
+
+  background: rgba(255,255,255,.18);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid rgba(255,255,255,.28);
+
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+
+  box-sizing: border-box;
+
+  box-shadow:
+      0 10px 35px rgba(0,0,0,.18),
+      inset 0 1px 1px rgba(255,255,255,.35);
+
+  transition: all .35s cubic-bezier(.4,0,.2,1);
+}
+
+.dividend-search-input::placeholder {
+  color: rgba(255,255,255,.72);
+}
+
+.dividend-search-input:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+      0 18px 40px rgba(35,50,170,.25),
+      inset 0 1px 1px rgba(255,255,255,.45);
+}
+
+.dividend-search-input:focus {
+  background: rgba(255,255,255,.24);
+
+  border: 1px solid rgba(105,155,255,.75);
+
+  box-shadow:
+      0 0 0 5px rgba(70,120,255,.18),
+      0 20px 45px rgba(30,60,180,.30),
+      inset 0 1px 1px rgba(255,255,255,.5);
+}
+
+.search-box:focus-within .search-icon {
+  color: #66a6ff;
+  transform: translateY(-50%) scale(1.15);
+}
+
+@media (max-width: 900px) {
+  .search-box {
+    width: 100%;
+  }
+
+  .dividend-search-input {
+    height: 54px;
+  }
+}
+
+/* =====================================================
+   TABLE
+===================================================== */
+/* =====================================================
+   DARK TABLE (Like Screenshot)
+===================================================== */
+
+.table-responsive-wrapper {
+  max-width: 1250px;
+  margin: 0 auto;
+  overflow-x: auto;
+  border-radius: 18px;
+  background: #162953;
+  box-shadow: 0 18px 38px rgba(8, 12, 78, 0.35);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.dividend-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  background: #16213b;
+}
+
+.dividend-table thead {
+  background: #1a2745;
+}
+
+.dividend-table th {
+  padding: 18px 22px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.dividend-table td {
+  padding: 20px 22px;
+  color: #ffffff;
+  font-size: 15px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.dividend-table tbody tr {
+  background: #182543;
+  transition: .25s;
+}
+
+.dividend-table tbody tr:nth-child(even) {
+  background: #1b2948;
+}
+
+.dividend-table tbody tr:hover {
+  background: #24375f;
+}
+
+.dividend-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Vertical column lines */
+
+.dividend-table th,
+.dividend-table td {
+  border-right: 1px solid rgba(255,255,255,.05);
+}
+
+.dividend-table th:last-child,
+.dividend-table td:last-child {
+  border-right: none;
+}
+
+/* Member Name */
+
+.member-name-cell {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Shares */
+
+.dividend-table td:nth-child(2) {
+  color: #8ec5ff;
+  font-weight: 600;
+}
+
+/* Percentage */
+
+.dividend-table td:nth-child(3) {
+  color: #ffd369;
+  font-weight: 600;
+}
+
+/* Dividend Amount */
+
+.dividend-amount-cell {
+  color: #47d17a !important;
+  font-weight: 700;
+}
+
+/* Empty Row */
+
+.empty-dividend-row td {
+  text-align: center;
+  color: #c7d0e0;
+  padding: 35px;
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+@media (max-width: 900px) {
+  .summary-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dividend-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .year-filter-box {
+    justify-content: space-between;
+  }
+
+  .dividend-search-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .dividend-page-container {
+    padding: 78px 16px 30px;
+  }
+
+  .dividend-header-box {
+    padding: 25px 20px;
+    border-radius: 20px;
+  }
+
+  .dividend-title {
+    font-size: 22px;
+    line-height: 1.4;
+  }
+
+  .dividend-stat-card {
+    padding: 19px;
+  }
+
+  .dividend-value {
+    font-size: 21px;
+  }
+
+  .dividend-table th,
+  .dividend-table td {
+    padding: 14px 15px;
+    font-size: 14px;
+  }
+}
