@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import "./ViewProfile.css"
 
 export default function ViewProfile() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
