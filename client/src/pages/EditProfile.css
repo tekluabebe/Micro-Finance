@@ -1,0 +1,84 @@
+.edit-profile-main{
+    transition:.3s;
+}
+
+.edit-profile-card{
+    width:100%;
+}
+
+/* Tablet */
+@media (max-width:992px){
+
+.edit-profile-main{
+    margin-left:0 !important;
+    padding:20px !important;
+}
+
+.edit-profile-card{
+    max-width:100%;
+    padding:25px !important;
+}
+
+.save-btn{
+    width:100%;
+}
+
+}
+
+/* Mobile */
+@media (max-width:768px){
+
+.edit-profile-main{
+    margin-left:0 !important;
+    padding:15px !important;
+}
+
+.edit-profile-card{
+    padding:20px !important;
+    border-radius:15px;
+}
+
+.edit-profile-card h2{
+    text-align:center;
+    font-size:24px;
+}
+
+.edit-input{
+    font-size:16px;
+    padding:14px !important;
+}
+
+.save-btn{
+    width:100%;
+    padding:15px !important;
+    font-size:16px;
+}
+
+}
+
+/* Small phones */
+@media (max-width:480px){
+
+.edit-profile-main{
+    padding:10px !important;
+}
+
+.edit-profile-card{
+    padding:15px !important;
+}
+
+.edit-profile-card h2{
+    font-size:20px;
+}
+
+.edit-input{
+    padding:12px !important;
+    font-size:15px;
+}
+
+.save-btn{
+    padding:13px !important;
+    font-size:15px;
+}
+
+}
