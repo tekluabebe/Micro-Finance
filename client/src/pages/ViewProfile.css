@@ -1,0 +1,148 @@
+/* Desktop */
+.profile-card{
+    display:flex;
+}
+
+.profile-actions{
+    display:flex;
+    gap:15px;
+}
+
+/* Tablet */
+@media (max-width:992px){
+
+.profile-main{
+    margin-left:0 !important;
+    padding:20px !important;
+}
+
+.profile-card{
+    flex-direction:column;
+}
+
+.profile-left{
+    flex:unset !important;
+    width:100%;
+    padding:40px 20px !important;
+}
+
+.profile-right{
+    padding:30px 20px !important;
+}
+
+.profile-grid{
+    grid-template-columns:1fr !important;
+    gap:20px !important;
+}
+
+.profile-actions{
+    flex-direction:column;
+}
+
+.profile-btn{
+    width:100%;
+}
+
+.profile-avatar{
+    width:120px !important;
+    height:120px !important;
+}
+
+}
+
+/* Mobile */
+@media (max-width:768px){
+
+.profile-container{
+    padding:0;
+}
+
+.profile-main{
+    margin-left:0 !important;
+    padding:12px !important;
+}
+
+.profile-card{
+    border-radius:18px;
+}
+
+.profile-left{
+    padding:30px 15px !important;
+}
+
+.profile-right{
+    padding:20px 15px !important;
+}
+
+.profile-right h2{
+    font-size:22px;
+    text-align:center;
+}
+
+.profile-grid{
+    display:grid;
+    grid-template-columns:1fr !important;
+    gap:15px;
+}
+
+.profile-actions{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.profile-btn{
+    width:100%;
+    padding:14px;
+    font-size:15px;
+}
+
+.profile-avatar{
+    width:100px !important;
+    height:100px !important;
+}
+
+.profile-left h2{
+    font-size:24px;
+}
+
+.profile-left p{
+    font-size:16px;
+}
+
+}
+
+/* Small phones */
+@media (max-width:480px){
+
+.profile-main{
+    padding:8px !important;
+}
+
+.profile-left{
+    padding:20px 10px !important;
+}
+
+.profile-right{
+    padding:15px 10px !important;
+}
+
+.profile-avatar{
+    width:85px !important;
+    height:85px !important;
+}
+
+.profile-right h2{
+    font-size:20px;
+}
+
+.profile-btn{
+    font-size:14px;
+    padding:12px;
+}
+
+.profile-grid{
+    gap:12px;
+}
+
+}

@@ -28,17 +28,24 @@ export default function ViewProfile() {
   }
 
   return (
-    <div style={styles.container}>
+<div className="profile-container" style={styles.container}>      
       
-      
-      <div style={{ ...styles.main, marginLeft: isSidebarOpen ? "65px" : "35px" }}>
-        <div style={styles.card}>
+      <div
+  className="profile-main"
+  style={{
+    ...styles.main,
+    marginLeft: isSidebarOpen ? "65px" : "35px",
+  }}
+>
+        <div className="profile-card" style={styles.card}>
           {/* ግራ ክፍል */}
-          <div style={styles.leftSection}>
+          <div className="profile-left" style={styles.leftSection}>
             <img
+            className="profile-avatar"
               src={employee.photo || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
               alt="profile"
-              style={styles.avatar}
+              
+style={styles.avatar}
             />
            <h2 style={{ color: "#fff", marginTop: "15px" }}>
   {employee.firstName} {employee.lastName}
@@ -50,10 +57,10 @@ export default function ViewProfile() {
           </div>
 
           {/* ቀኝ ክፍል */}
-          <div style={styles.rightSection}>
+          <div className="profile-right" style={styles.rightSection}>
             <h2 style={{ marginBottom: "30px", borderBottom: "2px solid #eee", paddingBottom: "10px" }}>Information</h2>
             
-            <div style={styles.infoGrid}>
+            <div className="profile-grid" style={styles.infoGrid}>
               {/* Password Section */}
               <div style={{ position: "relative" }}>
                 <p style={styles.label}>Password</p>
@@ -75,9 +82,9 @@ export default function ViewProfile() {
               <div><p style={styles.label}>Status</p><span>Active Employee</span></div>
             </div>
 
-            <div style={styles.actions}>
-              <button style={styles.editBtn} onClick={() => navigate("/profile/edit")}>✏️ Edit Profile</button>
-              <button style={styles.passwordBtn} onClick={() => navigate("/profile/change-password")}>🔐 Change Password</button>
+            <div className="profile-actions" style={styles.actions}>
+              <button className="profile-btn" style={styles.editBtn} onClick={() => navigate("/profile/edit")}>✏️ Edit Profile</button>
+              <button className="profile-btn" style={styles.passwordBtn} onClick={() => navigate("/profile/change-password")}>🔐 Change Password</button>
             </div>
           </div>
         </div>
@@ -94,19 +101,24 @@ const styles = {
     width: "100%"
   },
 
-  main: {
-    flex: 1,
-    padding: "40px",
-    transition: "0.3s"
-  },
+ main: {
+  flex: 1,
+  padding: "20px",
+  transition: "0.3s",
+  width: "100%",
+  boxSizing: "border-box"
+},
 
   card: {
-    display: "flex",
+     display: "flex",
+  width: "100%",
+  maxWidth: "1200px",
+  margin: "0 auto",
     background: "#ffffff",
     borderRadius: "25px",
     boxShadow: "0 15px 35px rgba(231,84,128,0.18)",
     overflow: "hidden",
-    width: "100%",
+   
     minHeight: "500px"
   },
 
