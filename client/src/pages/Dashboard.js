@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import API from "../services/api";
+import "./Dashboard.css"
 
 
 export default function Dashboard() {
@@ -323,10 +324,10 @@ const renderPasswordRequests = () => {
 
   return pending.map(item => (
 
-    <div
-      key={item._id}
-      style={styles.notificationCard}
-    >
+  <div
+  className="notification-card"
+  style={styles.notificationCard}
+>
       <div style={styles.notificationIcon}>
         🔑
       </div>
@@ -349,7 +350,10 @@ const renderPasswordRequests = () => {
         </p>
       </div>
 
-      <div style={styles.actions}>
+      <div
+  className="notification-actions"
+  style={styles.actions}
+>
 
         <button
           style={styles.readBtn}
@@ -421,7 +425,10 @@ const renderPasswordRequests = () => {
             </>
           )}
         </div>
-        <div style={styles.actions}>
+        <div
+  className="notification-actions"
+  style={styles.actions}
+>
           <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
           <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
         </div>
@@ -532,7 +539,13 @@ const renderPasswordRequests = () => {
 
       {/* ================= DROPDOWNS ================= */}
       {!isMember && openWithdrawals && (
-        <div className="dashboard-notif-dropdown" style={styles.dropdown}>
+        <div
+  className="dashboard-notif-dropdown"
+  style={{
+    ...styles.dropdown,
+    right: openWithdrawals ? 20 : "auto"
+  }}
+>
           {renderNotifications(withdrawals, "withdrawals")}
         </div>
       )}
@@ -543,8 +556,14 @@ const renderPasswordRequests = () => {
         </div>
       )}
   {!isMember && openPasswordRequests && (
-  <div style={styles.notificationPanel}>
-    <div style={styles.notificationHeader}>
+  <div
+  className="notification-panel"
+  style={styles.notificationPanel}
+>
+    <div
+  className="notification-header"
+  style={styles.notificationHeader}
+>
       <h4 style={{ margin: 0 }}>Notifications</h4>
 
       <span
@@ -555,7 +574,10 @@ const renderPasswordRequests = () => {
       </span>
     </div>
 
-    <div style={styles.notificationTabs}>
+    <div
+  className="notification-tabs"
+  style={styles.notificationTabs}
+>
   <button
     onClick={() => setNotifFilter("all")}
     style={notifFilter === "all" ? styles.activeTab : styles.tab}
@@ -704,10 +726,11 @@ const styles = {
     cursor: "pointer"
   },
   dropdown: {
-    position: "absolute",
-    top: 85,
-    right: 20,
-    width: 320,
+     position:"absolute",
+    top:85,
+    right:20,
+    width:"320px",
+    maxWidth:"95vw",
     background: "#fff",
     boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
     padding: 15,
@@ -716,7 +739,9 @@ const styles = {
     border: "1px solid #e2e8f0"
   },
   item: { padding: 10, marginBottom: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", fontSize: "13px", gap: "10px" },
-  actions: { display: "flex", gap: 5, alignItems: "center" },
+  actions: {     display:"flex",
+    gap:5,
+    flexWrap:"wrap", alignItems: "center" },
   approve: { background: "green", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
   reject: { background: "red", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
   readBtn: { background: "#3498db", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
@@ -737,7 +762,8 @@ const styles = {
   position: "absolute",
   top: 90,
   right: 20,
-  width: 430,
+    width:"430px",
+    maxWidth:"95vw",
   maxHeight: 600,
   overflowY: "auto",
 
@@ -790,8 +816,9 @@ notificationList: {
 },
 
 notificationCard: {
-  display: "flex",
-  gap: "12px",
+ display:"flex",
+    gap:"12px",
+    flexWrap:"wrap",
   padding: "15px",
   borderBottom: "1px solid #eee",
   alignItems: "flex-start"

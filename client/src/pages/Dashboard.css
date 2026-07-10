@@ -1,0 +1,75 @@
+/* ===========================
+   MOBILE NOTIFICATIONS
+=========================== */
+
+@media (max-width:768px){
+
+.dashboard-notif-dropdown,
+.notification-panel{
+
+    position: fixed !important;
+
+    top:80px !important;
+    left:10px !important;
+    right:10px !important;
+
+    width:auto !important;
+    max-width:none !important;
+
+    max-height:70vh !important;
+
+    overflow-y:auto;
+
+    z-index:99999;
+}
+
+.notification-card{
+
+    flex-direction:column;
+
+    align-items:flex-start !important;
+}
+
+.notification-actions{
+
+    display:flex;
+
+    width:100%;
+
+    justify-content:flex-end;
+
+    gap:8px;
+
+    margin-top:10px;
+
+    flex-wrap:wrap;
+}
+
+.notification-header{
+
+    flex-direction:column;
+
+    align-items:flex-start;
+
+    gap:10px;
+}
+
+.notification-tabs{
+
+    display:flex;
+
+    width:100%;
+
+    overflow-x:auto;
+
+    gap:8px;
+}
+
+.notification-tabs button{
+
+    white-space:nowrap;
+
+    flex-shrink:0;
+}
+
+}
