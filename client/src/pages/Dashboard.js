@@ -707,13 +707,20 @@ const styles = {
   fontWeight: "800",
   letterSpacing: ".5px"
 },
-  headerRightSection: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-end",
-    gap: "8px"
-  },
-  topBar: { display: "flex", gap: 15 },
+headerRightSection: {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  width: "100%",
+  gap: "10px"
+},
+  topBar: {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+  justifyContent: "center",
+  width: "100%"
+},
 
   filterBar: { display: "flex", gap: 10, alignItems: "center" },
   selectInput: {

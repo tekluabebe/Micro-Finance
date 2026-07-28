@@ -633,7 +633,30 @@ button{
 
 
 
+.income-expense-container .table-row span:last-child{
+    color:#ffffff !important;
+    font-weight:700;
+}
 
+.MuiInputBase-input{
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff !important;
+}
+
+.MuiInputLabel-root{
+    color:#cbd5e1 !important;
+}
+
+.MuiOutlinedInput-notchedOutline{
+    border-color:rgba(255,255,255,.2) !important;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus{
+    -webkit-text-fill-color:#ffffff !important;
+    transition:background-color 9999s ease-in-out 0s;
+}
 
 /* =====================================================
    INCOME SECTION COLORS
@@ -711,52 +734,29 @@ button{
 ===================================================== */
 
 .income-expense-container .table-row input{
-
     width:150px;
-
-    padding:10px 14px;
-
-    border:1px solid #d1d5db;
-
+    padding:11px 14px;
     border-radius:10px;
-
-    background:#fff;
-
-    color:#1e293b;
-
-    font-size:14px;
-
+    border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.08);
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff;
+    font-size:15px;
     font-weight:700;
-
     text-align:right;
-
-    transition:.25s;
-
-    outline:none;
-
 }
-
 
 .income-expense-container .table-row input:focus{
-
-    border-color:#2563eb;
-
-    box-shadow:
-    0 0 0 4px rgba(37,99,235,.12);
-
+    color:#ffffff !important;
+    -webkit-text-fill-color:#ffffff;
+    outline:none;
+    border-color:#38bdf8;
+    background:rgba(255,255,255,.12);
 }
 
-
-.income-expense-container
-.table-row input::placeholder{
-
-    color:#94a3b8;
-
+.income-expense-container .table-row input::placeholder{
+    color:#cbd5e1;
 }
-
-
-
-
 
 /* =====================================================
    BUTTON GROUP

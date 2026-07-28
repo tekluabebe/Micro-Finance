@@ -498,8 +498,10 @@ const removeOtherIncomeRow = (index) => {
 
                     {/* TOTAL */}
                     <div className="total-row">
-                        <span>ጠቅላላ ገቢ</span>
-                        <span>{totalIncome.toLocaleString()}</span>
+                      <h3  style={{ color: '#19cd31' }}>
+                        ጠቅላላ ገቢ (Total Income)
+                    </h3>
+                        <span style={{ color: '#19cd31' }}>{totalIncome.toLocaleString()}</span>
                     </div>
 
                 </div>
@@ -526,8 +528,8 @@ const removeOtherIncomeRow = (index) => {
                     ))}
 
                     <div className="total-row">
-                        <span>ጠቅላላ ወጪ</span>
-                        <span>{totalExpense.toLocaleString()}</span>
+                        <span style={{ color: '#ef6f0d' }}>ጠቅላላ ወጪ</span>
+                        <span style={{ color: '#cd6d19' }}>{totalExpense.toLocaleString()}</span>
                     </div>
 
                 </div>

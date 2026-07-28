@@ -59,8 +59,10 @@ const handleSave = async () => {
     ...styles.main,
     marginLeft: isSidebarOpen ? "260px" : "80px",
   }}
->        <h2>Edit Profile</h2>
-       <div className="edit-profile-card" style={styles.card}>
+>         <div className="edit-profile-content">
+    <h2 className="edit-profile-title">Edit Profile</h2>
+
+    
           {/* የማይቀየሩ መረጃዎች */}
           <label style={styles.label}>Full Name</label>
           <input
@@ -142,6 +144,8 @@ disabledInput:{
   fontSize:"15px",
   boxSizing:"border-box"
 },
+
+
 button:{
   background:"#ee2b09",
   color:"#fff",

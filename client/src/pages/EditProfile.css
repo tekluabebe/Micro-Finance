@@ -1,3 +1,39 @@
+
+/* ==========================================
+   PAGE LAYOUT
+========================================== */
+
+.edit-profile-main{
+    flex:1;
+    min-height:100vh;
+    padding:40px;
+    transition:.3s;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+}
+
+.edit-profile-content{
+    width:100%;
+    max-width:700px;
+}
+
+.edit-profile-title{
+    text-align:center;
+    margin-bottom:25px;
+    color:#222;
+    font-size:32px;
+    font-weight:700;
+}
+
+.edit-profile-card{
+    width:100%;
+    background:#fff;
+    padding:35px;
+    border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
 .edit-profile-main{
     transition:.3s;
 }
@@ -11,16 +47,15 @@
 
 .edit-profile-main{
     margin-left:0 !important;
-    padding:20px !important;
-}
-
-.edit-profile-card{
-    max-width:100%;
     padding:25px !important;
 }
 
-.save-btn{
-    width:100%;
+.edit-profile-content{
+    max-width:650px;
+}
+
+.edit-profile-card{
+    padding:30px;
 }
 
 }
@@ -30,28 +65,30 @@
 
 .edit-profile-main{
     margin-left:0 !important;
-    padding:15px !important;
+    padding:20px !important;
+    align-items:flex-start;
+}
+
+.edit-profile-content{
+    max-width:100%;
 }
 
 .edit-profile-card{
-    padding:20px !important;
-    border-radius:15px;
+    padding:25px;
+    border-radius:16px;
 }
 
-.edit-profile-card h2{
+.edit-profile-title{
+    font-size:28px;
     text-align:center;
-    font-size:24px;
 }
 
 .edit-input{
     font-size:16px;
-    padding:14px !important;
 }
 
 .save-btn{
     width:100%;
-    padding:15px !important;
-    font-size:16px;
 }
 
 }
@@ -60,25 +97,138 @@
 @media (max-width:480px){
 
 .edit-profile-main{
-    padding:10px !important;
-}
-
-.edit-profile-card{
     padding:15px !important;
 }
 
-.edit-profile-card h2{
-    font-size:20px;
+.edit-profile-card{
+    padding:20px;
 }
 
-.edit-input{
-    padding:12px !important;
-    font-size:15px;
+.edit-profile-title{
+    font-size:24px;
+}
+
+}
+
+/* ==========================================
+   DEFAULT COLORS (VISIBLE ON ALL THEMES)
+========================================== */
+
+.edit-profile-card{
+    background:#ffffff;
+    color:#222;
+}
+
+.edit-profile-card h2{
+    color:#222;
+}
+
+.edit-profile-card label{
+    color:#B76E79;
+    font-weight:600;
+}
+
+.edit-profile-card p,
+.edit-profile-card span{
+    color:#222;
+}
+
+.edit-input,
+.edit-profile-card input,
+.edit-profile-card select,
+.edit-profile-card textarea{
+    width:100%;
+    padding:14px;
+    border:1px solid #d1d5db;
+    border-radius:10px;
+    background:#ffffff;
+    color:#222 !important;
+    font-size:16px;
+    transition:.3s;
+}
+
+.edit-input::placeholder,
+.edit-profile-card input::placeholder,
+.edit-profile-card textarea::placeholder{
+    color:#6b7280;
+}
+
+.edit-input:focus,
+.edit-profile-card input:focus,
+.edit-profile-card select:focus,
+.edit-profile-card textarea:focus{
+    outline:none;
+    border-color:#E75480;
+    box-shadow:0 0 0 3px rgba(231,84,128,.2);
 }
 
 .save-btn{
-    padding:13px !important;
-    font-size:15px;
+    color:#fff;
+    font-weight:600;
 }
 
+/* Autofill text color */
+.edit-input:-webkit-autofill,
+.edit-profile-card input:-webkit-autofill,
+.edit-profile-card textarea:-webkit-autofill{
+    -webkit-text-fill-color:#222;
+    transition:background-color 5000s ease-in-out 0s;
+}
+
+/* ==========================================
+   DARK THEME
+========================================== */
+
+.dark-dashboard .edit-profile-card{
+    background:#1e293b;
+    color:#f8fafc;
+}
+
+.dark-dashboard .edit-profile-card h2,
+.dark-dashboard .edit-profile-card label,
+.dark-dashboard .edit-profile-card p,
+.dark-dashboard .edit-profile-card span{
+    color:#f8fafc;
+}
+
+.dark-dashboard .edit-input,
+.dark-dashboard .edit-profile-card input,
+.dark-dashboard .edit-profile-card select,
+.dark-dashboard .edit-profile-card textarea{
+    background:#334155;
+    border:1px solid #475569;
+    color:#f8fafc !important;
+}
+
+.dark-dashboard .edit-input::placeholder,
+.dark-dashboard .edit-profile-card input::placeholder,
+.dark-dashboard .edit-profile-card textarea::placeholder{
+    color:#cbd5e1;
+}
+
+/* Page Title */
+.edit-profile-title{
+    color:#222;
+    font-size:32px;
+    font-weight:700;
+    margin-bottom:20px;
+}
+
+/* Dark Theme */
+.dark-dashboard .edit-profile-title{
+    color:#f8fafc;
+}
+
+/* Mobile */
+@media (max-width:768px){
+    .edit-profile-title{
+        font-size:26px;
+        text-align:center;
+    }
+}
+
+@media (max-width:480px){
+    .edit-profile-title{
+        font-size:22px;
+    }
 }

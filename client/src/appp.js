@@ -13,6 +13,7 @@ import LoanPayments from "./pages/LoanPayments";
 import Withdrawals from "./pages/Withdrawals";
 import Reports from "./pages/Reports";
 //import Login from "./pages/Login";
+import BalanceSheet from "./pages/BalanceSheet";
 import HelpPage from "./pages/HelpPage";
 import SettingsPage from "./pages/SettingsPage";
 
@@ -62,6 +63,8 @@ function App() {
             <Route path="/dividend" element={isAuthenticated ? <Dividend /> : <Navigate to="/login" />} />
             <Route path="/profit" element={isAuthenticated ? <Profit /> : <Navigate to="/login" />} />
             <Route path="/terminated" element={isAuthenticated ? <TerminatedEmployees /> : <Navigate to="/login" />} />
+            <Route path="/Balancesheet" element={isAuthenticated ? <BalanceSheet /> : <Navigate to="/Balancesheet" />} />
+
             <Route path="/help" element={isAuthenticated ? <HelpPage /> : <Navigate to="/login" />} />
             <Route path="/settings" element={isAuthenticated ? <SettingsPage /> : <Navigate to="/login" />} />
 

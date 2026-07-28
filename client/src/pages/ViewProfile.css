@@ -146,3 +146,258 @@
 }
 
 }
+
+/* ===========================================
+   PROFILE THEME SUPPORT
+=========================================== */
+
+/* Light Theme */
+.light-dashboard .profile-right,
+.light-dashboard .profile-right h2,
+.light-dashboard .profile-right span,
+.light-dashboard .profile-right p,
+.light-dashboard .profile-grid div{
+    color:#222;
+}
+
+.light-dashboard .profile-right{
+    background:#ffffff;
+}
+
+.light-dashboard .profile-right h2{
+    border-bottom:2px solid #e5e7eb;
+}
+
+.light-dashboard .profile-label{
+    color:#8b5e6c;
+}
+
+/* Dark Theme */
+.dark-dashboard .profile-right,
+.dark-dashboard .profile-right h2,
+.dark-dashboard .profile-right span,
+.dark-dashboard .profile-right p,
+.dark-dashboard .profile-grid div{
+    color:#f8fafc;
+}
+
+.dark-dashboard .profile-right{
+    background:#1e293b;
+}
+
+.dark-dashboard .profile-right h2{
+    border-bottom:2px solid #334155;
+}
+
+.dark-dashboard .profile-label{
+    color:#cbd5e1;
+}
+
+/* Left Profile Panel */
+.profile-left{
+    color:#fff;
+}
+
+.profile-left h2{
+    color:#fff;
+}
+
+.profile-left p{
+    color:#f1f5f9;
+}
+
+/* Information Boxes */
+.profile-grid div{
+    padding:12px;
+    border-radius:10px;
+    transition:.3s;
+}
+
+.light-dashboard .profile-grid div{
+    background:#f8fafc;
+}
+
+.dark-dashboard .profile-grid div{
+    background:#334155;
+}
+
+/* Buttons */
+.profile-btn{
+    transition:.3s;
+}
+
+.profile-btn:hover{
+    transform:translateY(-2px);
+}
+
+/* Desktop */
+.profile-card{
+    display:flex;
+}
+
+.profile-actions{
+    display:flex;
+    gap:15px;
+}
+
+/* Tablet */
+@media (max-width:992px){
+
+.profile-main{
+    margin-left:0 !important;
+    padding:20px !important;
+}
+
+.profile-card{
+    flex-direction:column;
+}
+
+.profile-left{
+    flex:unset !important;
+    width:100%;
+    padding:40px 20px !important;
+}
+
+.profile-right{
+    padding:30px 20px !important;
+}
+
+.profile-grid{
+    grid-template-columns:1fr !important;
+    gap:20px !important;
+}
+
+.profile-actions{
+    flex-direction:column;
+}
+
+.profile-btn{
+    width:100%;
+}
+
+.profile-avatar{
+    width:120px !important;
+    height:120px !important;
+}
+
+}
+
+/* Mobile */
+@media (max-width:768px){
+
+.profile-container{
+    padding:0;
+}
+
+.profile-main{
+    margin-left:0 !important;
+    padding:12px !important;
+}
+
+.profile-card{
+    border-radius:18px;
+}
+
+.profile-left{
+    padding:30px 15px !important;
+}
+
+.profile-right{
+    padding:20px 15px !important;
+}
+
+.profile-right h2{
+    font-size:22px;
+    text-align:center;
+}
+
+.profile-grid{
+    display:grid;
+    grid-template-columns:1fr !important;
+    gap:15px;
+}
+
+.profile-actions{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+
+.profile-btn{
+    width:100%;
+    padding:14px;
+    font-size:15px;
+}
+
+.profile-avatar{
+    width:100px !important;
+    height:100px !important;
+}
+
+.profile-left h2{
+    font-size:24px;
+}
+
+.profile-left p{
+    font-size:16px;
+}
+
+}
+
+/* Small phones */
+@media (max-width:480px){
+
+.profile-main{
+    padding:8px !important;
+}
+
+.profile-left{
+    padding:20px 10px !important;
+}
+
+.profile-right{
+    padding:15px 10px !important;
+}
+
+.profile-avatar{
+    width:85px !important;
+    height:85px !important;
+}
+
+.profile-right h2{
+    font-size:20px;
+}
+
+.profile-btn{
+    font-size:14px;
+    padding:12px;
+}
+
+.profile-grid{
+    gap:12px;
+}
+
+}
+
+/* Default colors */
+.profile-right{
+    color:#222;
+    background:#fff;
+}
+
+.profile-right h2{
+    color:#222;
+}
+
+.profile-right span{
+    color:#222 !important;
+    font-weight:500;
+}
+
+.profile-right p{
+    color:#B76E79;
+}
+
+.profile-grid div{
+    color:#222;
+}

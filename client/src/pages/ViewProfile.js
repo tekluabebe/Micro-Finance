@@ -76,11 +76,11 @@ style={styles.avatar}
                 </div>
               </div>
 
-              <div><p style={styles.label}>Phone Number</p><span>{employee.phone}</span></div>
-              <div><p style={styles.label}>Category</p><span>{employee.category}</span></div>
-              <div><p style={styles.label}>Employee ID</p><span>{employee.memberId}</span></div>
-              <div><p style={styles.label}>Gender</p><span>{employee.gender}</span></div>
-              <div><p style={styles.label}>Status</p><span>Active Employee</span></div>
+              <div><p className="profile-label" style={styles.label}>Phone Number</p><span>{employee.phone}</span></div>
+              <div><p className="profile-label" style={styles.label}>Category</p><span>{employee.category}</span></div>
+              <div><p className="profile-label" style={styles.label}>Employee ID</p><span>{employee.memberId}</span></div>
+              <div><p className="profile-label" style={styles.label}>Gender</p><span>{employee.gender}</span></div>
+              <div><p className="profile-label" style={styles.label}>Status</p><span>Active Employee</span></div>
             </div>
 
             <div className="profile-actions" style={styles.actions}>

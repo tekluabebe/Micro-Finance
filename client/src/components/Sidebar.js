@@ -26,6 +26,7 @@ import {
   FaUser,
 } from "react-icons/fa";
 
+
 export default function Sidebar({ isOpen, setIsSidebarOpen }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -391,13 +392,13 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
                     {t.incomeExpense}
                   </li>
 
-                  <li
-                    onClick={() => handleNavigation("/balance-sheet")}
-                    style={getLinkStyle(currentPath === "/balance-sheet")}
-                  >
-                    <FaBalanceScale style={styles.icon} />
-                    {t.balanceSheet}
-                  </li>
+                <li
+  onClick={() => handleNavigation("/balance-sheet")}
+  style={getLinkStyle(currentPath === "/balance-sheet")}
+>
+  <FaBalanceScale style={styles.icon} />
+  {t.balanceSheet}
+</li>
 
                   <li
                     onClick={() => handleNavigation("/cash-flow")}

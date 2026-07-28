@@ -31,6 +31,11 @@ const Reports = () => {
   const [showMembers, setShowMembers] = useState(false);
   const userRole =
   localStorage.getItem("userRole")?.toLowerCase() || "";
+  const isMonthlyReport = reportType.endsWith("monthly");
+  const isAnnualReport = reportType.endsWith("annual");
+  const isTotalReport =
+  reportType === "total-monthly" ||
+  reportType === "total-annual";
 
 const isMember = userRole === "member";
 
@@ -118,7 +123,21 @@ useEffect(() => {
     const doc = new jsPDF();
     doc.setFontSize(18);
     doc.setTextColor(37, 99, 235);
-    doc.text(`${reportType.replace("-", " ").toUpperCase()} REPORT`, 14, 20);
+    doc.text(
+  `${reportType.replace("-", " ").toUpperCase()} REPORT`,
+  14,
+  20
+);
+
+doc.setFontSize(11);
+
+doc.text(
+  isMonthlyReport
+    ? `Period: ${monthNames[month]} ${year}`
+    : `Year: ${year}`,
+  14,
+  28
+);
     
     const rows = Object.entries(report).map(([key, value]) => [
       key.replace(/([A-Z])/g, " $1").toUpperCase(),
@@ -126,7 +145,7 @@ useEffect(() => {
     ]);
 
     autoTable(doc, {
-      startY: 30,
+      startY: 36,
       head: [["Description", "Details"]],
       body: rows,
       theme: "striped",
@@ -137,7 +156,15 @@ useEffect(() => {
 
   const downloadExcel = () => {
     if (!report) return;
-    const worksheet = XLSX.utils.json_to_sheet([report]);
+    const worksheet = XLSX.utils.json_to_sheet([
+  {
+    ReportType: reportType,
+    Period: isMonthlyReport
+      ? `${monthNames[month]} ${year}`
+      : year,
+    ...report,
+  },
+]);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Financial Report");
     const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
@@ -152,6 +179,21 @@ useEffect(() => {
       emp.memberId?.toLowerCase().includes(searchEmployee.toLowerCase())
     );
   });
+
+  const monthNames = {
+  "01": "January",
+  "02": "February",
+  "03": "March",
+  "04": "April",
+  "05": "May",
+  "06": "June",
+  "07": "July",
+  "08": "August",
+  "09": "September",
+  "10": "October",
+  "11": "November",
+  "12": "December",
+};
 
   return (
     <div className="reports-container">
@@ -282,14 +324,20 @@ useEffect(() => {
           </div>
 
          {!isMember && (
-  <div className="member-select-section">
+  <div
+  className={`member-select-section ${
+    isTotalReport ? "disabled-member-section" : ""
+  }`}
+>
 
     {employeeId ? (
       <div
         className="member-trigger-card active-trigger"
-        onClick={() =>
-          setShowMembers(!showMembers)
-        }
+       onClick={() => {
+  if (!isTotalReport) {
+    setShowMembers(!showMembers);
+  }
+}}
       >
         {employees
           .filter(
@@ -332,9 +380,11 @@ useEffect(() => {
     ) : (
       <div
         className="member-trigger-card"
-        onClick={() =>
-          setShowMembers(!showMembers)
-        }
+      onClick={() => {
+  if (!isTotalReport) {
+    setShowMembers(!showMembers);
+  }
+}}
       >
         <div className="member-selector-card">
 
@@ -351,19 +401,20 @@ useEffect(() => {
       </div>
     )}
 
-    {showMembers && (
+    {showMembers && !isTotalReport && (
       <div className="member-dropdown">
         <div className="report-search-box">
 
   <FaSearch />
 
-  <input
-    placeholder="Search member..."
-    value={searchEmployee}
-    onChange={(e)=>
-      setSearchEmployee(e.target.value)
-    }
-  />
+<input
+  placeholder="Search member..."
+  value={searchEmployee}
+  onChange={(e) =>
+    setSearchEmployee(e.target.value)
+  }
+  disabled={isTotalReport}
+/>
 
 </div>
 
@@ -377,14 +428,12 @@ useEffect(() => {
                     ? "active-member"
                     : ""
                 }`}
-                onClick={() => {
-                  setEmployeeId(
-                    emp._id
-                  );
-                  setShowMembers(
-                    false
-                  );
-                }}
+              onClick={() => {
+  if (isTotalReport) return;
+
+  setEmployeeId(emp._id);
+  setShowMembers(false);
+}}
               >
                 <div className="member-image-box">
                   {emp.photo ? (
@@ -424,33 +473,61 @@ useEffect(() => {
 )}
 
           <div className="report-controls-wrapper">
-            <div className={`date-circle-card ${reportType.endsWith("annual") ? "disabled-circle" : ""}`}>
-              <div className="circle-glow"></div>
-              <div className="circle-content">
-                <span className="circle-label">Month/ወር</span>
-                <select value={month} onChange={(e) => setMonth(e.target.value)} disabled={reportType.endsWith("annual")} className="circle-select">
-                  <option value="01">January</option>
-                  <option value="02">February</option>
-                  <option value="03">March</option>
-                  <option value="04">April</option>
-                  <option value="05">May</option>
-                  <option value="06">June</option>
-                  <option value="07">July</option>
-                  <option value="08">August</option>
-                  <option value="09">September</option>
-                  <option value="10">October</option>
-                  <option value="11">November</option>
-                  <option value="12">December</option>
-                </select>
-              </div>
-            </div>
+<div
+  className={`date-circle-card ${
+    isAnnualReport ? "disabled-circle" : ""
+  }`}
+>
+  <div className="circle-glow"></div>
+
+  <div className="circle-content">
+    <span className="circle-label">Month / ወር</span>
+
+    <select
+      value={month}
+      onChange={(e) => setMonth(e.target.value)}
+      disabled={isAnnualReport}
+      className="circle-select"
+    >
+      <option value="01">January</option>
+      <option value="02">February</option>
+      <option value="03">March</option>
+      <option value="04">April</option>
+      <option value="05">May</option>
+      <option value="06">June</option>
+      <option value="07">July</option>
+      <option value="08">August</option>
+      <option value="09">September</option>
+      <option value="10">October</option>
+      <option value="11">November</option>
+      <option value="12">December</option>
+    </select>
+  </div>
+</div>
 
             <div className="date-circle-card year-card">
               <div className="circle-glow purple"></div>
-              <div className="circle-content">
-                <span className="circle-label">Year/አመት</span>
-                <input type="number" value={year} onChange={(e) => setYear(e.target.value)} className="circle-input" />
-              </div>
+            <div
+  className={`date-circle-card year-card ${
+    isMonthlyReport ? "disabled-circle" : ""
+  }`}
+>
+  <div className="circle-glow purple"></div>
+
+  <div className="circle-content">
+    <span className="circle-label">Year / አመት</span>
+
+    <input
+      type="number"
+      value={year}
+      onChange={(e) => setYear(e.target.value)}
+      disabled={isMonthlyReport}
+      className="circle-input"
+      min="2020"
+      max="2100"
+    />
+  </div>
+</div>
             </div>
 
             <button
@@ -470,40 +547,103 @@ useEffect(() => {
       </div>
 
       {report && (
-        <div className="results-card animate-fade-in">
-          <div className="results-header">
-            <div className="title-group">
-              <FaMoneyBillWave className="result-icon" />
-              <h2 className="report-main-title">
-                {reportType.replace("-", " ").toUpperCase()} SUMMARY
-              </h2>
+      <div className="results-card animate-fade-in">
+    <div className="results-header">
+
+        <div className="title-group">
+            <FaMoneyBillWave className="result-icon" />
+
+            <div>
+                <h2 className="report-main-title">
+                    {reportType.replace("-", " ").toUpperCase()}
+                </h2>
+
+                <p className="report-period">
+                    {isMonthlyReport
+                        ? `${monthNames[month]} ${year}`
+                        : `Year ${year}`}
+                </p>
             </div>
-            <div className="export-actions">
-              <button className="export-btn pdf" onClick={downloadPDF}><FaFilePdf /> PDF</button>
-              <button className="export-btn excel" onClick={downloadExcel}><FaFileExcel /> Excel</button>
-            </div>
-          </div>
-          <div className="table-container">
-            <table className="modern-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Value (ETB)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(report).map(([key, value]) => (
-                  <tr key={key}>
-                    <td className="field-label">{key.replace(/([A-Z])/g, " $1").toUpperCase()}</td>
-                    <td className="field-value">
-                      {typeof value === "number" ? <span className="amount">{value.toLocaleString()}</span> : String(value)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
+
+        <div className="export-actions">
+            <button
+                className="export-btn pdf"
+                onClick={downloadPDF}
+            >
+                <FaFilePdf />
+                PDF
+            </button>
+
+            <button
+                className="export-btn excel"
+                onClick={downloadExcel}
+            >
+                <FaFileExcel />
+                Excel
+            </button>
+        </div>
+
+    </div>
+
+    <div className="table-container">
+
+        <table className="modern-table">
+
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {Object.entries(report).map(([key, value]) => (
+
+                    <tr key={key}>
+
+                        <td className="description-column">
+
+                            <div className="description-cell">
+
+                               
+
+                                <span>
+                                    {key
+                                        .replace(/([A-Z])/g, " $1")
+                                        .toUpperCase()}
+                                </span>
+
+                            </div>
+
+                        </td>
+
+                        
+
+<td className="field-value">
+  <span className="value-text">
+    {typeof value === "object" && value !== null ? (
+  <>
+    <div>Member ID : {value.memberId}</div>
+    <div>Full Name : {value.fullName}</div>
+  </>
+) : (
+  String(value)
+)}
+  </span>
+</td>
+
+                    </tr>
+
+                ))}
+
+            </tbody>
+
+        </table>
+
+    </div>
+</div>
       )}
     </div>
   );

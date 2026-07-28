@@ -1,0 +1,947 @@
+/* =====================================================
+   CHECK & BALANCE REPORT
+   PROFESSIONAL ACCOUNTING UI
+===================================================== */
+
+.checkbalance-container input,
+.checkbalance-container select,
+.checkbalance-container textarea{
+    color:#263238 !important;
+    background:#ffffff !important;
+}
+
+.checkbalance-container input::placeholder{
+    color:#8a94a6 !important;
+}
+.checkbalance-container select option{
+    color:#263238;
+    background:#ffffff;
+}
+
+/* ==========================
+   ROOT COLORS
+========================== */
+
+.checkbalance-container{
+    --primary:#1f4e79;
+    --primary-light:#2f6ea6;
+
+    --success:#2e7d32;
+    --danger:#c62828;
+    --warning:#ef6c00;
+
+    --excel:#1d6f42;
+    --pdf:#c62828;
+    --print:#455a64;
+
+    --bg:#f4f7fb;
+    --card:#ffffff;
+
+    --border:#d8dee9;
+
+    --text:#263238;
+    --muted:#6b7280;
+
+    --header:#eef4fb;
+
+    --shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+/* ==========================
+   RESET
+========================== */
+
+.checkbalance-container,
+.checkbalance-container *,
+.checkbalance-container *::before,
+.checkbalance-container *::after{
+    box-sizing:border-box;
+}
+
+.checkbalance-container{
+    background:var(--bg);
+    font-family:"Segoe UI","Inter",sans-serif;
+    color:var(--text);
+
+    max-width:1500px;
+    margin:auto;
+    padding:30px;
+}
+
+/* ==========================
+   PAGE
+========================== */
+
+.checkbalance-container{
+
+    max-width:1500px;
+
+    margin:auto;
+
+    padding:30px;
+
+}
+
+/* ==========================
+   HEADER
+========================== */
+
+.cb-header{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-bottom:25px;
+
+}
+
+.cb-header h1{
+
+    color:var(--primary);
+
+    font-size:30px;
+
+    font-weight:700;
+
+}
+
+.cb-header p{
+
+    color:var(--muted);
+
+    margin-top:5px;
+
+}
+
+/* ==========================
+   REFRESH BUTTON
+========================== */
+
+.refresh-btn{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    border:none;
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:12px 22px;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    font-weight:600;
+
+    transition:.25s;
+
+}
+
+.refresh-btn:hover{
+
+    background:var(--primary-light);
+
+}
+
+/* ==========================
+   FILTER CARD
+========================== */
+
+.filter-cards{
+
+    background:var(--card);
+
+    border-radius:14px;
+
+    padding:20px;
+
+    box-shadow:var(--shadow);
+
+    display:grid;
+
+    grid-template-columns:
+        180px
+        180px
+        1fr;
+
+    gap:18px;
+
+    margin-bottom:20px;
+
+}
+
+.filter-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+}
+
+.filter-group label{
+
+    font-size:13px;
+
+    color:#374151;
+
+    font-weight:600;
+
+    margin-bottom:8px;
+
+}
+
+.filter-group select{
+
+    height:45px;
+
+    border:1px solid var(--border);
+
+    border-radius:8px;
+
+    padding:0 12px;
+
+    font-size:15px;
+
+    font-weight:500;
+
+    outline:none;
+
+    transition:.2s;
+
+    background:#ffffff;
+
+    color:#263238;          /* Make selected text visible */
+
+    appearance:none;
+
+}
+
+.filter-group select:focus{
+
+    border-color:var(--primary);
+
+}
+
+/* ==========================
+   SEARCH
+========================== */
+
+.search-group{
+
+    width:100%;
+
+}
+
+.search-box{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    border:1px solid var(--border);
+
+    border-radius:8px;
+
+    padding:0 15px;
+
+    height:45px;
+
+    background:#ffffff;
+
+}
+
+.search-box svg{
+
+    color:var(--muted);
+
+}
+
+.search-box input{
+
+    flex:1;
+
+    border:none;
+
+    outline:none;
+
+    background:transparent;
+
+    font-size:15px;
+
+    font-weight:500;
+
+    color:#263238;      /* Input text */
+
+    caret-color:#1f4e79;
+
+}
+.search-box input::placeholder{
+
+    color:#8a94a6;
+
+    opacity:1;
+
+}
+.checkbalance-container .filter-group select option{
+    background:#ffffff;
+    color:#263238;
+}
+
+/* ==========================
+   ACTION BAR
+========================== */
+
+.action-bar{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:12px;
+
+    margin-bottom:22px;
+
+}
+
+.action-bar button{
+
+    border:none;
+
+    border-radius:10px;
+
+    color:white;
+
+    padding:11px 20px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    cursor:pointer;
+
+    font-size:14px;
+
+    font-weight:600;
+
+    transition:.25s;
+
+}
+
+.pdf-btn{
+
+    background:var(--pdf);
+
+}
+
+.pdf-btn:hover{
+
+    filter:brightness(.92);
+
+}
+
+.excel-btn{
+
+    background:var(--excel);
+
+}
+
+.excel-btn:hover{
+
+    filter:brightness(.92);
+
+}
+
+.print-btn{
+
+    background:var(--print);
+
+}
+
+.print-btn:hover{
+
+    filter:brightness(.92);
+
+}
+
+/* ==========================
+   REPORT CARD
+========================== */
+
+.report-card{
+
+    background:var(--card);
+
+    border-radius:15px;
+
+    box-shadow:var(--shadow);
+
+    overflow:hidden;
+
+}
+
+/* ==========================
+   REPORT TITLE
+========================== */
+
+.report-title{
+
+    background:var(--primary);
+
+    color:white;
+
+    padding:20px 25px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+}
+
+.report-title h2{
+
+    font-size:24px;
+
+    letter-spacing:.5px;
+
+}
+
+.report-title span{
+
+    font-weight:600;
+
+}
+
+/* ==========================
+   ORGANIZATION HEADER
+========================== */
+
+.organization-header{
+
+    padding:28px;
+
+    text-align:center;
+
+    border-bottom:1px solid var(--border);
+
+}
+
+.organization-header h3{
+
+    color:var(--primary);
+
+    font-size:24px;
+
+    margin-bottom:8px;
+
+}
+
+.organization-header p{
+
+        color:#374151;
+
+    font-weight:500;
+
+    margin-top:5px;
+
+}
+
+/* ==========================
+   TABLE WRAPPER
+========================== */
+
+.table-wrapper{
+
+    overflow:auto;
+
+    padding:20px;
+
+}
+/* =====================================================
+   TABLE
+===================================================== */
+
+.checkbalance-table{
+
+    width:100%;
+
+    border-collapse:collapse;
+
+    min-width:900px;
+
+    font-size:15px;
+
+}
+
+/* ==========================
+   TABLE HEADER
+========================== */
+
+.checkbalance-table thead th{
+
+    position:sticky;
+
+    top:0;
+
+    z-index:10;
+
+    background:var(--header);
+
+    color:var(--primary);
+
+    font-weight:700;
+
+    padding:14px 16px;
+
+    border:1px solid var(--border);
+
+    text-align:left;
+
+}
+
+.checkbalance-table thead th:nth-child(2),
+.checkbalance-table thead th:nth-child(3){
+
+    text-align:right;
+
+}
+
+/* ==========================
+   TABLE BODY
+========================== */
+
+.checkbalance-table tbody td{
+
+    padding:13px 16px;
+
+    border:1px solid var(--border);
+
+    color:var(--text);
+
+}
+
+.checkbalance-table tbody tr:nth-child(even){
+
+    background:#f9fbfd;
+
+}
+
+.checkbalance-table tbody tr:hover{
+
+    background:#edf5ff;
+
+    transition:.2s;
+
+}
+
+/* ==========================
+   AMOUNT COLUMN
+========================== */
+
+.amount{
+
+    text-align:right;
+
+    font-weight:600;
+
+    font-variant-numeric:tabular-nums;
+
+}
+
+/* ==========================
+   LOADING ROW
+========================== */
+
+.loading-row{
+
+    text-align:center;
+
+    color:var(--muted);
+
+    padding:35px !important;
+
+    font-style:italic;
+
+}
+
+/* ==========================
+   TOTAL ROW
+========================== */
+
+.checkbalance-table tfoot td{
+
+    padding:15px 16px;
+
+    border:1px solid var(--border);
+
+    background:var(--primary);
+
+    color:#fff;
+
+    font-size:16px;
+
+    font-weight:700;
+
+}
+
+.total-row td{
+
+    border-top:3px solid #163a5c;
+
+}
+
+/* =====================================================
+   SUMMARY SECTION
+===================================================== */
+
+/* =====================================================
+   SUMMARY SECTION
+===================================================== */
+
+.summary-section{
+
+    display:grid;
+
+    grid-template-columns:repeat(3,1fr);
+
+    gap:20px;
+
+    padding:25px;
+
+    border-top:1px solid var(--border);
+
+    background:#fafbfd;
+
+}
+
+/* =====================================================
+   SUMMARY CARD
+===================================================== */
+
+.summary-card{
+
+    background:#ffffff;
+
+    border-radius:12px;
+
+    padding:22px;
+
+    text-align:center;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.06);
+
+    color:#263238;          /* Default text color */
+
+}
+
+.summary-card span{
+
+    display:block;
+
+    margin-bottom:10px;
+
+    font-size:13px;
+
+    font-weight:600;
+
+    text-transform:uppercase;
+
+    letter-spacing:.5px;
+
+    color:#6b7280 !important;
+
+}
+
+.summary-card h3{
+
+    margin:0;
+
+    font-size:28px;
+
+    font-weight:700;
+
+    color:#263238 !important;
+
+}
+
+/* ==========================
+   CARD COLORS
+========================== */
+
+.debit-card{
+
+    border-top:5px solid #1f4e79;
+
+}
+
+.debit-card h3{
+
+    color:#1f4e79 !important;
+
+}
+
+.credit-card{
+
+    border-top:5px solid #2e7d32;
+
+}
+
+.credit-card h3{
+
+    color:#2e7d32 !important;
+
+}
+
+.balance-card{
+
+    border-top:5px solid #2e7d32;
+
+}
+
+.balance-card span{
+
+    color:#2e7d32 !important;
+
+}
+
+.balance-card h3{
+
+    color:#2e7d32 !important;
+
+}
+
+.unbalance-card{
+
+    border-top:5px solid #c62828;
+
+}
+
+.unbalance-card span{
+
+    color:#c62828 !important;
+
+}
+
+.unbalance-card h3{
+
+    color:#c62828 !important;
+
+}
+
+/* =====================================================
+   SCROLLBAR
+===================================================== */
+
+.table-wrapper::-webkit-scrollbar{
+
+    height:10px;
+
+    width:10px;
+
+}
+
+.table-wrapper::-webkit-scrollbar-thumb{
+
+    background:#b9c6d3;
+
+    border-radius:20px;
+
+}
+
+.table-wrapper::-webkit-scrollbar-track{
+
+    background:#eef3f8;
+
+}
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+
+@media (max-width:1100px){
+
+    .filter-card{
+
+        grid-template-columns:1fr;
+
+    }
+
+    .action-bar{
+
+        flex-wrap:wrap;
+
+        justify-content:flex-start;
+
+    }
+
+    .summary-section{
+
+        grid-template-columns:1fr;
+
+    }
+
+}
+
+@media (max-width:768px){
+
+    .checkbalance-container{
+
+        padding:15px;
+
+    }
+
+    .cb-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:15px;
+
+    }
+
+    .report-title{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+        gap:8px;
+
+    }
+
+    .organization-header h3{
+
+        font-size:20px;
+
+    }
+
+    .organization-header{
+
+        padding:20px;
+
+    }
+
+    .action-bar{
+
+        width:100%;
+
+    }
+
+    .action-bar button{
+
+        flex:1;
+
+        justify-content:center;
+
+    }
+
+}
+
+/* =====================================================
+   PRINT
+===================================================== */
+
+@media print{
+
+    body{
+
+        background:#fff;
+
+    }
+
+    .filter-card,
+    .action-bar,
+    .refresh-btn{
+
+        display:none !important;
+
+    }
+
+    .checkbalance-container{
+
+        padding:0;
+
+        max-width:100%;
+
+    }
+
+    .report-card{
+
+        box-shadow:none;
+
+        border:none;
+
+    }
+
+    .table-wrapper{
+
+        overflow:visible;
+
+        padding:0;
+
+    }
+
+    .checkbalance-table{
+
+        min-width:100%;
+
+    }
+
+    .summary-section{
+
+        page-break-inside:avoid;
+
+    }
+
+    .checkbalance-table thead th{
+
+        position:static;
+
+    }
+
+}
+
+/* =====================================================
+   ANIMATIONS
+===================================================== */
+
+.report-card{
+
+    animation:fadeIn .35s ease;
+
+}
+
+@keyframes fadeIn{
+
+    from{
+
+        opacity:0;
+
+        transform:translateY(10px);
+
+    }
+
+    to{
+
+        opacity:1;
+
+        transform:translateY(0);
+
+    }
+
+}

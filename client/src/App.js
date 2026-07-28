@@ -22,6 +22,9 @@ import ViewProfile from "./pages/ViewProfile";
 import EditProfile from "./pages/EditProfile";
 import ChangePassword from "./pages/ChangePassword";
 import ResetPassword from "./pages/ResetPassword";
+import BalanceSheet from "./pages/BalanceSheet";
+import CashFlow from "./pages/CashFlow";
+import CheckBalance from "./pages/CheckBalance";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -192,6 +195,39 @@ function App() {
                   isAuthenticated ? <Reports /> : <Navigate to="/login" />
                 }
               />
+                 
+<Route
+  path="/balance-sheet"
+  element={
+    isAuthenticated ? (
+      <BalanceSheet />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
+
+<Route
+  path="/cash-flow"
+  element={
+    isAuthenticated ? (
+      <CashFlow />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
+
+<Route
+  path="/check-balance"
+  element={
+    isAuthenticated ? (
+      <CheckBalance />
+    ) : (
+      <Navigate to="/login" />
+    )
+  }
+/>
 
               <Route
                 path="/dividend"
@@ -249,7 +285,7 @@ function App() {
                   isAuthenticated ? <ViewProfile /> : <Navigate to="/login" />
                 }
               />
-
+            
               <Route
                 path="/profile/edit"
                 element={

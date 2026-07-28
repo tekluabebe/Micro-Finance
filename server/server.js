@@ -1427,219 +1427,229 @@ app.get("/api/loans", async (req, res) => {
 // INDIVIDUAL MONTHLY REPORT
 // =========================================
 app.get("/api/reports/individual-monthly", async (req, res) => {
-
   try {
-
     const { employeeId, month, year } = req.query;
 
     const employee = await Employee.findById(employeeId);
 
     if (!employee) {
-
       return res.status(404).json({
-        message: "Employee not found"
+        message: "Employee not found",
       });
     }
 
-    // =========================
+    // ==========================================
     // DEPOSITS
-    // =========================
-    const deposits = await Deposit.find({
-      employeeId,
-      month,
-      year
-    });
+    // ==========================================
 
-    const totalNormalSaving = deposits.reduce(
-      (sum, d) => sum + (d.normalSaving || 0),
-      0
-    );
+// Monthly deposits
+// ==========================================
+// DEPOSITS
+// ==========================================
 
-    const totalVoluntarySaving = deposits.reduce(
-      (sum, d) => sum + (d.voluntarySaving || 0),
-      0
-    );
+const mongoose = require("mongoose");
 
-    const monthlyTotalDeposit =
-      totalNormalSaving + totalVoluntarySaving;
+const monthNames = {
+  "01": "January",
+  "02": "February",
+  "03": "March",
+  "04": "April",
+  "05": "May",
+  "06": "June",
+  "07": "July",
+  "08": "August",
+  "09": "September",
+  "10": "October",
+  "11": "November",
+  "12": "December",
+};
 
-    const sharesPurchased = deposits.reduce(
-      (sum, d) => sum + (d.sharedPurchase || 0),
-      0
-    );
+// Convert month number (05) to month name (May)
+const selectedMonth = monthNames[month] || month;
 
-    // =========================
-    // REGISTRATION FEES
-    // =========================
-    const registrationFees =
-      await RegistrationFee.find({
-        employeeId,
-        month,
-        year
-      });
+// Convert employeeId to ObjectId
+const employeeObjectId = new mongoose.Types.ObjectId(employeeId);
 
-    const registrationFee =
-      registrationFees.reduce(
-        (sum, r) => sum + (r.amount || 0),
-        0
-      );
+// Get all deposits for this employee
+const allDeposits = await Deposit.find({
+  employeeId: employeeObjectId,
+});
 
-    // =========================
-    // DEPOSIT PENALTIES
-    // =========================
-    const penalties =
-      await LatePenalty.find({
-        employeeId,
-        month,
-        year
-      });
+// Get deposits only for the selected month/year
+const monthlyDeposits = allDeposits.filter(
+  d =>
+    d.month === selectedMonth &&
+    String(d.year) === String(year)
+);
 
-    const depositPenalty =
-      penalties.reduce(
-        (sum, p) => sum + (p.amount || 0),
-        0
-      );
+console.log("Employee :", employeeId);
+console.log("Month    :", selectedMonth);
+console.log("Year     :", year);
+console.log("Found    :", monthlyDeposits.length);
 
-    // =========================
-    // ACTIVE LOAN
-    // =========================
-    const activeLoan =
-      await Loan.findOne({
-        employeeId,
-        status: "approved",
-        remainingAmount: { $gt: 0 }
-      });
+// Monthly Normal Saving
+const totalNormalSaving = monthlyDeposits.reduce(
+  (sum, d) => sum + Number(d.normalSaving || 0),
+  0
+);
 
-    // =========================
-    // LOAN PAYMENTS
-    // =========================
-    const startDate =
-      new Date(`${year}-${month}-01`);
+// Monthly Voluntary Saving
+const totalVoluntarySaving = monthlyDeposits.reduce(
+  (sum, d) => sum + Number(d.voluntarySaving || 0),
+  0
+);
 
-    const endDate = new Date(startDate);
+// Monthly Deposit
+const monthlyDeposit =
+  totalNormalSaving + totalVoluntarySaving;
 
-    endDate.setMonth(
-      endDate.getMonth() + 1
-    );
+// Total Registration Fee
+const registrationFee = allDeposits.reduce(
+  (sum, d) => sum + Number(d.registrationFee || 0),
+  0
+);
 
-    const payments =
-      await LoanPayment.find({
+// Monthly Deposit Penalty
+const depositPenalty = monthlyDeposits.reduce(
+  (sum, d) => sum + Number(d.latePenalty || 0),
+  0
+);
 
-        employeeId,
+// Total Shared Purchase
+const sharesPurchased = allDeposits.reduce(
+  (sum, d) => sum + Number(d.sharedPurchase || 0),
+  0
+);
 
-        createdAt: {
-          $gte: startDate,
-          $lt: endDate
-        }
-      });
+    // ==========================================
+    // GET LATEST LOAN
+    // ==========================================
+const loan = await Loan.findOne({
+  employeeId: employeeObjectId,
+  status: "approved",
+}).sort({
+  createdAt: -1,
+});
 
-    const loanPaidAmount =
-      payments.reduce(
-        (sum, p) =>
-          sum + (p.amountPaid || 0),
-        0
-      );
-
-    const loanPenalty =
-      payments.reduce(
-        (sum, p) =>
-          sum + (p.penalty || 0),
-        0
-      );
-
-    // =========================
-    // INTEREST
-    // =========================
+    let activeLoanAmount = 0;
+    let remainingLoanAmount = 0;
+    let loanStartDate = "N/A";
+    let loanEndDate = "N/A";
     let loanInterestAmount = 0;
 
-    if (activeLoan) {
+    if (loan && loan.status !== "completed") {
+      activeLoanAmount = Number(loan.principalAmount) || 0;
 
+      remainingLoanAmount =
+        Number(loan.remainingAmount) || 0;
+
+      loanStartDate = loan.createdAt;
+
+      if (loan.dueDate) {
+        loanEndDate = loan.dueDate;
+      } else if (loan.durationMonths) {
+        const end = new Date(loan.createdAt);
+        end.setMonth(
+          end.getMonth() + Number(loan.durationMonths)
+        );
+        loanEndDate = end;
+      }
+
+      // Loan Interest = Total Amount - Principal Amount
       loanInterestAmount =
-        activeLoan.principalAmount * 0.12;
+        (Number(loan.totalAmount) || 0) -
+        (Number(loan.principalAmount) || 0);
     }
 
-    const interestPaid =
-      payments.reduce(
-        (sum, p) =>
-          sum +
-          (
-            (p.totalPaid || 0) -
-            (p.amountPaid || 0)
-          ),
-        0
-      );
+    // ==========================================
+    // MONTHLY LOAN PAYMENTS
 
-    const remainingInterest =
-      loanInterestAmount - interestPaid;
+// ==========================================
+// LOAN PAYMENTS (ALL PAYMENTS FOR THIS LOAN)
+// ==========================================
 
-    res.json({
+let payments = [];
 
-      employee: {
+if (loan) {
+  payments = await LoanPayment.find({
+    employeeId,
+    loanId: loan._id,
+  });
+}
 
-        id: employee._id,
+// Total Principal Paid
+const loanPaidAmount = payments.reduce(
+  (sum, p) => sum + (Number(p.amountPaid) || 0),
+  0
+);
 
-        memberId: employee.memberId,
+// Total Penalty Paid
+const loanPenalty = payments.reduce(
+  (sum, p) => sum + (Number(p.penalty) || 0),
+  0
+);
 
-        fullName:
-          employee.firstName +
-          " " +
-          employee.lastName
-      },
+// Total Interest Paid (All Months)
+const interestPaid = payments.reduce(
+  (sum, p) => sum + (Number(p.interestPaid) || 0),
+  0
+);
 
-      month,
+// Remaining Interest
+const remainingInterest = Math.max(
+  0,
+  loanInterestAmount - interestPaid
+);
 
-      year,
+    // ==========================================
+    // RESPONSE
+    // ==========================================
+res.json({
+  employee: {
+    id: employee._id,
+    memberId: employee.memberId,
+    fullName:
+      employee.firstName + " " + employee.lastName,
+  },
 
-      monthlyTotalDeposit,
+  month,
+  year,
 
-      activeLoanAmount:
-        activeLoan?.principalAmount || 0,
+  monthlyDeposit,
 
-      loanStartDate:
-        activeLoan?.createdAt || null,
+  normalSaving: totalNormalSaving,
 
-      loanEndDate:
-        activeLoan
-          ? new Date(
-              activeLoan.createdAt.getTime() +
-              Number(
-                activeLoan.durationMonths
-              ) *
-              30 *
-              24 *
-              60 *
-              60 *
-              1000
-            )
-          : null,
+  voluntarySaving: totalVoluntarySaving,
 
-      loanInterestAmount,
+  registrationFee,
 
-      loanPaidAmount,
+  depositPenalty,
 
-      remainingLoanAmount:
-        activeLoan?.remainingAmount || 0,
+  sharesPurchased,
 
-      registrationFee,
+  activeLoanAmount,
 
-      depositPenalty,
+  loanStartDate,
 
-      interestPaid,
+  loanEndDate,
 
-      remainingInterest,
+  loanInterestAmount,
 
-      loanPenalty,
+  loanPaidAmount,
 
-      sharesPurchased
-    });
+  remainingLoanAmount,
 
+  interestPaid,
+
+  remainingInterest,
+
+  loanPenalty,
+});
   } catch (err) {
-
     console.error(err);
 
     res.status(500).json({
-      message:
-        "Monthly report generation failed"
+      message: "Monthly report generation failed",
     });
   }
 });
@@ -1662,14 +1672,21 @@ app.get("/api/reports/individual-annual", async (req, res) => {
         year
       });
 
-    const totalAnnualDeposits =
-      deposits.reduce(
-        (sum, d) =>
-          sum +
-          (d.normalSaving || 0) +
-          (d.voluntarySaving || 0),
-        0
-      );
+// Annual Normal Saving
+const annualNormalSaving = deposits.reduce(
+  (sum, d) => sum + (d.normalSaving || 0),
+  0
+);
+
+// Annual Voluntary Saving
+const annualVoluntarySaving = deposits.reduce(
+  (sum, d) => sum + (d.voluntarySaving || 0),
+  0
+);
+
+// Total Annual Deposits
+const totalAnnualDeposits =
+  annualNormalSaving + annualVoluntarySaving;
 
     const sharesPurchased =
       deposits.reduce(
@@ -1761,49 +1778,55 @@ app.get("/api/reports/individual-annual", async (req, res) => {
         0
       );
 
-    const remainingInterest =
-      loanInterestAmount - interestPaid;
+    const remainingInterest = Math.max(
+  0,
+  loanInterestAmount - interestPaid
+);
+res.json({
 
-    res.json({
+  employee: {
 
-      employee: {
+    id: employee._id,
 
-        id: employee._id,
+    memberId: employee.memberId,
 
-        memberId: employee.memberId,
+    fullName:
+      employee.firstName +
+      " " +
+      employee.lastName
+  },
 
-        fullName:
-          employee.firstName +
-          " " +
-          employee.lastName
-      },
+  year,
 
-      year,
+ 
 
-      totalAnnualDeposits,
+  totalAnnualDeposits,
+   annualNormalSaving,
 
-      activeLoanAmount:
-        activeLoan?.principalAmount || 0,
+  annualVoluntarySaving,
 
-      loanInterestAmount,
+  activeLoanAmount:
+    activeLoan?.principalAmount || 0,
 
-      annualLoanPaid,
+  loanInterestAmount,
 
-      remainingLoanAmount:
-        activeLoan?.remainingAmount || 0,
+  annualLoanPaid,
 
-      registrationFee,
+  remainingLoanAmount:
+    activeLoan?.remainingAmount || 0,
 
-      totalAnnualDepositPenalties,
+  registrationFee,
 
-      interestPaid,
+  totalAnnualDepositPenalties,
 
-      remainingInterest,
+  interestPaid,
 
-      totalAnnualLoanPenalties,
+  remainingInterest,
 
-      sharesPurchased
-    });
+  totalAnnualLoanPenalties,
+
+  sharesPurchased
+});
 
   } catch (err) {
 
@@ -1815,11 +1838,6 @@ app.get("/api/reports/individual-annual", async (req, res) => {
     });
   }
 });
-
-
-
-
-//restore data
 
 
 // POST /terminated/restore/:id
@@ -2983,83 +3001,6 @@ app.get("/api/dashboard", async (req, res) => {
 // ==========================================
 // FINANCIAL REPORTS LOGIC (API ENDPOINTS)
 // ==========================================
-
-// 1. Individual Monthly Report
-app.get("/api/reports/individual-monthly", async (req, res) => {
-  try {
-    const { employeeId, month, year } = req.query;
-
-    // ወሩን እና አመቱን ወደ ቁጥር (Number) መቀየር ለጥንቃቄ
-    const targetMonth = month; // "05" ከሆነ በስትሪንግ መፈለግ ካልሆነ parseInt(month)
-    const targetYear = year;
-
-    // የዚያን ወር የተቀመጠ ገንዘብ (Deposits)
-    const deposits = await Deposit.find({ employeeId, month: targetMonth, year: targetYear });
-    
-    // ብድር ካለ መረጃውን ማምጣት
-    const activeLoan = await Loan.findOne({ employeeId, status: "approved" });
-    
-    // የዚያን ወር የብድር ክፍያ (Payments)
-    const payments = await LoanPayment.find({ 
-      employeeId, 
-      // በከፈለው ቀን ወር እና አመት ፊልተር ለማድረግ (እንደ ዳታቤዝህ አወቃቀር ይለያያል)
-    });
-
-    // ክፍያዎችን ለዚያ ወር ብቻ ፊልተር ማድረግ (CreatedAt በመጠቀም)
-    const monthlyPayments = payments.filter(p => {
-      const d = new Date(p.createdAt);
-      return (d.getMonth() + 1).toString().padStart(2, '0') === targetMonth && 
-             d.getFullYear().toString() === targetYear;
-    });
-
-    // ስሌቶች
-    const monthlyTotalDeposit = deposits.reduce((sum, d) => sum + (d.normalSaving || 0) + (d.voluntarySaving || 0), 0);
-    const regFee = deposits.reduce((sum, d) => sum + (d.registrationFee || 0), 0);
-    const penalty = deposits.reduce((sum, d) => sum + (d.latePenalty || 0), 0);
-    const shares = deposits.reduce((sum, d) => sum + (d.sharedPurchase || 0), 0);
-    const loanPaid = monthlyPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
-    const loanInt = monthlyPayments.reduce((sum, p) => sum + (p.interestPaid || 0), 0);
-
-    res.json({
-      month: targetMonth,
-      year: targetYear,
-      monthlyTotalDeposit,
-      activeLoanAmount: activeLoan ? activeLoan.principalAmount : 0,
-      loanStartDate: activeLoan ? new Date(activeLoan.createdAt).toLocaleDateString() : "No Active Loan",
-      loanEndDate: activeLoan && activeLoan.dueDate ? new Date(activeLoan.dueDate).toLocaleDateString() : "N/A",
-      loanInterestPaid: loanInt,
-      loanPaidAmount: loanPaid,
-      remainingLoanAmount: activeLoan ? activeLoan.remainingAmount : 0,
-      registrationFee: regFee,
-      depositPenalty: penalty,
-      sharesPurchased: shares
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
-  }
-});
-
-// 2. Individual Annual Report
-app.get("/api/reports/individual-annual", async (req, res) => {
-  try {
-    const { employeeId, year } = req.query;
-
-    const deposits = await Deposit.find({ employeeId, year });
-    const activeLoan = await Loan.findOne({ employeeId, status: "approved" });
-
-    res.json({
-      year,
-      yearlyTotalDeposit: deposits.reduce((sum, d) => sum + (d.normalSaving || 0) + (d.voluntarySaving || 0), 0),
-      totalSharesInYear: deposits.reduce((sum, d) => sum + (d.sharedPurchase || 0), 0),
-      totalRegistrationFees: deposits.reduce((sum, d) => sum + (d.registrationFee || 0), 0),
-      totalPenalties: deposits.reduce((sum, d) => sum + (d.latePenalty || 0), 0),
-      currentLoanStatus: activeLoan ? "Active" : "No Loan",
-      remainingLoanBalance: activeLoan ? activeLoan.remainingAmount : 0
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // 3. Total Members Report (Monthly & Annual)
 app.get("/api/reports/total-members", async (req, res) => {
