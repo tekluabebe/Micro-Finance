@@ -373,13 +373,19 @@ console.log("Rounded Total:", roundedTotalLoan);
 
             <div className="loan-input-group">
               <label>Loan Amount</label>
-              <input 
-                type="number" 
-                name="principalAmount" 
-                placeholder="Enter amount (ETB)..." 
-                value={loan.principalAmount} 
-                onChange={handleChange} 
-              />
+             <input
+  type="number"
+  name="principalAmount"
+  placeholder="Enter amount (ETB)..."
+  value={loan.principalAmount}
+  onChange={handleChange}
+  style={{
+    color: "#000000",
+    backgroundColor: "#ffffff",
+    WebkitTextFillColor: "#000000",
+    caretColor: "#000000"
+  }}
+/>
             </div>
 
             {totalSaving > 0 && (

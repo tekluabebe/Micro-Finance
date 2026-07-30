@@ -65,25 +65,13 @@
 .loan-input-group label {
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
+  color: #0d0e0e;
   margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.loan-input-group select, 
-.loan-input-group input {
-  padding: 14px;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 15px;
-  transition: all 0.3s ease;
-  background: white;
-  color: #334155;
-  outline: none;
-  width: 100%;
-  box-sizing: border-box;
-}
+
 
 .loan-input-group select:focus, 
 .loan-input-group input:focus {
@@ -305,6 +293,22 @@
 
 .loan-card h2{
   color: #1d4ed8;
+}
+/* FORCE loan input text */
+.loan-card input[type="number"]{
+    color:#000000 !important;
+    -webkit-text-fill-color:#000000 !important;
+    background:#ffffff !important;
+    caret-color:#000000 !important;
+}
+
+.loan-card input[type="number"]:focus{
+    color:#000000 !important;
+    -webkit-text-fill-color:#000000 !important;
+}
+
+.loan-card input[type="number"]::placeholder{
+    color:#666666 !important;
 }
 
 /* ==========================
@@ -530,39 +534,79 @@
 }
 
 /* Inputs */
-.loan-input-group input,
-.loan-input-group select{
-    color:#0f172a;
+
+
+/* ========================================
+   INPUTS
+======================================== */
+
+/* ==========================================
+   FORCE INPUT COLORS
+========================================== */
+
+.loan-card input,
+.loan-card select,
+.loan-card textarea{
+    background:#ffffff !important;
+    color:#000000 !important;
+    border:1px solid #cbd5e1 !important;
     font-weight:600;
 }
 
-.loan-input-group input::placeholder{
-    color:#64748b;
+.loan-card input::placeholder{
+    color:#6b7280 !important;
 }
 
+.loan-card option{
+    background:#ffffff !important;
+    color:#000000 !important;
+}
+
+.loan-card input:focus,
+.loan-card select:focus{
+    background:#ffffff !important;
+    color:#000000 !important;
+    border-color:#2563eb !important;
+}
+
+/* ==========================================
+   SUMMARY
+========================================== */
+
+.summary-card{
+    background:#f8fafc !important;
+    border:1px solid #cbd5e1 !important;
+    color:#000000 !important;
+}
+
+.summary-card *{
+    color:#000000 !important;
+}
+
+.summary-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.summary-row span{
+    color:#374151 !important;
+    font-weight:600;
+}
+
+.summary-row strong{
+    color:#000000 !important;
+    font-size:18px;
+    font-weight:700;
+}
 /* Dropdown */
 .loan-input-group select option{
     color:#0f172a;
     background:#ffffff;
 }
 
-/* Summary Card */
-.summary-card{
-    background:#1e293b;
-    color:#fff;
-}
 
-.summary-card .summary-row{
-    color:#fff;
-}
-
-.summary-card strong,
-.summary-card span,
-.summary-card p,
-.summary-card h3,
-.summary-card h4{
-    color:#fff;
-}
 
 /* Loan History */
 .loan-history-card{
