@@ -19,13 +19,7 @@ export default function Withdrawals() {
     reason: "",
   });
 
- // const userRole =
-  //localStorage.getItem("userRole")?.toLowerCase() || "member";
-
-//const isMember = userRole === "member";
-
-const loggedInMemberId =
-  localStorage.getItem("memberId");
+  const loggedInMemberId = localStorage.getItem("memberId");
 
   // =======================
   // LOAD DATA
@@ -49,28 +43,28 @@ const loggedInMemberId =
   }, []);
 
   useEffect(() => {
-  if (
-    isMember &&
-    loggedInMemberId &&
-    employees.length > 0
-  ) {
-    const employee = employees.find(
-      (emp) =>
-        String(emp.memberId) === String(loggedInMemberId)
-    );
+    if (
+      isMember &&
+      loggedInMemberId &&
+      employees.length > 0
+    ) {
+      const employee = employees.find(
+        (emp) =>
+          String(emp.memberId) === String(loggedInMemberId)
+      );
 
-    if (employee) {
-      const total = calculateSaving(employee._id);
+      if (employee) {
+        const total = calculateSaving(employee._id, employee);
 
-      setData({
-        employeeId: employee._id,
-        fullName: `${employee.firstName} ${employee.lastName}`,
-        totalSaving: total,
-        reason: "",
-      });
+        setData({
+          employeeId: employee._id,
+          fullName: `${employee.firstName} ${employee.lastName}`,
+          totalSaving: total,
+          reason: "",
+        });
+      }
     }
-  }
-}, [employees, deposits]);
+  }, [employees, deposits]);
 
   // =======================
   // CHECK ACTIVE LOAN
@@ -85,23 +79,33 @@ const loggedInMemberId =
   };
 
   // =======================
-  // CALCULATE SAVING
+  // CALCULATE SAVING (UPDATED)
   // =======================
-  const calculateSaving = (employeeId) => {
-    const total = deposits
-      .filter(
-        (d) =>
-          String(d.employeeId?._id || d.employeeId) === String(employeeId)
-      )
-      .reduce((sum, d) => {
-        const normal = parseFloat(d.normalSaving) || 0;
-        const voluntary = parseFloat(d.voluntarySaving) || 0;
-        return sum + normal + voluntary;
-      }, 0);
+// =======================
+// CALCULATE SAVING (UPDATED)
+// =======================
+const calculateSaving = (employeeId, employee = null) => {
+  // 🔥 First priority: Use employee's totalSaving field if available
+  if (employee && employee.totalSaving) {
+    return employee.totalSaving;
+  }
 
-    return total;
-  };
+  // Fallback: Calculate from deposits (ONLY normal + voluntary)
+  const total = deposits
+    .filter(
+      (d) =>
+        String(d.employeeId?._id || d.employeeId) === String(employeeId)
+    )
+    .reduce((sum, d) => {
+      const normal = parseFloat(d.normalSaving) || 0;
+      const voluntary = parseFloat(d.voluntarySaving) || 0;
+      
+      // 🔥 ONLY sum normal and voluntary savings
+      return sum + normal + voluntary;
+    }, 0);
 
+  return total;
+};
   // =======================
   // HANDLE CHANGE
   // =======================
@@ -110,7 +114,9 @@ const loggedInMemberId =
 
     if (name === "employeeId") {
       const selectedEmp = employees.find((emp) => emp._id === value);
-      const total = calculateSaving(value);
+      
+      // 🔥 Pass employee object to calculateSaving
+      const total = calculateSaving(value, selectedEmp);
 
       setData({
         ...data,
@@ -145,18 +151,18 @@ const loggedInMemberId =
     try {
       const emp = employees.find((e) => e._id === data.employeeId);
 
-    
+      // 🔥 Get the most accurate totalSaving
+      const finalTotalSaving = emp?.totalSaving || calculateSaving(data.employeeId, emp);
 
-  await API.post("/withdrawals", {
-  employeeId: data.employeeId,
-  fullName: data.fullName,
-  totalSaving: data.totalSaving,
-  reason: data.reason,
-  status: "pending",
-  isRead: false,
-});
-
-      //await API.delete(`/employees/${data.employeeId}`);
+      await API.post("/withdrawals", {
+        employeeId: data.employeeId,
+        memberId: emp?.memberId,  // 🔥 Also send memberId
+        fullName: data.fullName,
+        totalSaving: finalTotalSaving,  // 🔥 Use calculated value
+        reason: data.reason,
+        status: "pending",
+        isRead: false,
+      });
 
       alert("Employee moved to terminated list ✅");
 
@@ -181,16 +187,16 @@ const loggedInMemberId =
     <div className="withdraw-container">
       <div className="withdraw-card">
         
-       {!isMember && (
-  <div className="top-bar">
-    <button
-      onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
-      className="view-btn"
-    >
-      <FaListUl /> View Terminated
-    </button>
-  </div>
-)}
+        {!isMember && (
+          <div className="top-bar">
+            <button
+              onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
+              className="view-btn"
+            >
+              <FaListUl /> View Terminated
+            </button>
+          </div>
+        )}
 
         <h2 className="withdraw-title">
           <FaUserMinus color="#8e44ad" /> 
@@ -198,55 +204,55 @@ const loggedInMemberId =
         </h2>
 
         {/* EMPLOYEE */}
-      <div className="input-field-group">
-  <label className="field-label">
-    Select Employee 
-  </label>
+        <div className="input-field-group">
+          <label className="field-label">
+            Select Employee 
+          </label>
 
-  <select
-    name="employeeId"
-    value={data.employeeId}
-    onChange={handleChange}
-    className="modern-select"
-    disabled={isMember}
-  >
-    {!isMember ? (
-      <>
-        <option value="">
-          Choose an employee...
-        </option>
+          <select
+            name="employeeId"
+            value={data.employeeId}
+            onChange={handleChange}
+            className="modern-select"
+            disabled={isMember}
+          >
+            {!isMember ? (
+              <>
+                <option value="">
+                  Choose an employee...
+                </option>
 
-        {employees.map((emp) => (
-          <option
-            key={emp._id}
-            value={emp._id}
-          >
-            {emp.memberId} - {emp.firstName}{" "}
-            {emp.lastName}
-            {hasActiveLoan(emp._id)
-              ? " (Active Loan ❌)"
-              : ""}
-          </option>
-        ))}
-      </>
-    ) : (
-      employees
-        .filter(
-          (emp) =>
-            String(emp.memberId) ===
-            String(loggedInMemberId)
-        )
-        .map((emp) => (
-          <option
-            key={emp._id}
-            value={emp._id}
-          >
-            {emp.firstName} {emp.lastName}
-          </option>
-        ))
-    )}
-  </select>
-</div>
+                {employees.map((emp) => (
+                  <option
+                    key={emp._id}
+                    value={emp._id}
+                  >
+                    {emp.memberId} - {emp.firstName}{" "}
+                    {emp.lastName}
+                    {hasActiveLoan(emp._id)
+                      ? " (Active Loan ❌)"
+                      : ""}
+                  </option>
+                ))}
+              </>
+            ) : (
+              employees
+                .filter(
+                  (emp) =>
+                    String(emp.memberId) ===
+                    String(loggedInMemberId)
+                )
+                .map((emp) => (
+                  <option
+                    key={emp._id}
+                    value={emp._id}
+                  >
+                    {emp.firstName} {emp.lastName}
+                  </option>
+                ))
+            )}
+          </select>
+        </div>
 
         {/* FULL NAME */}
         <div className="input-field-group">
@@ -286,8 +292,6 @@ const loggedInMemberId =
         </button>
 
       </div>
-
-    
     </div>
   );
 }

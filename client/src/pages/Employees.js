@@ -467,7 +467,7 @@ const barInstance = useRef(null);
     fontWeight: "700",
     marginBottom: "20px"
   }}
->Employees Management</h2>
+>Member Management</h2>
      <div className="emp-actions-bar" style={dynamicActionBarStyle}>
   {!isMember && (
     <button
@@ -484,8 +484,8 @@ const barInstance = useRef(null);
       {showForm
         ? "Close Form"
         : editingId
-        ? "Edit Employee"
-        : "Register Employee"}
+        ? "Edit Member"
+        : "Register Member"}
     </button>
   )}
 
@@ -501,7 +501,7 @@ const barInstance = useRef(null);
 
   <input
     type="text"
-    placeholder="Search Employee by Name, Member ID or Phone..."
+    placeholder="Search Member by Name, Member ID or Phone..."
     value={search}
     onChange={(e) => setSearch(e.target.value)}
     className="emp-search-input"
@@ -569,12 +569,21 @@ const barInstance = useRef(null);
   ...styles.labelStyle,
   color: theme.secondary
 }}>Member ID (Username)</label>
-          <input name="memberId" placeholder="Member ID" value={formData.memberId} onChange={handleChange} style={{
-  ...styles.inputStyle,
-  background: theme.input,
-  color: theme.text,
-  border: `1px solid ${theme.border}`
-}} disabled={editingId} />
+<input
+  name="memberId"
+  placeholder="Member ID"
+  value={formData.memberId}
+  onChange={handleChange}
+  disabled={editingId}
+  style={{
+    ...styles.inputStyle,
+    background: theme.input,
+    color: theme.text,
+    WebkitTextFillColor: theme.text,
+    opacity: 1,
+    border: `1px solid ${theme.border}`,
+  }}
+/>
         </div>
 <div>
   <label style={styles.labelStyle}>Birth Date</label>
@@ -589,17 +598,21 @@ const barInstance = useRef(null);
 
 <div>
   <label style={styles.labelStyle}>Age</label>
-  <input
-    type="number"
-    name="age"
-    value={formData.age}
-    readOnly
-    style={{
-      ...styles.inputStyle,
-      background: "#e9ecef",
-      cursor: "not-allowed"
-    }}
-  />
+<input
+  type="number"
+  name="age"
+  value={formData.age}
+  readOnly
+  style={{
+    ...styles.inputStyle,
+    background: theme.input,
+    color: theme.text,
+    WebkitTextFillColor: theme.text,
+    opacity: 1,
+    cursor: "not-allowed",
+    border: `1px solid ${theme.border}`,
+  }}
+/>
 </div>
 
        
@@ -871,7 +884,7 @@ const barInstance = useRef(null);
         color: theme.text,
       }}
     >
-      Employee Distribution
+      Member Distribution
     </h3>
 
     <canvas ref={pieChartRef} style={{ maxHeight: "200px" }}></canvas>
@@ -911,7 +924,7 @@ const barInstance = useRef(null);
         color: theme.text,
       }}
     >
-      Employee Statistics
+      Member Statistics
     </h3>
 
    <canvas ref={barChartRef} style={{ maxHeight: "200px" }}></canvas>
@@ -919,7 +932,7 @@ const barInstance = useRef(null);
 </div>
 
 
-  Employee List
+  Member List
 </h3>      
 <div
   className="emp-table-wrapper"
@@ -1266,6 +1279,17 @@ SUPER AESTHETIC EMPLOYEE SEARCH
               font-size: 14px !important;
             }
           }
+            .employees-page-container input:disabled,
+.employees-page-container input[readonly] {
+  opacity: 1 !important;
+  color: #f8fafc !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  background-color: #1e293b !important;
+}
+
+.employees-page-container input:disabled {
+  cursor: not-allowed;
+}
         `}
       </style>
     </div>

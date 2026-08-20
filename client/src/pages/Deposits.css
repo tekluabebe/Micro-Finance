@@ -421,3 +421,230 @@ select{
     color: #ffffff !important;
     font-weight: 700;
 }
+
+/* ===============================
+   DEPOSIT DARK DASHBOARD THEME
+================================ */
+
+.deposit-container {
+  min-height: 100vh;
+  padding: 95px 30px 45px;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(99, 102, 241, .3), transparent 30%),
+    radial-gradient(circle at 90% 20%, rgba(37, 99, 235, .2), transparent 30%),
+    linear-gradient(135deg, #080b2b, #10143f 55%, #17134b);
+  color: #f8fafc;
+  align-items: flex-start;
+}
+
+.deposit-card {
+  width: min(1180px, 100%);
+  padding: 32px;
+  background: rgba(25, 27, 74, .96);
+  border: 1px solid rgba(129, 140, 248, .28);
+  border-radius: 24px;
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
+.deposit-card::before {
+  height: 4px;
+  margin: -32px -32px 28px;
+  background: linear-gradient(90deg, #6366f1, #38bdf8, #2563eb);
+}
+
+.form-title {
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #4f46e5, #2563eb);
+  color: #ffffff !important;
+  font-size: clamp(21px, 3vw, 30px);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, .3);
+}
+
+.selection-row-container {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.selection-section,
+.status-display-box,
+.field-large {
+  background: rgba(15, 23, 70, .86);
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 18px;
+}
+
+.selection-section {
+  padding: 24px;
+}
+
+.input-row {
+  gap: 15px;
+}
+
+.input-group label,
+.status-label {
+  color: #a5b4fc !important;
+  font-weight: 700 !important;
+  font-size: 12px;
+  letter-spacing: .6px;
+}
+
+.input-group input,
+.input-group select,
+.modern-input,
+.modern-select {
+  min-height: 48px;
+  padding: 12px 15px;
+  background: #202653 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #3b4385 !important;
+  border-radius: 11px !important;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, .16);
+}
+
+.input-group input::placeholder {
+  color: #9ca3c7 !important;
+}
+
+.input-group select option {
+  background: #202653 !important;
+  color: #ffffff !important;
+}
+
+.status-display-box {
+  min-height: 100%;
+  padding: 24px;
+}
+
+.status-title {
+  color: #c4b5fd !important;
+}
+
+.status-placeholder {
+  color: #cbd5e1 !important;
+}
+
+.member-status-grid {
+  gap: 14px;
+}
+
+.status-card {
+  border: 1px solid rgba(255, 255, 255, .12);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .16);
+}
+
+.status-card h4,
+.status-card span {
+  color: #ffffff !important;
+}
+
+.field-large {
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .12);
+}
+
+.highlight {
+  border-color: rgba(96, 165, 250, .45);
+  background: rgba(30, 41, 95, .9);
+}
+
+.alert-box.warning {
+  background: rgba(245, 158, 11, .16);
+  border: 1px solid #f59e0b;
+  border-left: 5px solid #f59e0b;
+  color: #fcd34d !important;
+}
+
+.alert-box.warning * {
+  color: #fcd34d !important;
+}
+
+.error-banner {
+  background: rgba(220, 38, 38, .18);
+  border: 1px solid #ef4444;
+  color: #fecaca !important;
+}
+
+.error-banner * {
+  color: #fecaca !important;
+}
+
+.submit-btn {
+  min-height: 52px;
+  margin-top: 24px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #2563eb);
+  color: #ffffff !important;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, .35);
+}
+
+.submit-btn:hover {
+  background: linear-gradient(135deg, #818cf8, #3b82f6);
+  transform: translateY(-2px);
+}
+
+/* Override the previous global light-text rule */
+.deposit-card,
+.deposit-card p,
+.deposit-card div,
+.deposit-card span,
+.deposit-card label,
+.deposit-card strong {
+  color: #f8fafc;
+}
+
+@media (max-width: 768px) {
+  .deposit-container {
+    padding: 82px 12px 25px;
+  }
+
+  .deposit-card {
+    padding: 17px;
+    border-radius: 18px;
+  }
+
+  .deposit-card::before {
+    margin: -17px -17px 22px;
+  }
+
+  .form-title {
+    padding: 17px;
+    font-size: 21px;
+    line-height: 1.4;
+  }
+
+  .selection-row-container {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .selection-section,
+  .status-display-box,
+  .field-large {
+    padding: 17px;
+  }
+
+  .input-row,
+  .deposit-grid {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .submit-btn {
+    width: 100%;
+    font-size: 14px;
+  }
+}

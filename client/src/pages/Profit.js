@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// filepath: d:\micro-finance\client\src\pages\Profit.js
+import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import "./ProfitDistribution.css";
 
@@ -7,119 +8,139 @@ export default function ProfitDistribution({ isSidebarOpen = true }) {
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-
   const [selectedMember, setSelectedMember] = useState(null);
-
+  const [dividendHistory, setDividendHistory] = useState([]);
   const [distribution, setDistribution] = useState({
     savingAmount: "",
     shareAmount: "",
   });
-
-  const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear()
-  );
-
-  const [distributedMemberIds, setDistributedMemberIds] = useState(new Set());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [netProfit, setNetProfit] = useState(0);
   const [totalShares, setTotalShares] = useState(0);
   const [availableYears, setAvailableYears] = useState([]);
-
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // Safe dividend calculation:
-  // dividend = employeeShares / totalShares * netProfit
-  const calculateDividend = (employeeShares) => {
-    const shares = Number(employeeShares || 0);
-    const total = Number(totalShares || 0);
-    const profit = Number(netProfit || 0);
-
-    if (shares <= 0 || total <= 0 || profit <= 0) {
-      return 0;
-    }
-
-    return (shares / total) * profit;
-  };
-
-  // ======================
-  // RESPONSIVE
-  // ======================
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    const resize = () => setIsMobile(window.innerWidth <= 768);
 
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
   }, []);
 
-  
-
-  // ======================
-  // LOAD DATA FOR SELECTED YEAR
-  // Same approach as Dividend.js
-  // ======================
   useEffect(() => {
     fetchDividendCalculationData();
   }, [selectedYear]);
 
+  const getArray = (response) => {
+    if (Array.isArray(response)) return response;
+    return response?.data || response?.reports || [];
+  };
+
+const findDividendHistory = (member, history = dividendHistory) => {
+  return history
+    .filter((item) => {
+      const sameYear =
+        Number(item.year) === Number(selectedYear);
+
+      const sameMember =
+        String(item.memberId || "") ===
+          String(member.memberId || "") ||
+        String(item.employeeId?._id || item.employeeId || "") ===
+          String(member._id || "");
+
+      return sameYear && sameMember;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.updatedAt || b.createdAt || 0) -
+        new Date(a.updatedAt || a.createdAt || 0)
+    )[0];
+};
+
+  const calculateMemberData = (
+    member,
+    deposits,
+    sharesTotal = totalShares,
+    profitTotal = netProfit,
+    history = dividendHistory
+  ) => {
+    const yearDeposits = deposits.filter(
+      (deposit) => String(deposit.year) === String(selectedYear)
+    );
+
+    const memberDeposits = yearDeposits.filter((deposit) => {
+      const depositEmployeeId = String(
+        deposit.employeeId?._id || deposit.employeeId || ""
+      );
+
+      const depositMemberId = String(
+        deposit.memberId || deposit.employeeId?.memberId || ""
+      );
+
+      return (
+        depositEmployeeId === String(member._id) ||
+        (member.memberId &&
+          depositMemberId === String(member.memberId))
+      );
+    });
+
+    const memberShares = memberDeposits.reduce(
+      (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
+      0
+    );
+
+    const calculatedDividend =
+      sharesTotal > 0
+        ? (memberShares / sharesTotal) * Number(profitTotal || 0)
+        : 0;
+
+    const historyItem = findDividendHistory(member, history);
+
+    return {
+      ...member,
+      fullName:
+        member.fullName ||
+        `${member.firstName || ""} ${member.lastName || ""}`.trim(),
+      employeeShares: memberShares,
+      ownershipPercent:
+        sharesTotal > 0 ? (memberShares / sharesTotal) * 100 : 0,
+      calculatedDividend,
+      historyItem,
+    };
+  };
+
   const fetchDividendCalculationData = async () => {
     try {
-     const [employeesRes, depositsRes, financialRes, distributionsRes] =
-  await Promise.all([
-    API.get("/employees"),
-    API.get("/deposits"),
-    API.get(`/financial-reports?year=${selectedYear}`),
-    API.get(`/profit-distributions?year=${selectedYear}`),
-  ]);
+      const [employeesRes, depositsRes, financialRes, dividendRes] =
+        await Promise.all([
+          API.get("/employees"),
+          API.get("/deposits"),
+          API.get(`/financial-reports?year=${selectedYear}`),
+          API.get(`/dividends?year=${selectedYear}`),
+        ]);
 
-      const allEmployees = employeesRes.data || [];
-      const allDeposits = depositsRes.data || [];
-      const distributions = distributionsRes.data || [];
+      const allEmployees = getArray(employeesRes.data);
+      const allDeposits = getArray(depositsRes.data);
+      const financialReports = getArray(financialRes.data);
+      const history = getArray(dividendRes.data);
 
-const alreadyDistributedIds = new Set(
-  distributions
-    .filter(
-      (item) => Number(item.year) === Number(selectedYear)
-    )
-    .map((item) =>
-      String(item.employeeId?._id || item.employeeId)
-    )
-);
-
-setDistributedMemberIds(alreadyDistributedIds);
-
-      // Supports:
-      // [ ...reports ]
-      // { data: [ ...reports ] }
-      // { reports: [ ...reports ] }
-      const financialReports = Array.isArray(financialRes.data)
-        ? financialRes.data
-        : financialRes.data?.data
-        ? financialRes.data.data
-        : financialRes.data?.reports
-        ? financialRes.data.reports
-        : [];
-
-      console.log("Financial reports response:", financialRes.data);
-      console.log("Financial reports array:", financialReports);
-
-      // Get only the selected year's financial report(s)
-      const selectedYearReports = financialReports.filter(
-        (report) => Number(report.year) === Number(selectedYear)
+      const yearDeposits = allDeposits.filter(
+        (deposit) => String(deposit.year) === String(selectedYear)
       );
 
-      // If there is one report for 2026:
-      // [{ year: 2026, netProfit: 2334 }]
-      // result = 2334
-      const selectedYearNetProfit = selectedYearReports.reduce(
-        (sum, report) => sum + Number(report.netProfit || 0),
-        0
-      );
-
-      // Total shares from ALL deposits, exactly like Dividend.js
-      const calculatedTotalShares = allDeposits.reduce(
+      const shares = yearDeposits.reduce(
         (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
         0
       );
+
+      const profit = financialReports
+        .filter(
+          (report) => Number(report.year) === Number(selectedYear)
+        )
+        .reduce(
+          (sum, report) => sum + Number(report.netProfit || 0),
+          0
+        );
 
       const years = [
         ...new Set(
@@ -130,107 +151,68 @@ setDistributedMemberIds(alreadyDistributedIds);
       ].sort((a, b) => b - a);
 
       setEmployees(allEmployees);
-      setNetProfit(selectedYearNetProfit);
-      setTotalShares(calculatedTotalShares);
+      setFilteredEmployees(allEmployees);
+      setDividendHistory(history);
+      setTotalShares(shares);
+      setNetProfit(profit);
       setAvailableYears(years);
 
-      console.log("Dividend calculation data:", {
-        selectedYear,
-        netProfit: selectedYearNetProfit,
-        totalShares: calculatedTotalShares,
-      });
-
-      // Recalculate selected member's shares after data reload/year change.
       if (selectedMember) {
-        updateSelectedMemberShares(selectedMember, allDeposits);
+        const updatedMember = allEmployees.find(
+          (employee) =>
+            String(employee.memberId) ===
+            String(selectedMember.memberId)
+        );
+
+        if (updatedMember) {
+          setSelectedMember(
+            calculateMemberData(
+              updatedMember,
+              allDeposits,
+              shares,
+              profit,
+              history
+            )
+          );
+        }
       }
     } catch (err) {
-      console.error("Profit distribution data error:", err);
+      console.error("Profit data error:", err);
       setNetProfit(0);
       setTotalShares(0);
+      setDividendHistory([]);
     }
   };
 
-  // ======================
-  // UPDATE SELECTED MEMBER
-  // ======================
-  const updateSelectedMemberShares = (member, deposits) => {
-    const memberDeposits = deposits.filter(
-      (deposit) =>
-        String(deposit.employeeId?._id || deposit.employeeId) ===
-        String(member._id)
-    );
-
-    const employeeShares = memberDeposits.reduce(
-      (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
-      0
-    );
-
-    const allShares = deposits.reduce(
-      (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
-      0
-    );
-
-    const ownershipPercent =
-      allShares > 0 ? (employeeShares / allShares) * 100 : 0;
-
-    setSelectedMember({
-      ...member,
-      fullName:
-        member.fullName || `${member.firstName} ${member.lastName}`,
-      employeeShares,
-      ownershipPercent,
-    });
-  };
-
-  // ======================
-  // DEBUG CONSOLE OUTPUT
-  // ======================
-  useEffect(() => {
-    if (!selectedMember) return;
-
-    const dividend = calculateDividend(selectedMember.employeeShares);
-
-    console.log("=== DIVIDEND CALCULATION ===");
-    console.log({
-      year: selectedYear,
-      netProfit,
-      employeeShares: selectedMember.employeeShares,
-      totalShares,
-      formula: `(${selectedMember.employeeShares} / ${totalShares}) * ${netProfit}`,
-      dividend,
-    });
-  }, [selectedMember, selectedYear, netProfit, totalShares]);
-
-  // ======================
-  // SEARCH EMPLOYEE
-  // ======================
   const handleSearch = (e) => {
     const value = e.target.value;
 
     setSearchTerm(value);
     setShowDropdown(true);
 
-    const filtered = employees.filter(
-      (employee) =>
-        employee.memberId?.toString().includes(value) ||
-        `${employee.firstName} ${employee.lastName}`
-          .toLowerCase()
-          .includes(value.toLowerCase())
-    );
+    setFilteredEmployees(
+      employees.filter((employee) => {
+        const name =
+          `${employee.firstName || ""} ${
+            employee.lastName || ""
+          }`.toLowerCase();
 
-    setFilteredEmployees(filtered);
+        return (
+          String(employee.memberId || "").includes(value) ||
+          name.includes(value.toLowerCase())
+        );
+      })
+    );
   };
 
-  // ======================
-  // SELECT MEMBER
-  // ======================
   const handleSelect = async (member) => {
     try {
       const depositsRes = await API.get("/deposits");
-      const deposits = depositsRes.data || [];
+      const deposits = getArray(depositsRes.data);
 
-      updateSelectedMemberShares(member, deposits);
+      setSelectedMember(
+        calculateMemberData(member, deposits)
+      );
 
       setShowDropdown(false);
       setSearchTerm("");
@@ -239,112 +221,148 @@ setDistributedMemberIds(alreadyDistributedIds);
     }
   };
 
-  // Calculate once for rendering and approval
-const isAlreadyDistributed =
-  selectedMember &&
-  distributedMemberIds.has(String(selectedMember._id));
+const historyItem = selectedMember
+  ? findDividendHistory(selectedMember)
+  : null;
 
-const dividend = selectedMember
-  ? isAlreadyDistributed
-    ? 0
-    : calculateDividend(selectedMember.employeeShares)
-  : 0;
+const originalDividend = historyItem
+  ? Number(
+      historyItem.dividendAmount ??
+        selectedMember?.calculatedDividend ??
+        0
+    )
+  : Number(selectedMember?.calculatedDividend || 0);
 
-  // ======================
-  // APPROVE
-  // ======================
-  const handleApprove = async () => {
-    if (!selectedMember) {
-      alert("Please select a member.");
-      return;
-    }
-    if (isAlreadyDistributed) {
-  alert(
-    `Profit distribution has already been completed for ${selectedMember.fullName} in ${selectedYear}.`
-  );
+const dividend = historyItem
+  ? Number(historyItem.remainingAmount ?? 0)
+  : originalDividend;
+
+const saving = Number(distribution.savingAmount || 0);
+const shareMoney = Number(distribution.shareAmount || 0);
+const extraShares = shareMoney / 500;
+const totalDistributed = saving + shareMoney;
+
+const remaining = Math.max(
+  0,
+  dividend - totalDistributed
+);
+
+// filepath: d:\micro-finance\client\src\pages\Profit.js
+
+const isFullyDistributed =
+  Boolean(historyItem) &&
+  Number(historyItem.remainingAmount || 0) <= 0.01;
+
+const handleApprove = async () => {
+  if (!selectedMember) {
+    alert("Please select a member.");
+    return;
+  }
+
+ // filepath: d:\micro-finance\client\src\pages\Profit.js
+
+if (isFullyDistributed) {
+  alert("This member's dividend is already fully distributed.");
   return;
 }
 
-    const saving = Number(distribution.savingAmount || 0);
-    const shareMoney = Number(distribution.shareAmount || 0);
-    const totalDistributed = saving + shareMoney;
+  if (totalDistributed <= 0) {
+    alert("Enter saving amount or share amount.");
+    return;
+  }
 
-    if (totalDistributed <= 0) {
-      alert("Please enter an amount to distribute.");
-      return;
-    }
+  if (totalDistributed > dividend) {
+    alert(`Distribution cannot exceed ${dividend.toFixed(2)} ETB.`);
+    return;
+  }
 
-    if (totalDistributed > dividend) {
-      alert(
-        `Distribution cannot exceed dividend amount (${dividend.toFixed(
-          2
-        )} ETB)`
-      );
-      return;
-    }
+  if (shareMoney > 0 && shareMoney % 500 !== 0) {
+    alert("Share money must be a multiple of 500 ETB.");
+    return;
+  }
 
-    if (shareMoney > 0 && shareMoney % 500 !== 0) {
-      alert(
-        "Share amount must be 500, 1000, 1500, 2000 ETB, etc. (multiples of 500)"
-      );
-      return;
-    }
-
-    if (shareMoney > 0 && dividend < 500) {
-      alert(
-        "This member's dividend is less than 500 ETB. Shares cannot be purchased."
-      );
-      return;
-    }
-
-    const extraShares = shareMoney / 500;
-
-    try {
-      if (saving > 0) {
-        await API.post("/deposits", {
-          employeeId: selectedMember._id,
-          normalSaving: saving,
-          voluntarySaving: 0,
-          sharedPurchase: 0,
-          year: selectedYear,
-        });
-      }
-
-      if (extraShares > 0) {
-        await API.post("/deposits", {
-          employeeId: selectedMember._id,
-          normalSaving: 0,
-          voluntarySaving: 0,
-          sharedPurchase: extraShares,
-          year: selectedYear,
-        });
-      }
-
-      await API.post("/profit-distributions", {
+  try {
+    // Save distribution first.
+    const distributionResponse = await API.post(
+      "/profit-distributions",
+      {
         employeeId: selectedMember._id,
-        year: selectedYear,
+        memberId: selectedMember.memberId,
+        year: Number(selectedYear),
         dividendAmount: dividend,
         savingAmount: saving,
         shareAmount: shareMoney,
+        distributedAmount: totalDistributed,
+        remainingAmount: remaining,
+        status: "approved",
+      }
+    );
+
+    // Save saving as a deposit.
+    if (saving > 0) {
+      await API.post("/deposits", {
+        employeeId: selectedMember._id,
+        memberId: selectedMember.memberId,
+        month: `Dividend-${Date.now()}`,
+        year: String(selectedYear),
+        normalSaving: saving,
+        voluntarySaving: 0,
+        sharedPurchase: 0,
+        registrationFee: 0,
+        latePenalty: 0,
+        depositForPurchase: 0,
       });
-
-      alert("Profit distributed successfully!");
-
-      setDistribution({
-        savingAmount: "",
-        shareAmount: "",
-      });
-
-      await fetchDividendCalculationData();
-    } catch (err) {
-      console.error("Approve error:", err);
-
-      alert(
-        err.response?.data?.message ||
-          "Failed to save profit distribution."
-      );
     }
-  };
+
+    // Save shares as a deposit.
+    if (extraShares > 0) {
+      await API.post("/deposits", {
+        employeeId: selectedMember._id,
+        memberId: selectedMember.memberId,
+        month: `Dividend-Shares-${Date.now()}`,
+        year: String(selectedYear),
+        normalSaving: 0,
+        voluntarySaving: 0,
+        sharedPurchase: extraShares,
+        registrationFee: 0,
+        latePenalty: 0,
+        depositForPurchase: shareMoney,
+      });
+    }
+
+    console.log(
+      "Saved distribution:",
+      distributionResponse.data
+    );
+
+    alert(
+      `✅ Distribution saved.\nRemaining: ${remaining.toFixed(2)} ETB`
+    );
+
+    setDistribution({
+      savingAmount: "",
+      shareAmount: "",
+    });
+
+    const updatedDividendRes = await API.get(
+  `/dividends?year=${selectedYear}`
+);
+
+setDividendHistory(getArray(updatedDividendRes.data));
+
+await fetchDividendCalculationData();
+  } catch (err) {
+    console.error(
+      "Distribution save error:",
+      err.response?.data || err.message
+    );
+
+    alert(
+      err.response?.data?.message ||
+        "Failed to save distribution ❌"
+    );
+  }
+};
 
   const currentLeftMargin = isMobile
     ? "0px"
@@ -357,77 +375,67 @@ const dividend = selectedMember
       className="pd-main-wrapper"
       style={{
         marginLeft: currentLeftMargin,
-        width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
+        width: isMobile
+          ? "100%"
+          : `calc(100% - ${currentLeftMargin})`,
       }}
     >
       <div className="pd-top-bar">
         <h2>የትርፍ ክፍፍል</h2>
-
         <p>
-          Search and select a member to calculate and distribute annual
-          dividends.
+          Search and select a member to distribute annual dividends.
         </p>
 
-<div className="member-search-wrapper">
-  <div className="search-container">
+        <div className="member-search-wrapper">
+          <div className="search-container">
+            <div className="search-box">
+              <span className="search-icon">🔍</span>
 
-    <div className="search-box">
+              <input
+                type="text"
+                placeholder="Search member by Name or Member ID..."
+                value={searchTerm}
+                onChange={handleSearch}
+                onFocus={() => setShowDropdown(true)}
+              />
+            </div>
 
-      <span className="search-icon">
-        🔍
-      </span>
+            {showDropdown && searchTerm && (
+              <div className="dropdown">
+                {filteredEmployees.length > 0 ? (
+                  filteredEmployees.map((employee) => (
+                    <button
+                      key={employee._id}
+                      type="button"
+                      className="dropdown-member"
+                      onClick={() => handleSelect(employee)}
+                    >
+                      <span className="dropdown-avatar">
+                        {employee.firstName?.charAt(0)}
+                        {employee.lastName?.charAt(0)}
+                      </span>
 
-      <input
-        type="text"
-        placeholder="Search member by Name or Member ID..."
-        value={searchTerm}
-        onChange={handleSearch}
-        onFocus={() => setShowDropdown(true)}
-      />
+                      <span className="dropdown-member-info">
+                        <strong>
+                          {employee.firstName}{" "}
+                          {employee.lastName}
+                        </strong>
 
-      <span className="search-glow"></span>
-
-    </div>
-
-    {showDropdown && searchTerm && (
-      <div className="dropdown">
-
-        {filteredEmployees.length > 0 ? (
-          filteredEmployees.map((employee) => (
-            <button
-              key={employee._id}
-              type="button"
-              className="dropdown-member"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleSelect(employee)}
-            >
-              <span className="dropdown-avatar">
-                {employee.firstName?.charAt(0)}
-                {employee.lastName?.charAt(0)}
-              </span>
-
-              <span className="dropdown-member-info">
-                <strong>
-                  {employee.firstName} {employee.lastName}
-                </strong>
-
-                <small>
-                  Member ID : {employee.memberId}
-                </small>
-              </span>
-            </button>
-          ))
-        ) : (
-          <div className="dropdown-empty">
-            No member found
+                        <small>
+                          Member ID: {employee.memberId}
+                        </small>
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="dropdown-empty">
+                    No member found
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-      </div>
-    )}
-
-  </div>
-</div>
+        </div>
       </div>
 
       {selectedMember ? (
@@ -437,18 +445,19 @@ const dividend = selectedMember
 
             <select
               value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              onChange={(e) =>
+                setSelectedYear(Number(e.target.value))
+              }
               className="year-select"
             >
-              {availableYears.length > 0 ? (
-                availableYears.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))
-              ) : (
-                <option value={selectedYear}>{selectedYear}</option>
-              )}
+              {(availableYears.length
+                ? availableYears
+                : [selectedYear]
+              ).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -479,30 +488,27 @@ const dividend = selectedMember
             </div>
           </div>
 
-             <div>
-  <h3>ሊከፋፈል የሚገባው ትርፍ ({selectedYear})</h3>
+          <div>
+            <h3>
+              ሊከፋፈል የሚገባው ትርፍ ({selectedYear})
+            </h3>
 
-  {isAlreadyDistributed && (
-    <p className="already-distributed-message">
-      Profit has already been distributed to this member for {selectedYear}.
-      Dividend amount is now 0 ETB.
-    </p>
-  )}
-
-  <h2>
-    {dividend.toLocaleString(undefined, {
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3,
-    })}{" "}
-    ETB
-  </h2>
+            <h2>
+              {dividend.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}{" "}
+              ETB
+            </h2>
 
             <p>
               Shares: {selectedMember.employeeShares} (
-              {selectedMember.ownershipPercent?.toFixed(2)}%)
+              {selectedMember.ownershipPercent.toFixed(2)}%)
             </p>
 
-            <p>Net Profit: {netProfit.toLocaleString()} ETB</p>
+            <p>
+              Net Profit: {netProfit.toLocaleString()} ETB
+            </p>
 
             <p>Total Shares: {totalShares}</p>
           </div>
@@ -510,52 +516,54 @@ const dividend = selectedMember
           <div>
             <h3>የክፍፍል ስርጭት</h3>
 
-           <input
-  type="number"
-  placeholder="Saving"
-  value={distribution.savingAmount}
-  disabled={isAlreadyDistributed}
-  onChange={(e) =>
-    setDistribution({
-      ...distribution,
-      savingAmount: e.target.value,
-    })
-  }
-/>
+            <input
+              type="number"
+              min="0"
+              placeholder="Saving"
+              value={distribution.savingAmount}
+              disabled={isFullyDistributed}
+              onChange={(e) =>
+                setDistribution((prev) => ({
+                  ...prev,
+                  savingAmount: e.target.value,
+                }))
+              }
+            />
 
-           <input
-  type="number"
-  min="0"
-  step="500"
-  placeholder="Share money (500 = 1 share)"
-  value={distribution.shareAmount}
-  disabled={isAlreadyDistributed}
-  onChange={(e) =>
-    setDistribution({
-      ...distribution,
-      shareAmount: e.target.value,
-    })
-  }
-/>
-              
+            <input
+              type="number"
+              min="0"
+              step="500"
+              placeholder="Share money (500 = 1 share)"
+              value={distribution.shareAmount}
+              disabled={isFullyDistributed}
+              onChange={(e) =>
+                setDistribution((prev) => ({
+                  ...prev,
+                  shareAmount: e.target.value,
+                }))
+              }
+            />
+
             <div className="distribution-summary">
               <p>
-                <strong>Dividend:</strong> {dividend.toFixed(2)} ETB
+                <strong>Dividend:</strong>{" "}
+                {dividend.toFixed(2)} ETB
               </p>
 
               <p>
                 <strong>Saving:</strong>{" "}
-                {Number(distribution.savingAmount || 0).toFixed(2)} ETB
+                {saving.toFixed(2)} ETB
               </p>
 
               <p>
                 <strong>Share Purchase:</strong>{" "}
-                {Number(distribution.shareAmount || 0).toFixed(2)} ETB
+                {shareMoney.toFixed(2)} ETB
               </p>
 
               <p>
                 <strong>New Shares:</strong>{" "}
-                {Number(distribution.shareAmount || 0) / 500}
+                {extraShares}
               </p>
             </div>
           </div>
@@ -564,21 +572,19 @@ const dividend = selectedMember
             <h3>ማጠቃለያ</h3>
 
             <p>
-              Remaining:{" "}
-              {Math.max(
-                0,
-                dividend -
-                  (Number(distribution.savingAmount || 0) +
-                    Number(distribution.shareAmount || 0))
-              ).toFixed(2)}{" "}
-              ETB
+              Remaining: {remaining.toFixed(2)} ETB
             </p>
 
-            <button
+        
+
+<button
+  type="button"
   onClick={handleApprove}
-  disabled={isAlreadyDistributed}
+  disabled={isFullyDistributed}
 >
-  {isAlreadyDistributed ? "Already Distributed" : "አጽድቅ"}
+  {isFullyDistributed
+    ? "Already distributed"
+    : "አጽድቅ"}
 </button>
           </div>
         </div>

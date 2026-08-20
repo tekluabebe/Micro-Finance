@@ -40,22 +40,26 @@ const [historyLoans, setHistoryLoans] = useState([]);
     fetchData();
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const emp = await API.get("/employees");
-      const dep = await API.get("/deposits");
-      const loanRes = await API.get("/loans");
-      setEmployees(emp.data || []);
-      setDeposits(dep.data || []);
-      setLoans(
-  (loanRes.data || []).filter(
-    loan => loan.status !== "pending"
-  )
-);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+const fetchData = async () => {
+  try {
+    const emp = await API.get("/employees");
+    const dep = await API.get("/deposits");
+    const loanRes = await API.get("/loans");
+    
+    // 🔥 Make sure employees have totalSaving field
+    console.log("Employees loaded:", emp.data);
+    
+    setEmployees(emp.data || []);
+    setDeposits(dep.data || []);
+    setLoans(
+      (loanRes.data || []).filter(
+        loan => loan.status !== "pending"
+      )
+    );
+  } catch (err) {
+    console.error(err);
+  }
+};
 
 
 useEffect(() => {
@@ -70,7 +74,12 @@ useEffect(() => {
     );
 
     if (employee) {
-      const saving = calculateSaving(employee._id);
+      // 🔥 Use employee's totalSaving field directly
+      const saving = employee.totalSaving || calculateSaving(employee._id);
+
+      console.log("Logged in employee:", employee);
+      console.log("Employee totalSaving:", employee.totalSaving);
+      console.log("Calculated saving:", saving);
 
       setTotalSaving(saving);
 
@@ -121,43 +130,65 @@ const updateLoanStatus = async (loanId, status) => {
   }
 };
 
-  const calculateSaving = (employeeId) => {
-    return deposits
-      .filter((d) => String(d.employeeId?._id || d.employeeId) === employeeId)
-      .reduce((sum, d) => sum + (Number(d.normalSaving) || 0) + (Number(d.voluntarySaving) || 0), 0);
-  };
+ const calculateSaving = (employeeId) => {
+  // 🔥 First, find the employee and use their totalSaving field
+  const employee = employees.find(emp => emp._id === employeeId);
+  
+  if (employee && employee.totalSaving > 0) {
+    return employee.totalSaving;
+  }
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setError("");
+  // Fallback: Calculate from deposits (for non-restored members)
+  return deposits
+    .filter((d) => String(d.employeeId?._id || d.employeeId) === employeeId)
+    .reduce((sum, d) => sum + (Number(d.normalSaving) || 0) + (Number(d.voluntarySaving) || 0), 0);
+};
 
-    if (name === "employeeId") {
-      const saving = calculateSaving(value);
-      setTotalSaving(saving);
-      setGuarantorSavings({});
-      setLoan((prev) => ({
-        ...prev,
-        employeeId: value,
-        guarantors: [],
-      }));
-    } else {
-      setLoan((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-    }
-  };
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setError("");
 
-  const addGuarantor = (selectedId) => {
-    if (!selectedId || loan.guarantors.includes(selectedId)) return;
-
-    const saving = calculateSaving(selectedId);
-    setGuarantorSavings((prev) => ({ ...prev, [selectedId]: saving }));
+  if (name === "employeeId") {
+    // 🔥 Get the selected employee and pass it to calculateSaving
+    const selectedEmployee = employees.find(emp => emp._id === value);
+    
+    // Calculate saving using the employee's totalSaving field
+    const saving = selectedEmployee?.totalSaving || calculateSaving(value);
+    
+    console.log("Selected Employee:", selectedEmployee);
+    console.log("Total Saving:", saving);
+    
+    setTotalSaving(saving);
+    setGuarantorSavings({});
     setLoan((prev) => ({
       ...prev,
-      guarantors: [...prev.guarantors, selectedId],
+      employeeId: value,
+      guarantors: [],
     }));
-  };
+  } else {
+    setLoan((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+};
+
+const addGuarantor = (selectedId) => {
+  if (!selectedId || loan.guarantors.includes(selectedId)) return;
+
+  // 🔥 Use guarantor's totalSaving field
+  const guarantor = employees.find(emp => emp._id === selectedId);
+  const saving = guarantor?.totalSaving || calculateSaving(selectedId);
+  
+  console.log("Guarantor:", guarantor);
+  console.log("Guarantor saving:", saving);
+  
+  setGuarantorSavings((prev) => ({ ...prev, [selectedId]: saving }));
+  setLoan((prev) => ({
+    ...prev,
+    guarantors: [...prev.guarantors, selectedId],
+  }));
+};
 
   const removeGuarantor = (id) => {
     const updated = loan.guarantors.filter((g) => g !== id);

@@ -223,7 +223,7 @@ doc.text(
 
     <div className="hero-stat">
       <span>Data Source</span>
-      <strong>Cloud DB</strong>
+      <strong>Mongo DB</strong>
     </div>
   </div>
 </div>

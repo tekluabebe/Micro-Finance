@@ -46,37 +46,59 @@ export default function Deposits() {
 const sharedPurchaseQty = parseFloat(data.sharedPurchase || 0);
 const showDepositForPurchase = sharedPurchaseQty > 0;
   const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const hasAlreadyDeposited = (employeeId, month, year) => {
+const hasAlreadyDeposited = (employeeId, month, year) => {
+  const selectedEmp = employees.find(emp => emp._id === employeeId);
+  
+  // 🔥 Check by both employeeId AND memberId to catch restored members
   return deposits.some((d) => {
-    const depositEmployee =
-      String(d.employeeId?._id || d.employeeId);
+    const depositEmployeeId = String(d.employeeId?._id || d.employeeId);
+    const depositMemberId = String(d.memberId || d.employeeId?.memberId || "");
+    const selectedMemberId = String(selectedEmp?.memberId || "");
+    
+    // Match by employeeId OR by memberId (for restored members)
+    const employeeMatch = depositEmployeeId === String(employeeId);
+    const memberMatch = depositMemberId === selectedMemberId && selectedMemberId !== "";
 
     return (
-      depositEmployee === String(employeeId) &&
+      (employeeMatch || memberMatch) &&
       d.month === month &&
       String(d.year) === String(year)
     );
   });
 };
-  const calculateMissingMonths = (empId, selectedMonth, selectedYear) => {
-    const empDeposits = deposits.filter(d => String(d.employeeId?._id || d.employeeId) === String(empId));
-    if (empDeposits.length === 0) return 0;
-
-    const sorted = empDeposits.sort((a, b) => {
-      const dateA = new Date(a.year, months.indexOf(a.month));
-      const dateB = new Date(b.year, months.indexOf(b.month));
-      return dateB - dateA;
-    });
-
-    const last = sorted[0]; 
-    const lastDate = new Date(last.year, months.indexOf(last.month));
-    const current = new Date(selectedYear, months.indexOf(selectedMonth));
-
-    let diff = (current.getFullYear() - lastDate.getFullYear()) * 12;
-    diff += current.getMonth() - lastDate.getMonth();
+const calculateMissingMonths = (empId, selectedMonth, selectedYear) => {
+  const selectedEmp = employees.find(emp => emp._id === empId);
+  
+  // 🔥 Filter by both employeeId AND memberId
+  const empDeposits = deposits.filter(d => {
+    const depositEmployeeId = String(d.employeeId?._id || d.employeeId);
+    const depositMemberId = String(d.memberId || d.employeeId?.memberId || "");
+    const selectedMemberId = String(selectedEmp?.memberId || "");
     
-    return diff > 1 ? diff - 1 : 0;
-  };
+    // Match deposits by employeeId OR memberId
+    return (
+      depositEmployeeId === String(empId) || 
+      (depositMemberId === selectedMemberId && selectedMemberId !== "")
+    );
+  });
+
+  if (empDeposits.length === 0) return 0;
+
+  const sorted = empDeposits.sort((a, b) => {
+    const dateA = new Date(a.year, months.indexOf(a.month));
+    const dateB = new Date(b.year, months.indexOf(b.month));
+    return dateB - dateA;
+  });
+
+  const last = sorted[0]; 
+  const lastDate = new Date(last.year, months.indexOf(last.month));
+  const current = new Date(selectedYear, months.indexOf(selectedMonth));
+
+  let diff = (current.getFullYear() - lastDate.getFullYear()) * 12;
+  diff += current.getMonth() - lastDate.getMonth();
+  
+  return diff > 1 ? diff - 1 : 0;
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -133,96 +155,104 @@ if (alreadyPaid) {
     
   };
 
-  const submit = async () => {
-    if (!data.employeeId || !data.month || !data.year) {
-      // Prevent duplicate deposits
-if (
-  hasAlreadyDeposited(
-    data.employeeId,
-    data.month,
-    data.year
-  )
-) {
-  setErrorMessage(
-    `❌ You already deposited for the month "${data.month}" (${data.year}).`
-  );
+const submit = async () => {
+  if (!data.employeeId || !data.month || !data.year) {
+    setErrorMessage("Please select member, month, and year!");
+    return;
+  }
 
-  return;
-}
-      setErrorMessage("እባክዎ መጀመሪያ ትክክለኛ ወር እና አመት ይምረጡ!");
-      return;
-    }
+  // 🔥 Check for existing deposit BEFORE processing
+  if (hasAlreadyDeposited(data.employeeId, data.month, data.year)) {
+    setErrorMessage(
+      `❌ You already deposited for the month "${data.month}" (${data.year}).`
+    );
+    return;
+  }
 
-    const minRequiredSaving = (missingMonthsCount + 1) * MONTHLY_NORMAL_SAVING;
-    const minRequiredPenalty = missingMonthsCount * MONTHLY_PENALTY;
+  const minRequiredSaving = (missingMonthsCount + 1) * MONTHLY_NORMAL_SAVING;
+  const minRequiredPenalty = missingMonthsCount * MONTHLY_PENALTY;
 
-    if (parseFloat(data.normalSaving) < minRequiredSaving) {
-      setErrorMessage(`የመደበኛ ቁጠባ መጠን ከ ${minRequiredSaving} ETB ማነስ የለበትም!`);
-      return;
-    }
+  if (parseFloat(data.normalSaving) < minRequiredSaving) {
+    setErrorMessage(`Normal saving must be at least ${minRequiredSaving} ETB!`);
+    return;
+  }
 
-    try {
-      const empDeposits = deposits.filter(d => String(d.employeeId?._id || d.employeeId) === String(data.employeeId));
-      let lastDate;
-      if (empDeposits.length > 0) {
-        const sorted = empDeposits.sort((a, b) => {
-          const dateA = new Date(a.year, months.indexOf(a.month));
-          const dateB = new Date(b.year, months.indexOf(b.month));
-          return dateB - dateA;
-        });
-        const last = sorted[0];
-        lastDate = new Date(last.year, months.indexOf(last.month));
-      }
+  if (parseFloat(data.latePenalty) < minRequiredPenalty) {
+    setErrorMessage(`Late penalty must be at least ${minRequiredPenalty} ETB! (${missingMonthsCount} months overdue)`);
+    return;
+  }
 
-      for (let i = 0; i <= missingMonthsCount; i++) {
-        let currentMonthIndex;
-        let currentYear = parseInt(data.year);
-
-        if (lastDate) {
-          let nextMonthDate = new Date(lastDate.getFullYear(), lastDate.getMonth() + 1 + i);
-          currentMonthIndex = nextMonthDate.getMonth();
-          currentYear = nextMonthDate.getFullYear();
-        } else {
-          currentMonthIndex = months.indexOf(data.month);
-        }
-        if (parseFloat(data.latePenalty) < minRequiredPenalty) {
-          setErrorMessage(`የቅጣት መጠን ከ ${minRequiredPenalty} ETB ማነስ የለበትም! (${missingMonthsCount} ወራት ተዘልለዋል)`);
-          return;
-        }
-
-        const payload = {
-          ...data,
-          month: months[currentMonthIndex],
-          year: String(currentYear),
-          normalSaving: MONTHLY_NORMAL_SAVING,
-          latePenalty: i < missingMonthsCount ? MONTHLY_PENALTY : 0,
-          voluntarySaving: i === missingMonthsCount ? (parseFloat(data.voluntarySaving) || 0) : 0,
-          sharedPurchase: i === missingMonthsCount ? (parseFloat(data.sharedPurchase) || 0) : 0,
-depositForPurchase:
-  i === missingMonthsCount
-    ? (parseFloat(data.sharedPurchase) || 0) * 500
-    : 0,
-          registrationFee: (i === 0 && isNewEmployee) ? parseFloat(data.registrationFee) : 0,
-        };
-
-        await API.post("/deposits", payload);
-      }
-
-      alert("ሁሉም ወራት በተሳካ ሁኔታ ተመዝግበዋል ✅");
+  try {
+    const selectedEmp = employees.find(emp => emp._id === data.employeeId);
+    
+    // 🔥 Get ALL deposits for this member (both old and new employeeId)
+    const empDeposits = deposits.filter(d => {
+      const depositEmployeeId = String(d.employeeId?._id || d.employeeId);
+      const depositMemberId = String(d.memberId || d.employeeId?.memberId || "");
+      const selectedMemberId = String(selectedEmp?.memberId || "");
       
-      setData({
-        employeeId: "", month: "", year: "",
-        normalSaving: "", voluntarySaving: "",
-        sharedPurchase: "", registrationFee: "", latePenalty: ""
-      });
-      setMissingMonthsCount(0);
-      window.location.reload(); 
+      return (
+        depositEmployeeId === String(data.employeeId) || 
+        (depositMemberId === selectedMemberId && selectedMemberId !== "")
+      );
+    });
 
-    } catch (err) {
-      console.error(err);
-      setErrorMessage("መረጃውን ማስቀመጥ አልተቻለም ❌");
+    let lastDate;
+
+    if (empDeposits.length > 0) {
+      const sorted = empDeposits.sort((a, b) => {
+        const dateA = new Date(a.year, months.indexOf(a.month));
+        const dateB = new Date(b.year, months.indexOf(b.month));
+        return dateB - dateA;
+      });
+      const last = sorted[0];
+      lastDate = new Date(last.year, months.indexOf(last.month));
     }
-  };
+
+    for (let i = 0; i <= missingMonthsCount; i++) {
+      let currentMonthIndex;
+      let currentYear = parseInt(data.year);
+
+      if (lastDate) {
+        let nextMonthDate = new Date(lastDate.getFullYear(), lastDate.getMonth() + 1 + i);
+        currentMonthIndex = nextMonthDate.getMonth();
+        currentYear = nextMonthDate.getFullYear();
+      } else {
+        currentMonthIndex = months.indexOf(data.month);
+      }
+
+      const payload = {
+        ...data,
+        employeeId: data.employeeId,
+        memberId: selectedEmp?.memberId,  // 🔥 Always include memberId
+        month: months[currentMonthIndex],
+        year: String(currentYear),
+        normalSaving: MONTHLY_NORMAL_SAVING,
+        latePenalty: i < missingMonthsCount ? MONTHLY_PENALTY : 0,
+        voluntarySaving: i === missingMonthsCount ? (parseFloat(data.voluntarySaving) || 0) : 0,
+        sharedPurchase: i === missingMonthsCount ? (parseFloat(data.sharedPurchase) || 0) : 0,
+        depositForPurchase: i === missingMonthsCount ? (parseFloat(data.sharedPurchase) || 0) * 500 : 0,
+        registrationFee: (i === 0 && isNewEmployee) ? parseFloat(data.registrationFee) : 0,
+      };
+
+      await API.post("/deposits", payload);
+    }
+
+    alert("✅ All deposits recorded successfully!");
+    
+    setData({
+      employeeId: "", month: "", year: "",
+      normalSaving: "", voluntarySaving: "",
+      sharedPurchase: "", registrationFee: "", latePenalty: "", depositForPurchase: ""
+    });
+    setMissingMonthsCount(0);
+    window.location.reload(); 
+
+  } catch (err) {
+    console.error(err);
+    setErrorMessage("Failed to save deposit data ❌");
+  }
+};
 
   const selectedEmployeeData = employees.find(emp => emp._id === data.employeeId);
 

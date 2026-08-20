@@ -3,7 +3,6 @@ import DashboardCard from "../components/DashboardCard";
 import API from "../services/api";
 import "./Dashboard.css"
 
-
 export default function Dashboard() {
 const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
 const isMember = userRole === "member";
@@ -12,6 +11,7 @@ const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
 
   const [withdrawals, setWithdrawals] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [deposits, setDeposits] = useState([]);
 
   const [openWithdrawals, setOpenWithdrawals] = useState(false);
   const [openLoans, setOpenLoans] = useState(false);
@@ -23,8 +23,6 @@ console.log(user.fullName);
 
 const fullName =
   `${user.firstName || ""} ${user.lastName || ""}`;
-
-
 
   // =========================
   // FILTERS
@@ -51,6 +49,9 @@ const fullName =
     totalLatePenalties: 0,
   });
 
+  const [savingsData, setSavingsData] = useState([]);
+  const [loanDistribution, setLoanDistribution] = useState({});
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -69,6 +70,10 @@ useEffect(() => {
     .then((res) => setLoans(res.data || []))
     .catch(() => setLoans([]));
 
+  API.get("/deposits")
+    .then((res) => setDeposits(res.data || []))
+    .catch(() => setDeposits([]));
+
   API.get("/password-reset-request")
     .then((res) => setPasswordRequests(res.data || []))
     .catch(() => setPasswordRequests([]));
@@ -82,35 +87,45 @@ useEffect(() => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [empRes, depRes, loanRes, registrationRes, penaltyRes] = await Promise.all([
+        const [empRes, depRes, loanRes] = await Promise.all([
           API.get("/employees"),
           API.get("/deposits"),
           API.get("/loans"),
-          API.get("/registration-fees"),
-          API.get("/late-penalties"),
         ]);
 
-        const deposits = depRes.data || [];
-        const registrationFees = registrationRes.data || [];
-        const latePenalties = penaltyRes.data || [];
+        const depositsData = depRes.data || [];
+        const loansData = loanRes.data || [];
 
         const employeesCount = empRes.data?.length || 0;
 
-        const totalSavings = deposits.reduce((sum, d) => sum + (parseFloat(d.normalSaving) || 0) + (parseFloat(d.voluntarySaving) || 0), 0);
+        // ===== TOTAL SAVINGS (All time) =====
+        const totalSavings = depositsData.reduce((sum, d) => {
+          const normalSaving = parseFloat(d.normalSaving) || 0;
+          const voluntarySaving = parseFloat(d.voluntarySaving) || 0;
+          return sum + normalSaving + voluntarySaving;
+        }, 0);
 
-        const monthlyDeposits = deposits
+        // ===== MONTHLY DEPOSITS =====
+        const monthlyDeposits = depositsData
           .filter((d) => d.month === selectedMonth && String(d.year) === selectedYear)
-          .reduce((sum, d) => sum + (parseFloat(d.normalSaving) || 0) + (parseFloat(d.voluntarySaving) || 0), 0);
+          .reduce((sum, d) => {
+            const normalSaving = parseFloat(d.normalSaving) || 0;
+            const voluntarySaving = parseFloat(d.voluntarySaving) || 0;
+            return sum + normalSaving + voluntarySaving;
+          }, 0);
 
-        const totalRegistrationFees = registrationFees
-          .filter((r) => r.month === selectedMonth && String(r.year) === selectedYear)
-          .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+        // ===== REGISTRATION FEES (From deposits collection) =====
+        const totalRegistrationFees = depositsData
+          .filter((d) => d.month === selectedMonth && String(d.year) === selectedYear)
+          .reduce((sum, d) => sum + (parseFloat(d.registrationFee) || 0), 0);
 
-        const totalLatePenalties = latePenalties
-          .filter((p) => p.month === selectedMonth && String(p.year) === selectedYear)
-          .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        // ===== LATE PENALTIES (From deposits collection) =====
+        const totalLatePenalties = depositsData
+          .filter((d) => d.month === selectedMonth && String(d.year) === selectedYear)
+          .reduce((sum, d) => sum + (parseFloat(d.latePenalty) || 0), 0);
 
-        const activeLoans = (loanRes.data || []).filter((l) => l.status === "approved" && l.remainingAmount > 0).length;
+        // ===== ACTIVE LOANS =====
+        const activeLoans = loansData.filter((l) => l.status === "approved" && l.remainingAmount > 0).length;
 
         setStats({
           employees: employeesCount,
@@ -120,6 +135,32 @@ useEffect(() => {
           totalRegistrationFees,
           totalLatePenalties,
         });
+
+        // ===== SAVINGS ANALYTICS BY MONTH =====
+        const monthlySavings = {};
+        depositsData
+          .filter((d) => String(d.year) === selectedYear)
+          .forEach((d) => {
+            const monthIndex = months.indexOf(d.month);
+            if (!monthlySavings[monthIndex]) {
+              monthlySavings[monthIndex] = 0;
+            }
+            const normalSaving = parseFloat(d.normalSaving) || 0;
+            const voluntarySaving = parseFloat(d.voluntarySaving) || 0;
+            monthlySavings[monthIndex] += normalSaving + voluntarySaving;
+          });
+
+        const savingsArray = months.map((_, index) => monthlySavings[index] || 0);
+        setSavingsData(savingsArray);
+
+        // ===== LOAN DISTRIBUTION BY STATUS =====
+        const distribution = {
+          approved: loansData.filter((l) => l.status === "approved").length,
+          pending: loansData.filter((l) => l.status === "pending").length,
+          rejected: loansData.filter((l) => l.status === "rejected").length,
+        };
+        setLoanDistribution(distribution);
+
       } catch (err) {
         console.log("Dashboard stats error:", err);
       }
@@ -136,8 +177,6 @@ useEffect(() => {
     w.status !== "approved" &&
     w.status !== "rejected"
 ).length;
-
-
 
 const unreadLoans = loans.filter(
   (l) =>
@@ -182,35 +221,45 @@ setPasswordRequests([]);
   }
 };
 
-
 const handleApprove = async (type, id) => {
   try {
     await API.put(`/${type}/${id}/approve`);
 
-    if (type === "withdrawals") {
-      const withdrawal = withdrawals.find(
-        (w) => w._id === id
-      );
+if (type === "withdrawals") {
 
-      if (!withdrawal) return;
+  const withdrawal = withdrawals.find(
+    (w) => w._id === id
+  );
 
-      const employeeId =
-        withdrawal.employeeId?._id ||
-        withdrawal.employeeId;
+  if (!withdrawal) {
+    console.error("Withdrawal request not found");
+    return;
+  }
 
-      console.log(
-        "Terminate URL:",
-        `/employees/${employeeId}/terminate`
-      );
+  const employeeId =
+    withdrawal.employeeId?._id ||
+    withdrawal.employeeId;
 
-      await API.put(
-        `/employees/${employeeId}/terminate`
-      );
+  console.log("Termination Payload:", {
+    employeeId,
+    totalSaving: withdrawal.totalSaving,
+    reason: withdrawal.reason
+  });
 
-      setWithdrawals((prev) =>
-        prev.filter((w) => w._id !== id)
-      );
+  await API.put(
+    `/employees/${employeeId}/terminate`,
+    {
+      totalSaving: withdrawal.totalSaving,
+      reason: withdrawal.reason
     }
+  );
+
+  setWithdrawals((prev) =>
+    prev.filter(
+      (w) => w._id !== id
+    )
+  );
+}
 
     if (type === "loans") {
       setLoans((prev) =>
@@ -225,10 +274,6 @@ const handleApprove = async (type, id) => {
     );
   }
 };
-    // =========================
-    // LOANS
-    // =========================
-  
 
 const handleReject = async (type, id) => {
   try {
@@ -290,6 +335,7 @@ const approvePasswordReset = async (id) => {
     );
   }
 };
+
 const rejectPasswordReset = async (id) => {
   try {
     await API.put(
@@ -388,6 +434,7 @@ const renderPasswordRequests = () => {
     </div>
   ));
 };
+
   const renderNotifications = (items, type) => {
     const unreadItems = items.filter((i) => i.isRead !== true && i.status !== "Rejected");
     if (!unreadItems.length) return <p style={styles.empty}>No notifications</p>;
@@ -395,13 +442,29 @@ const renderPasswordRequests = () => {
     return unreadItems.map((item) => (
       <div key={item._id} style={{ ...styles.item, background: "#eaf7ff" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {type === "withdrawals" && (
-            <>
-              <strong>{item.fullName}</strong>
-              <p style={styles.text}>Reason: {item.reason}</p>
-              <p style={styles.text}>Amount: {item.totalSaving} ETB</p>
-            </>
-          )}
+         {type === "withdrawals" && (
+  <>
+    <strong
+      style={{
+        color: "#000",
+        fontSize: "14px",
+        fontWeight: "700",
+        display: "block",
+        marginBottom: "4px",
+      }}
+    >
+    fullName: {item.fullName}
+    </strong>
+
+    <p style={styles.text}>
+      Reason: {item.reason}
+    </p>
+
+    <p style={styles.text}>
+      Amount: {item.totalSaving} ETB
+    </p>
+  </>
+)}
 
           {type === "loans" && (
             <>
@@ -438,6 +501,9 @@ const renderPasswordRequests = () => {
     ));
   };
 
+  const maxSavings = Math.max(...savingsData, 1);
+  const totalLoans = Object.values(loanDistribution).reduce((a, b) => a + b, 1);
+
   return (
 <div
   className={`dashboard-main-container ${
@@ -451,8 +517,6 @@ const renderPasswordRequests = () => {
     <h1 className="welcome-title">
       👋 Welcome to Micro-finance Dashboard
     </h1>
-
-    
   </div>
 
   <div className="user-profile-box">
@@ -463,7 +527,6 @@ const renderPasswordRequests = () => {
   />
 
   <div>
-   
     <h3>{fullName}</h3>
     <span>{userRole}</span>
   </div>
@@ -512,10 +575,8 @@ const renderPasswordRequests = () => {
         </span>
       )}
     </div>
-     
   </div>
 )}
-
 
           <div style={styles.filterBar}>
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="selectInput">
@@ -557,6 +618,7 @@ const renderPasswordRequests = () => {
           {renderNotifications(loans, "loans")}
         </div>
       )}
+
   {!isMember && openPasswordRequests && (
   <div
   className="notification-panel"
@@ -607,20 +669,21 @@ const renderPasswordRequests = () => {
     </div>
   </div>
 )}
+
       {/* ================= CARDS ================= */}
       {/* ================= DASHBOARD STATS ================= */}
 
 <div className="stats-grid">
 
   <DashboardCard
-    title="Employees"
+    title="Members"
     value={stats.employees}
     icon="👥"
   />
 
   <DashboardCard
     title="Total Savings"
-    value={`${stats.totalSavings} ETB`}
+    value={`${stats.totalSavings.toFixed(2)} ETB`}
     icon="💰"
   />
 
@@ -632,19 +695,19 @@ const renderPasswordRequests = () => {
 
   <DashboardCard
     title={`Deposits (${selectedMonth})`}
-    value={`${stats.monthlyDeposits} ETB`}
+    value={`${stats.monthlyDeposits.toFixed(2)} ETB`}
     icon="📈"
   />
 
   <DashboardCard
     title="Registration Fees"
-    value={`${stats.totalRegistrationFees} ETB`}
+    value={`${stats.totalRegistrationFees.toFixed(2)} ETB`}
     icon="📝"
   />
 
   <DashboardCard
     title="Late Penalties"
-    value={`${stats.totalLatePenalties} ETB`}
+    value={`${stats.totalLatePenalties.toFixed(2)} ETB`}
     icon="⚠️"
   />
 
@@ -657,26 +720,83 @@ const renderPasswordRequests = () => {
   <div className="analytics-card analytics-large">
     <div className="card-header">
       <h3>Savings Analytics</h3>
-      <span>Current Year</span>
+      <span>{selectedYear}</span>
     </div>
 
-    <div className="fake-chart">
-      <div className="line-chart"></div>
+    <div className="line-chart-container" style={styles.chartContainer}>
+      <div style={styles.chartBars}>
+        {savingsData.map((value, index) => (
+          <div key={index} style={styles.barWrapper}>
+            <div
+              style={{
+                ...styles.bar,
+                height: `${(value / maxSavings) * 150}px`,
+                backgroundColor: '#4f46e5'
+              }}
+              title={`${months[index]}: ${value.toFixed(2)} ETB`}
+            >
+              {value > 0 && (
+                <span style={styles.barLabel}>
+                  {(value / 1000).toFixed(1)}K
+                </span>
+              )}
+            </div>
+            <span style={styles.monthLabel}>{months[index].slice(0, 3)}</span>
+          </div>
+        ))}
+      </div>
+      <div style={styles.chartLegend}>
+        <p>Monthly Savings (ETB)</p>
+        <small style={{ color: '#888' }}>Max: {(maxSavings / 1000).toFixed(1)}K ETB</small>
+      </div>
     </div>
   </div>
 
   <div className="analytics-card">
     <div className="card-header">
       <h3>Loan Distribution</h3>
+      <span>{totalLoans} Total</span>
     </div>
 
-    <div className="bars">
-      <span style={{height:"70%"}}></span>
-      <span style={{height:"90%"}}></span>
-      <span style={{height:"60%"}}></span>
-      <span style={{height:"95%"}}></span>
-      <span style={{height:"80%"}}></span>
-      <span style={{height:"100%"}}></span>
+    <div className="distribution-container" style={styles.distributionContainer}>
+      <div style={styles.distributionItem}>
+        <div
+          style={{
+            ...styles.distributionBar,
+            height: `${(loanDistribution.approved / totalLoans) * 150}px`,
+            backgroundColor: '#10b981'
+          }}
+          title={`Approved: ${loanDistribution.approved}`}
+        ></div>
+        <span style={styles.distributionLabel}>Approved</span>
+        <strong style={{ color: '#10b981', marginTop: '4px' }}>{loanDistribution.approved}</strong>
+      </div>
+
+      <div style={styles.distributionItem}>
+        <div
+          style={{
+            ...styles.distributionBar,
+            height: `${(loanDistribution.pending / totalLoans) * 150}px`,
+            backgroundColor: '#f59e0b'
+          }}
+          title={`Pending: ${loanDistribution.pending}`}
+        ></div>
+        <span style={styles.distributionLabel}>Pending</span>
+        <strong style={{ color: '#f59e0b', marginTop: '4px' }}>{loanDistribution.pending}</strong>
+      </div>
+
+      <div style={styles.distributionItem}>
+        <div
+          style={{
+            ...styles.distributionBar,
+            height: `${(loanDistribution.rejected / totalLoans) * 150}px`,
+            backgroundColor: '#ef4444'
+          }}
+          title={`Rejected: ${loanDistribution.rejected}`}
+        ></div>
+        <span style={styles.distributionLabel}>Rejected</span>
+        <strong style={{ color: '#ef4444', marginTop: '4px' }}>{loanDistribution.rejected}</strong>
+      </div>
     </div>
   </div>
 
@@ -691,39 +811,33 @@ const renderPasswordRequests = () => {
 // 🛠️ ቋሚ ስታይሎች
 // =========================
 const styles = {
-
-  
-
- dashboardHeader: {
-  background:
-    "linear-gradient(135deg,#1e3a8a,#4f46e5)",
-  padding: "25px 30px",
-  borderRadius: "24px",
-  boxShadow:
-    "0 15px 40px rgba(79,70,229,.25)",
-  marginBottom: "30px"
-},
- title: {
-  color: "#fff",
-  fontSize: "32px",
-  fontWeight: "800",
-  letterSpacing: ".5px"
-},
-headerRightSection: {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  width: "100%",
-  gap: "10px"
-},
+  dashboardHeader: {
+    background: "linear-gradient(135deg,#1e3a8a,#4f46e5)",
+    padding: "25px 30px",
+    borderRadius: "24px",
+    boxShadow: "0 15px 40px rgba(79,70,229,.25)",
+    marginBottom: "30px"
+  },
+  title: {
+    color: "#fff",
+    fontSize: "32px",
+    fontWeight: "800",
+    letterSpacing: ".5px"
+  },
+  headerRightSection: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    gap: "10px"
+  },
   topBar: {
-  display: "flex",
-  gap: 10,
-  flexWrap: "wrap",
-  justifyContent: "center",
-  width: "100%"
-},
-
+    display: "flex",
+    gap: 10,
+    flexWrap: "wrap",
+    justifyContent: "center",
+    width: "100%"
+  },
   filterBar: { display: "flex", gap: 10, alignItems: "center" },
   selectInput: {
     padding: "6px 10px",
@@ -735,7 +849,7 @@ headerRightSection: {
     cursor: "pointer"
   },
   dropdown: {
-     position:"absolute",
+    position:"absolute",
     top:85,
     right:20,
     width:"320px",
@@ -748,122 +862,192 @@ headerRightSection: {
     border: "1px solid #e2e8f0"
   },
   item: { padding: 10, marginBottom: 10, borderRadius: 8, display: "flex", justifyContent: "space-between", fontSize: "13px", gap: "10px" },
-  actions: {     display:"flex",
-    gap:5,
-    flexWrap:"wrap", alignItems: "center" },
+  actions: { display:"flex", gap:5, flexWrap:"wrap", alignItems: "center" },
   approve: { background: "green", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
   reject: { background: "red", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
   readBtn: { background: "#3498db", color: "#fff", border: "none", cursor: "pointer", borderRadius: "4px", padding: "4px 8px" },
-  cardContainer: { 
-    display: "grid", 
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", 
-    gap: "20px",
-    width: "100%",
-    marginTop: "10px",
-    boxSizing: "border-box"
-  },
   empty: { textAlign: "center", color: "#888", fontSize: "13px" },
   text: { margin: "2px 0", fontSize: "12px", color: "#666" },
 
-  
-
- notificationPanel: {
-  position: "absolute",
-  top: 90,
-  right: 20,
+  notificationPanel: {
+    position: "absolute",
+    top: 90,
+    right: 20,
     width:"430px",
     maxWidth:"95vw",
-  maxHeight: 600,
-  overflowY: "auto",
+    maxHeight: 600,
+    overflowY: "auto",
+    backdropFilter: "blur(20px)",
+    background: "rgba(255,255,255,.85)",
+    border: "1px solid rgba(255,255,255,.4)",
+    borderRadius: "24px",
+    boxShadow: "0 25px 50px rgba(0,0,0,.15)",
+    zIndex: 9999
+  },
 
-  backdropFilter: "blur(20px)",
+  notificationHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "15px",
+    borderBottom: "1px solid #eee"
+  },
 
-  background:
-    "rgba(255,255,255,.85)",
+  markAll: {
+    color: "#4f46e5",
+    cursor: "pointer",
+    fontSize: "14px",
+    fontWeight: 600
+  },
 
-  border:
-    "1px solid rgba(255,255,255,.4)",
+  notificationTabs: {
+    padding: "10px 15px"
+  },
 
-  borderRadius: "24px",
+  activeTab: {
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    padding: "8px 18px",
+    borderRadius: "8px",
+    cursor: "pointer"
+  },
 
-  boxShadow:
-    "0 25px 50px rgba(0,0,0,.15)",
+  notificationList: {
+    padding: "10px"
+  },
 
-  zIndex: 9999
-},
-
-notificationHeader: {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "15px",
-  borderBottom: "1px solid #eee"
-},
-
-markAll: {
-  color: "#4f46e5",
-  cursor: "pointer",
-  fontSize: "14px",
-  fontWeight: 600
-},
-
-notificationTabs: {
-  padding: "10px 15px"
-},
-
-activeTab: {
-  background: "#4f46e5",
-  color: "#fff",
-  border: "none",
-  padding: "8px 18px",
-  borderRadius: "8px",
-  cursor: "pointer"
-},
-
-notificationList: {
-  padding: "10px"
-},
-
-notificationCard: {
- display:"flex",
+  notificationCard: {
+    display:"flex",
     gap:"12px",
     flexWrap:"wrap",
-  padding: "15px",
-  borderBottom: "1px solid #eee",
-  alignItems: "flex-start"
-},
+    padding: "15px",
+    borderBottom: "1px solid #eee",
+    alignItems: "flex-start"
+  },
 
-notificationIcon: {
-  width: "45px",
-  height: "45px",
-  borderRadius: "50%",
-  background: "#f3f4f6",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "20px"
-},
+  notificationIcon: {
+    width: "45px",
+    height: "45px",
+    borderRadius: "50%",
+    background: "#f3f4f6",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px"
+  },
 
+  notificationText: {
+    margin: "4px 0",
+    fontSize: "13px",
+    color: "#555"
+  },
 
+  notificationTime: {
+    marginTop: "6px",
+    fontSize: "12px",
+    color: "#999"
+  },
 
-notificationText: {
-  margin: "4px 0",
-  fontSize: "13px",
-  color: "#555"
-},
+  tab: {
+    background: "#f1f5f9",
+    color: "#333",
+    border: "none",
+    padding: "8px 18px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    marginRight: "8px"
+  },
 
-notificationTime: {
-  marginTop: "6px",
-  fontSize: "12px",
-  color: "#999"
-},
-tab: {
-  background: "#f1f5f9",
-  color: "#333",
-  border: "none",
-  padding: "8px 18px",
-  borderRadius: "8px",
-  cursor: "pointer",
-  marginRight: "8px"
-},
+  chartContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "20px",
+    gap: "15px"
+  },
+
+  chartBars: {
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    gap: "8px",
+    height: "200px",
+    width: "100%"
+  },
+
+  barWrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "5px",
+    flex: 1,
+    maxWidth: "35px"
+  },
+
+  bar: {
+    width: "100%",
+    borderRadius: "4px 4px 0 0",
+    transition: "all 0.3s ease",
+    cursor: "pointer",
+    minHeight: "4px",
+    position: "relative",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+
+  barLabel: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    color: "#fff",
+    fontSize: "11px",
+    fontWeight: "700",
+    textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+    whiteSpace: "nowrap",
+    pointerEvents: "none"
+  },
+
+  monthLabel: {
+    fontSize: "11px",
+    color: "#666",
+    fontWeight: "600"
+  },
+
+  chartLegend: {
+    textAlign: "center",
+    marginTop: "10px"
+  },
+
+  distributionContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    gap: "30px",
+    padding: "30px 20px",
+    height: "220px"
+  },
+
+  distributionItem: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "8px"
+  },
+
+  distributionBar: {
+    width: "50px",
+    borderRadius: "8px 8px 0 0",
+    transition: "all 0.3s ease",
+    cursor: "pointer",
+    minHeight: "4px"
+  },
+
+  distributionLabel: {
+    fontSize: "12px",
+    color: "#666",
+    fontWeight: "600"
+  }
 };

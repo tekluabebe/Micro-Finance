@@ -50,11 +50,25 @@ const handleRestore = async (id) => {
   if (!window.confirm("Restore this employee?")) return;
 
   try {
-    await API.post(`/terminated/restore/${id}`);
+    const response = await API.post(`/terminated/restore/${id}`, {});
 
-    setData((prev) => prev.filter((x) => x._id !== id));
+    if (response.data.success) {
+      // Remove from terminated list
+      setData((prev) => prev.filter((x) => x._id !== id));
+      
+      // Show detailed success message
+      alert(
+        `✅ ${response.data.message}\n\n` +
+        `Total Savings: ${response.data.employee.calculatedSavings.totalSaving} ETB\n` +
+        `Normal Saving: ${response.data.employee.calculatedSavings.normalSaving} ETB\n` +
+        `Voluntary Saving: ${response.data.employee.calculatedSavings.voluntarySaving} ETB\n` +
+        `Deposit Records: ${response.data.employee.calculatedSavings.depositCount}`
+      );
+    }
+
   } catch (err) {
-    console.error(err);
+    console.error("Restore error:", err);
+    alert(err.response?.data?.message || "❌ Failed to restore employee");
   }
 };
   // ================= FILTER LOGIC =================
@@ -365,7 +379,7 @@ const handleRestore = async (id) => {
   inset: 0;
   border-radius: 16px;
   padding: 1px;
-  background: linear-gradient(135deg, #ec4899, #6366f1, #22c55e);
+  background: linear-gradient(135deg, #a18292, #6366f1, #22c55e);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -455,11 +469,11 @@ const handleRestore = async (id) => {
 }
 
 .card {
-  background: white;
+  background: #ffffff;
+  color: #111827;
   padding: 15px;
   border-radius: 14px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  transition: 0.3s ease;
 }
 
 .card:hover {
@@ -482,13 +496,13 @@ const handleRestore = async (id) => {
 .delete {
   border: none;
   background: transparent;
-  color: red;
+  color: black;
   cursor: pointer;
 }
 
 .saving {
-  font-weight: bold;
   color: #10b981;
+  font-weight: 700;
 }
 
 .footer {
@@ -558,6 +572,15 @@ const handleRestore = async (id) => {
   background: #1f2937;
   color: white;
   border: 1px solid #374151;
+}
+
+.top-bar h2 {
+  color: #111827;
+  font-weight: 700;
+}
+
+.dark .top-bar h2 {
+  color: #ffffff;
 }
 `}</style>
 

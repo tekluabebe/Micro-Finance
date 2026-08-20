@@ -24,104 +24,139 @@ useEffect(() => {
   fetchDividendData();
 }, [selectedYear]);
 
-  const fetchDividendData = async () => {
-    try {
-    const [memRes, depRes, financialRes] = await Promise.all([
-  API.get("/employees"),
-  API.get("/deposits"),
-   API.get(`/financial-reports?year=${selectedYear}`)
-   
-]);
-      const allMembers = memRes.data || [];
-      const allDeposits = depRes.data || [];
 
-      const processedMembers = allMembers.map((member) => {
-        const memberDeposits = allDeposits.filter(
-          (d) => String(d.employeeId?._id || d.employeeId) === String(member._id)
+// function to fetch dividend
+const fetchDividendData = async () => {
+  try {
+    const [memRes, depRes, financialRes] = await Promise.all([
+      API.get("/employees"),
+      API.get("/deposits"),
+      API.get(`/financial-reports?year=${selectedYear}`)
+    ]);
+
+    const allMembers = memRes.data || [];
+    const allDeposits = depRes.data || [];
+
+    const processedMembers = allMembers.map((member) => {
+      // 🔥 FILTER DEPOSITS BY BOTH employeeId AND memberId FOR THIS MEMBER
+      const memberDeposits = allDeposits.filter((d) => {
+        const depositEmployeeId = String(d.employeeId?._id || d.employeeId);
+        const depositMemberId = String(d.memberId || d.employeeId?.memberId || "");
+        const memberMemberId = String(member.memberId || "");
+        
+        // Match by employeeId OR memberId (for restored members)
+        const isThisMember = (
+          depositEmployeeId === String(member._id) ||
+          (depositMemberId === memberMemberId && memberMemberId !== "")
         );
 
-        const normalSum = memberDeposits.reduce((s, d) => s + (parseFloat(d.normalSaving) || 0), 0);
-        const voluntarySum = memberDeposits.reduce((s, d) => s + (parseFloat(d.voluntarySaving) || 0), 0);
-        const sharesSum = memberDeposits.reduce((s, d) => s + (parseFloat(d.sharedPurchase) || 0), 0);
+        // 🔥 ONLY include deposits from selected year
+        const isSelectedYear = String(d.year) === String(selectedYear);
 
-        return {
-          ...member,
-          fullName: `${member.firstName} ${member.lastName}`,
-          normalSaving: normalSum,
-          voluntarySaving: voluntarySum,
-          sharesPurchased: sharesSum,
-        };
+        return isThisMember && isSelectedYear;
       });
 
-      const totalS = processedMembers.reduce((s, m) => s + m.normalSaving + m.voluntarySaving, 0);
-      const totalSh = processedMembers.reduce((s, m) => s + m.sharesPurchased, 0);
+      console.log(`Member ${member.firstName}: ${memberDeposits.length} deposits in ${selectedYear}`);
+
+      // 🔥 SUM ONLY normal + voluntary savings (NOT sharedPurchase, registrationFee, latePenalty)
+      const normalSum = memberDeposits.reduce((s, d) => {
+        const amount = parseFloat(d.normalSaving) || 0;
+        console.log(`  Normal: ${amount}`);
+        return s + amount;
+      }, 0);
+
+      const voluntarySum = memberDeposits.reduce((s, d) => {
+        const amount = parseFloat(d.voluntarySaving) || 0;
+        console.log(`  Voluntary: ${amount}`);
+        return s + amount;
+      }, 0);
       
-// ===============================
-// FINANCIAL REPORTS
-// ===============================
-// ===============================
-// FINANCIAL REPORTS
-// ===============================
-console.log("Financial Reports Response:", financialRes.data);
+      // 🔥 Shares = sharedPurchase quantity (not amount)
+      const sharesSum = memberDeposits.reduce((s, d) => s + (parseFloat(d.sharedPurchase) || 0), 0);
 
-// Handle different API response structures
-const financialReports = Array.isArray(financialRes.data)
-  ? financialRes.data
-  : financialRes.data?.data
-  ? financialRes.data.data
-  : financialRes.data?.reports
-  ? financialRes.data.reports
-  : [];
+      const totalSaving = normalSum + voluntarySum;
 
-console.log("Reports:", financialReports);
+      console.log(`Member ${member.firstName} Total: ${totalSaving} (Normal: ${normalSum} + Voluntary: ${voluntarySum})`);
 
-// Build year dropdown
-const years = [
-  ...new Set(
-    financialReports
-      .map((report) => Number(report.year))
-      .filter(Boolean)
-  ),
-].sort((a, b) => b - a);
+      return {
+        ...member,
+        fullName: `${member.firstName} ${member.lastName}`,
+        normalSaving: normalSum,
+        voluntarySaving: voluntarySum,
+        totalSaving: totalSaving,  // 🔥 Only normal + voluntary
+        sharesPurchased: sharesSum,
+      };
+    });
 
-setAvailableYears(years);
+    // 🔥 CALCULATE TOTALS - SUM FROM PROCESSED MEMBERS
+    const totalS = processedMembers.reduce((s, m) => {
+      console.log(`Adding ${m.fullName}: ${m.totalSaving}`);
+      return s + m.totalSaving;
+    }, 0);
 
-// Calculate total net profit
-console.log("Selected Year:", selectedYear);
-console.log("Financial Reports:", financialReports);
-// Only reports for selected year
-const yearlyReports = financialReports.filter(
-  (report) => Number(report.year) === Number(selectedYear)
-);
+    const totalSh = processedMembers.reduce((s, m) => s + m.sharesPurchased, 0);
 
-console.log("Yearly Reports:", yearlyReports);
+    console.log(`Total Saving Calculated: ${totalS}`);
+    console.log(`Total Shares Calculated: ${totalSh}`);
 
-// Sum net profit only for selected year
-const netProfit = yearlyReports.reduce(
-  (sum, report) => sum + Number(report.netProfit || 0),
-  0
-);
+    // ===============================
+    // FINANCIAL REPORTS
+    // ===============================
+    console.log("Financial Reports Response:", financialRes.data);
 
-console.log(
-  `Net Profit for ${selectedYear}:`,
-  netProfit
-);
+    // Handle different API response structures
+    const financialReports = Array.isArray(financialRes.data)
+      ? financialRes.data
+      : financialRes.data?.data
+      ? financialRes.data.data
+      : financialRes.data?.reports
+      ? financialRes.data.reports
+      : [];
 
-console.log("Net Profit:", netProfit);
+    console.log("Reports:", financialReports);
 
-setTotals({
-  totalSaving: totalS,
-  totalShares: totalSh,
-  totalProfit: netProfit,
-});
+    // Build year dropdown
+    const years = [
+      ...new Set(
+        financialReports
+          .map((report) => Number(report.year))
+          .filter(Boolean)
+      ),
+    ].sort((a, b) => b - a);
 
-      setMembers(processedMembers);
-      setFilteredMembers(processedMembers);
+    setAvailableYears(years.length > 0 ? years : [new Date().getFullYear()]);
 
-    } catch (err) {
-      console.error("Dividend fetch error:", err);
-    }
-  };
+    // Calculate total net profit for selected year
+    console.log("Selected Year:", selectedYear);
+    console.log("Financial Reports:", financialReports);
+
+    const yearlyReports = financialReports.filter(
+      (report) => Number(report.year) === Number(selectedYear)
+    );
+
+    console.log("Yearly Reports:", yearlyReports);
+
+    // 🔥 SUM net profit for selected year
+    const netProfit = yearlyReports.reduce(
+      (sum, report) => sum + (Number(report.netProfit) || 0),
+      0
+    );
+
+    console.log(`Net Profit for ${selectedYear}:`, netProfit);
+
+    setTotals({
+      totalSaving: totalS,  // 🔥 Sum of normal + voluntary only
+      totalShares: totalSh,
+      totalProfit: netProfit > 0 ? netProfit : 0,
+    });
+
+    setMembers(processedMembers);
+    setFilteredMembers(processedMembers);
+
+  } catch (err) {
+    console.error("Dividend fetch error:", err);
+  }
+};
 
   const handleSearch = (e) => {
     const query = e.target.value.toLowerCase();
@@ -225,42 +260,53 @@ const selectedYearExists =
           </tr>
         </thead>
 
-        <tbody>
-          {filteredMembers.length > 0 ? (
-            filteredMembers.map((member) => {
-              const shareRatio =
-                totals.totalShares > 0
-                  ? member.sharesPurchased / totals.totalShares
-                  : 0;
+<tbody>
+  {filteredMembers.length > 0 ? (
+    filteredMembers.map((member) => {
+      // 🔥 Calculate share ratio based on total shares
+      const shareRatio =
+        totals.totalShares > 0
+          ? member.sharesPurchased / totals.totalShares
+          : 0;
 
-              const dividendAmount =
-                shareRatio * totals.totalProfit;
+      // 🔥 Dividend = (member shares / total shares) * total profit
+      const dividendAmount =
+        totals.totalProfit > 0 ? shareRatio * totals.totalProfit : 0;
 
-              return (
-                <tr key={member._id}>
-                  <td className="member-name-cell">
-                    {member.fullName}
-                  </td>
+      return (
+        <tr key={member._id}>
+          <td className="member-name-cell">
+            {member.fullName}
+          </td>
 
-                  <td>{member.sharesPurchased}</td>
+          <td>
+            {Number(member.sharesPurchased).toLocaleString()}
+          </td>
 
-                  <td>{(shareRatio * 100).toFixed(2)}%</td>
+          <td>
+            {(shareRatio * 100).toFixed(2)}%
+          </td>
 
-                  <td className="dividend-amount-cell">
-                    {dividendAmount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    })}{" "}
-                    ETB
-                  </td>
-                </tr>
-              );
-            })
-          ) : (
-            <tr className="empty-dividend-row">
-              <td colSpan="4">ምንም ዳታ አልተገኘም</td>
-            </tr>
-          )}
-        </tbody>
+          <td className="dividend-amount-cell">
+            <strong>
+              {dividendAmount > 0 
+                ? dividendAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })
+                : "0.00"
+              }
+            </strong>
+            {" "} ETB
+          </td>
+        </tr>
+      );
+    })
+  ) : (
+    <tr className="empty-dividend-row">
+      <td colSpan="4">ምንም ዳታ አልተገኘም</td>
+    </tr>
+  )}
+</tbody>
       </table>
     </div>
   </div>

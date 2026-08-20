@@ -27,7 +27,6 @@ mongoose.connect(ATLAS_URI)
 // EMPLOYEE SCHEMA
 // =======================
 const employeeSchema = new mongoose.Schema({
-
   memberId: { type: String, required: true, unique: true },
   category: { type: String, required: true },
   age: Number,
@@ -39,6 +38,11 @@ const employeeSchema = new mongoose.Schema({
   maritalStatus: String,
   role: String,
   password: String,
+
+  // 🔥 ADD THESE SAVINGS FIELDS
+  totalSaving: { type: Number, default: 0 },
+  normalSaving: { type: Number, default: 0 },
+  voluntarySaving: { type: Number, default: 0 },
 
   wifeName: String,
   wifeFatherName: String,
@@ -106,50 +110,23 @@ const PasswordResetRequest = mongoose.model(
 // DEPOSIT SCHEMA
 // =======================
 const depositSchema = new mongoose.Schema({
-
   employeeId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee",
     required: true
   },
-
+  memberId: String,  // 🔥 Add this field for easier lookups
   month: String,
-
   year: String,
-
-  normalSaving: {
-    type: Number,
-    default: 0
-  },
-
-  voluntarySaving: {
-    type: Number,
-    default: 0
-  },
-
-  sharedPurchase: {
-    type: Number,
-    default: 0
-  },
-
-  // NEW
-  registrationFee: {
-    type: Number,
-    default: 0
-  },
-
-  // NEW
-  latePenalty: {
-    type: Number,
-    default: 0
-  }
-
+  normalSaving: { type: Number, default: 0 },
+  voluntarySaving: { type: Number, default: 0 },
+  sharedPurchase: { type: Number, default: 0 },
+  registrationFee: { type: Number, default: 0 },
+  latePenalty: { type: Number, default: 0 },
+  depositForPurchase: { type: Number, default: 0 }
 }, { timestamps: true });
 
-const Deposit = mongoose.model(
-  "Deposit",
-  depositSchema
-);
+const Deposit = mongoose.model("Deposit", depositSchema);
 
 // =======================
 // REGISTRATION FEE SCHEMA
@@ -243,15 +220,44 @@ const Withdrawal = mongoose.model(
 // =======================
 const terminatedSchema = new mongoose.Schema({
   memberId: String,
-  fullName: String,
-  totalSaving: Number,
-  reason: String,
-  terminatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  category: String,
 
+  firstName: String,
+  lastName: String,
+  fullName: String,
+
+  gender: String,
+  birthDate: Date,
+  age: Number,
+
+  phone: String,
+  maritalStatus: String,
+  role: String,
+  password: String,
+
+  // 🔥 ADD THESE SAVINGS FIELDS
+  totalSaving: { type: Number, default: 0 },
+  normalSaving: { type: Number, default: 0 },
+  voluntarySaving: { type: Number, default: 0 },
+
+  fatherName: String,
+  motherName: String,
+
+  wifeName: String,
+  wifeFatherName: String,
+  wifeMotherName: String,
+
+  husbandName: String,
+  husbandFatherName: String,
+  husbandMotherName: String,
+
+  brothers: [String],
+  sisters: [String],
+  children: [String],
+
+  reason: String,
+  terminatedAt: Date
+});
 const Terminated = mongoose.model(
   "Terminated",
   terminatedSchema
@@ -512,6 +518,10 @@ app.put("/api/employees/:id", async (req, res) => {
 
 app.put("/api/employees/:id/terminate", async (req, res) => {
   try {
+    // Get values sent from frontend
+    const { totalSaving, reason } = req.body;
+
+    // Find employee
     const employee = await Employee.findById(req.params.id);
 
     if (!employee) {
@@ -520,22 +530,55 @@ app.put("/api/employees/:id/terminate", async (req, res) => {
       });
     }
 
-    const withdrawal = await Withdrawal.findOne({
-      employeeId: req.params.id
-    }).sort({ createdAt: -1 });
+    // Save full employee information in Terminated collection
+    const terminated = new Terminated({
+      memberId: employee.memberId,
 
-await Terminated.create({
-  memberId: employee.memberId,
-  fullName: `${employee.firstName} ${employee.lastName}`,
-  totalSaving: withdrawal?.totalSaving || 0,
-  reason: withdrawal?.reason || "Not specified",
-  terminatedAt: new Date()
-});
+      category: employee.category,
 
-    await Employee.findByIdAndDelete(req.params.id);
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      fullName: `${employee.firstName || ""} ${employee.lastName || ""}`.trim(),
+
+      gender: employee.gender,
+      birthDate: employee.birthDate,
+      age: employee.age,
+
+      phone: employee.phone,
+      maritalStatus: employee.maritalStatus,
+      role: employee.role,
+      password: employee.password,
+
+      fatherName: employee.fatherName,
+      motherName: employee.motherName,
+
+      wifeName: employee.wifeName,
+      wifeFatherName: employee.wifeFatherName,
+      wifeMotherName: employee.wifeMotherName,
+
+      husbandName: employee.husbandName,
+      husbandFatherName: employee.husbandFatherName,
+      husbandMotherName: employee.husbandMotherName,
+
+      brothers: employee.brothers || [],
+      sisters: employee.sisters || [],
+      children: employee.children || [],
+
+      // termination information
+      totalSaving: Number(totalSaving) || 0,
+      reason: reason || "",
+
+      terminatedAt: new Date()
+    });
+
+    await terminated.save();
+
+    // Remove employee from Employee collection
+    await Employee.findByIdAndDelete(employee._id);
 
     res.json({
-      success: true
+      success: true,
+      message: "Employee terminated successfully"
     });
 
   } catch (err) {
@@ -578,56 +621,69 @@ app.delete("/api/employees/:id", async (req, res) => {
 // =======================
 
 // CREATE DEPOSIT
+// CREATE DEPOSIT (Alternative - if frontend sends memberId)
+// UPDATE EMPLOYEE TOTAL SAVING after deposit
 app.post("/api/deposits", async (req, res) => {
 
   try {
 
+    let memberId = req.body.memberId;
+
+    // If memberId not provided, fetch from employee
+    if (!memberId) {
+      const employee = await Employee.findById(req.body.employeeId);
+      if (!employee) {
+        return res.status(400).json({
+          message: "Employee not found"
+        });
+      }
+      memberId = employee.memberId;
+    }
+
     const d = new Deposit({
 
       employeeId: req.body.employeeId,
+      memberId: memberId,
 
       month: req.body.month,
-
       year: req.body.year,
 
-      normalSaving:
-        Number(req.body.normalSaving) || 0,
-
-      voluntarySaving:
-        Number(req.body.voluntarySaving) || 0,
-
-      sharedPurchase:
-        Number(req.body.sharedPurchase) || 0,
-
-      registrationFee:
-        Number(req.body.registrationFee) || 0,
-
-      latePenalty:
-        Number(req.body.latePenalty) || 0
+      normalSaving: Number(req.body.normalSaving) || 0,
+      voluntarySaving: Number(req.body.voluntarySaving) || 0,
+      sharedPurchase: Number(req.body.sharedPurchase) || 0,
+      registrationFee: Number(req.body.registrationFee) || 0,
+      latePenalty: Number(req.body.latePenalty) || 0,
+      depositForPurchase: Number(req.body.depositForPurchase) || 0
 
     });
 
     await d.save();
 
+    // 🔥 UPDATE employee totalSaving with normal + voluntary only
+    const allDeposits = await Deposit.find({ employeeId: req.body.employeeId });
+    const newTotal = allDeposits.reduce((sum, dep) => {
+      return sum + (parseFloat(dep.normalSaving) || 0) + (parseFloat(dep.voluntarySaving) || 0);
+    }, 0);
+
+    await Employee.findByIdAndUpdate(
+      req.body.employeeId,
+      { 
+        totalSaving: newTotal,
+        normalSaving: allDeposits.reduce((s, d) => s + (parseFloat(d.normalSaving) || 0), 0),
+        voluntarySaving: allDeposits.reduce((s, d) => s + (parseFloat(d.voluntarySaving) || 0), 0)
+      }
+    );
+
     // =======================
     // SAVE REGISTRATION FEE
     // =======================
     if (Number(req.body.registrationFee) > 0) {
-
-      const registration =
-        new RegistrationFee({
-
-          employeeId: req.body.employeeId,
-
-          amount:
-            Number(req.body.registrationFee),
-
-          month: req.body.month,
-
-          year: req.body.year
-
-        });
-
+      const registration = new RegistrationFee({
+        employeeId: req.body.employeeId,
+        amount: Number(req.body.registrationFee),
+        month: req.body.month,
+        year: req.body.year
+      });
       await registration.save();
     }
 
@@ -635,21 +691,12 @@ app.post("/api/deposits", async (req, res) => {
     // SAVE LATE PENALTY
     // =======================
     if (Number(req.body.latePenalty) > 0) {
-
-      const penalty =
-        new LatePenalty({
-
-          employeeId: req.body.employeeId,
-
-          amount:
-            Number(req.body.latePenalty),
-
-          month: req.body.month,
-
-          year: req.body.year
-
-        });
-
+      const penalty = new LatePenalty({
+        employeeId: req.body.employeeId,
+        amount: Number(req.body.latePenalty),
+        month: req.body.month,
+        year: req.body.year
+      });
       await penalty.save();
     }
 
@@ -659,15 +706,122 @@ app.post("/api/deposits", async (req, res) => {
     });
 
   } catch (err) {
-
     console.error(err);
-
     res.status(500).json({
-      message: "Error saving deposit ❌"
+      message: "Error saving deposit ❌",
+      error: err.message
     });
   }
 });
 
+// GET /api/dividends - Get all dividends for a specific year
+// GET /api/dividends - Updated to show remaining after distribution
+// Replace the /api/dividends route
+
+// GET DIVIDENDS
+app.get("/api/dividends", async (req, res) => {
+  try {
+    const year = Number(req.query.year);
+
+    const [deposits, employees, report, distributions] =
+      await Promise.all([
+        Deposit.find(),
+        Employee.find(),
+        FinancialReport.findOne({ year }),
+        ProfitDistribution.find({ year }).sort({
+          updatedAt: -1,
+          createdAt: -1,
+        }),
+      ]);
+
+    const yearDeposits = deposits.filter(
+      (d) => String(d.year) === String(year)
+    );
+
+    const totalShares = yearDeposits.reduce(
+      (sum, d) => sum + Number(d.sharedPurchase || 0),
+      0
+    );
+
+    const netProfit = Number(report?.netProfit || 0);
+
+    const result = employees.map((employee) => {
+      const memberDeposits = yearDeposits.filter((deposit) => {
+        const depositEmployeeId = String(
+          deposit.employeeId?._id ||
+            deposit.employeeId ||
+            ""
+        );
+
+        const depositMemberId = String(
+          deposit.memberId ||
+            deposit.employeeId?.memberId ||
+            ""
+        );
+
+        return (
+          depositEmployeeId === String(employee._id) ||
+          depositMemberId === String(employee.memberId)
+        );
+      });
+
+      const shares = memberDeposits.reduce(
+        (sum, d) => sum + Number(d.sharedPurchase || 0),
+        0
+      );
+
+      // This is the dividend shown before distribution.
+      const calculatedDividend =
+        totalShares > 0
+          ? (shares / totalShares) * netProfit
+          : 0;
+
+      const distribution = distributions.find(
+        (item) =>
+          String(item.memberId) === String(employee.memberId) ||
+          String(item.employeeId) === String(employee._id)
+      );
+
+      // Logic 1:
+      // Once distributed, keep the original dividend unchanged.
+      const dividendAmount = distribution
+        ? Number(distribution.dividendAmount || 0)
+        : calculatedDividend;
+
+      // Logic 2:
+      // After distribution, show the database remaining amount.
+      const remainingAmount = distribution
+        ? Number(distribution.remainingAmount || 0)
+        : dividendAmount;
+
+return {
+  employeeId: employee._id,
+  memberId: employee.memberId,
+  firstName: employee.firstName,
+  lastName: employee.lastName,
+  year, // Required by Profit.js
+
+  shares,
+  totalShares,
+  netProfit,
+  dividendAmount: Number(dividendAmount.toFixed(2)),
+  remainingAmount: Number(remainingAmount.toFixed(2)),
+  distributedAmount: Number(
+    distribution?.distributedAmount || 0
+  ),
+  isDistributed: Boolean(distribution)
+};
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error("Dividend error:", err);
+    res.status(500).json({
+      message: "Failed to load dividends",
+      error: err.message,
+    });
+  }
+});
 // =======================
 // REQUEST PASSWORD RESET
 // =======================
@@ -1840,57 +1994,139 @@ res.json({
 });
 
 
-// POST /terminated/restore/:id
+// POST /api/terminated/restore/:id
+// POST /api/terminated/restore/:id
 app.post("/api/terminated/restore/:id", async (req, res) => {
-  try {
-    const terminatedEmp = await Terminated.findById(req.params.id);
+    try {
+        const terminated = await Terminated.findById(req.params.id);
 
-    if (!terminatedEmp) {
-      return res.status(404).json({ message: "Not found" });
+        if (!terminated) {
+            return res.status(404).json({
+                message: "Employee not found"
+            });
+        }
+
+        // 🔥 FIND DEPOSITS BY memberId
+        const deposits = await Deposit.find({ 
+            employeeId: { $exists: true }
+        }).populate("employeeId");
+
+        // Filter deposits that belong to this member
+        const memberDeposits = deposits.filter(d => 
+            d.employeeId?.memberId === terminated.memberId || 
+            d.memberId === terminated.memberId
+        );
+
+        console.log(`Found ${memberDeposits.length} deposits for member ${terminated.memberId}`);
+
+        // 🔥 CALCULATE ONLY normal + voluntary savings
+        const totalSaving = memberDeposits.reduce((sum, deposit) => {
+            const normalSaving = parseFloat(deposit.normalSaving) || 0;
+            const voluntarySaving = parseFloat(deposit.voluntarySaving) || 0;
+            
+            // Only sum normal and voluntary
+            return sum + normalSaving + voluntarySaving;
+        }, 0);
+
+        // Calculate normal separately
+        const normalSaving = memberDeposits.reduce((sum, d) => sum + (parseFloat(d.normalSaving) || 0), 0);
+        const voluntarySaving = memberDeposits.reduce((sum, d) => sum + (parseFloat(d.voluntarySaving) || 0), 0);
+
+        console.log(`Total Savings Calculated: ${totalSaving} ETB (Normal: ${normalSaving} + Voluntary: ${voluntarySaving})`);
+
+        // Hash the password if it exists
+        let hashedPassword = terminated.password;
+        if (terminated.password && !terminated.password.startsWith("$2b$")) {
+            const salt = await bcrypt.genSalt(10);
+            hashedPassword = await bcrypt.hash(terminated.password, salt);
+        } else {
+            hashedPassword = terminated.password;
+        }
+
+        const restoredEmployee = new Employee({
+            memberId: terminated.memberId,
+            category: terminated.category,
+
+            firstName: terminated.firstName,
+            lastName: terminated.lastName,
+
+            gender: terminated.gender,
+            birthDate: terminated.birthDate,
+            age: terminated.age,
+
+            phone: terminated.phone,
+            maritalStatus: terminated.maritalStatus || "",
+
+            role: terminated.role,
+            password: hashedPassword,
+
+            fatherName: terminated.fatherName || "",
+            motherName: terminated.motherName || "",
+
+            wifeName: terminated.wifeName || "",
+            wifeFatherName: terminated.wifeFatherName || "",
+            wifeMotherName: terminated.wifeMotherName || "",
+
+            husbandName: terminated.husbandName || "",
+            husbandFatherName: terminated.husbandFatherName || "",
+            husbandMotherName: terminated.husbandMotherName || "",
+
+            brothers: terminated.brothers || [],
+            sisters: terminated.sisters || [],
+            children: terminated.children || [],
+
+            // 🔥 ONLY normal + voluntary
+            totalSaving: totalSaving,
+            normalSaving: normalSaving,
+            voluntarySaving: voluntarySaving
+        });
+
+        const savedEmployee = await restoredEmployee.save();
+
+        // Update all deposits to reference the new employee ID
+        const updateResult = await Deposit.updateMany(
+            { 
+                $or: [
+                    { employeeId: { $exists: false } },
+                    { "employeeId.memberId": terminated.memberId }
+                ]
+            },
+            { employeeId: savedEmployee._id }
+        );
+
+        console.log(`Updated ${updateResult.modifiedCount} deposit records`);
+
+        // Delete from terminated collection
+        await Terminated.findByIdAndDelete(req.params.id);
+
+        res.json({
+            success: true,
+            message: `Employee restored successfully! Total Savings: ${totalSaving} ETB ✅`,
+            employee: {
+                _id: savedEmployee._id,
+                memberId: savedEmployee.memberId,
+                firstName: savedEmployee.firstName,
+                lastName: savedEmployee.lastName,
+                totalSaving: savedEmployee.totalSaving,
+                normalSaving: savedEmployee.normalSaving,
+                voluntarySaving: savedEmployee.voluntarySaving,
+                calculatedSavings: {
+                    totalSaving: totalSaving,
+                    normalSaving: normalSaving,
+                    voluntarySaving: voluntarySaving,
+                    depositCount: memberDeposits.length,
+                    depositsUpdated: updateResult.modifiedCount
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error("Restore Error:", err);
+        res.status(500).json({
+            message: "Restore failed: " + err.message,
+            error: err
+        });
     }
-
-    // 🔁 recreate FULL employee
- const restored = new Employee({
-  memberId: terminatedEmp.memberId,
-  firstName: terminatedEmp.firstName,
-  lastName: terminatedEmp.lastName,
-  fullName: `${terminatedEmp.firstName || ""} ${terminatedEmp.lastName || ""}`.trim(),
-
-  gender: terminatedEmp.gender,
-  birthDate: terminatedEmp.birthDate,
-  age: terminatedEmp.age,
-
-  category: terminatedEmp.category || (terminatedEmp.age >= 18 ? "Adult" : "Child"),
-
-  phone: terminatedEmp.phone,
-  maritalStatus: terminatedEmp.maritalStatus,
-  role: terminatedEmp.role,
-  password: terminatedEmp.password,
-
-  fatherName: terminatedEmp.fatherName,
-  motherName: terminatedEmp.motherName,
-  wifeName: terminatedEmp.wifeName,
-  wifeFatherName: terminatedEmp.wifeFatherName,
-  wifeMotherName: terminatedEmp.wifeMotherName,
-  husbandName: terminatedEmp.husbandName,
-  husbandFatherName: terminatedEmp.husbandFatherName,
-  husbandMotherName: terminatedEmp.husbandMotherName,
-
-  brothers: terminatedEmp.brothers || [],
-  sisters: terminatedEmp.sisters || [],
-  children: terminatedEmp.children || []
-});
-
-    await restored.save();
-
-    // ❌ remove from terminated
-    await Terminated.findByIdAndDelete(req.params.id);
-
-    res.json({ message: "Employee restored successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Restore failed" });
-  }
 });
 
 // =========================================
@@ -2215,6 +2451,57 @@ const FinancialReport = mongoose.model(
   financialReportSchema
 );
 
+const profitDistributionSchema = new mongoose.Schema(
+  {
+    employeeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      required: true,
+    },
+    memberId: {
+      type: String,
+      required: true,
+    },
+    year: {
+      type: Number,
+      required: true,
+    },
+    dividendAmount: {
+      type: Number,
+      default: 0,
+    },
+    savingAmount: {
+      type: Number,
+      default: 0,
+    },
+    shareAmount: {
+      type: Number,
+      default: 0,
+    },
+    distributedAmount: {
+      type: Number,
+      default: 0,
+    },
+    remainingAmount: {
+      type: Number,
+      default: 0,
+    },
+    status: {
+      type: String,
+      default: "approved",
+    },
+    distributedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  { timestamps: true }
+);
+
+const ProfitDistribution = mongoose.model(
+  "ProfitDistribution",
+  profitDistributionSchema
+);
 
 // ==========================================
 // SAVE FINANCIAL REPORT
@@ -2438,44 +2725,6 @@ app.delete("/api/loans/:id", async (req, res) => {
 // =======================
 // PROFIT DISTRIBUTION SCHEMA
 // =======================
-const profitDistributionSchema = new mongoose.Schema({
-  employeeId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Employee",
-    required: true,
-  },
-
-  year: {
-    type: Number,
-    required: true,
-  },
-
-  dividendAmount: {
-    type: Number,
-    default: 0,
-  },
-
-  savingAmount: {
-    type: Number,
-    default: 0,
-  },
-
-  shareAmount: {
-    type: Number,
-    default: 0,
-  },
-
-  sharesAdded: {
-    type: Number,
-    default: 0,
-  }
-
-}, { timestamps: true });
-
-const ProfitDistribution = mongoose.model(
-  "ProfitDistribution",
-  profitDistributionSchema
-);
 
 
 //total loan interest paid
@@ -2549,42 +2798,121 @@ app.get("/api/profit-distributions", async (req, res) => {
 // =======================
 // SAVE PROFIT DISTRIBUTION
 // =======================
+// POST /api/profit-distributions
+// SAVE OR UPDATE PROFIT DISTRIBUTION
 app.post("/api/profit-distributions", async (req, res) => {
   try {
-
     const {
       employeeId,
-      year,
-      dividendAmount,
-      savingAmount,
-      shareAmount
-    } = req.body;
-
-    const sharesAdded = Math.floor(
-      Number(shareAmount || 0) / 500
-    );
-
-    const record = new ProfitDistribution({
-      employeeId,
+      memberId,
       year,
       dividendAmount,
       savingAmount,
       shareAmount,
-      sharesAdded
+    } = req.body;
+
+    const employee = await Employee.findById(employeeId);
+
+    if (!employee) {
+      return res.status(404).json({
+        message: "Employee not found",
+      });
+    }
+
+    const finalMemberId = memberId || employee.memberId;
+    const finalYear = Number(year);
+
+    const currentSaving = Number(savingAmount || 0);
+    const currentShare = Number(shareAmount || 0);
+    const currentDistribution =
+      currentSaving + currentShare;
+
+    const existing = await ProfitDistribution.findOne({
+      memberId: finalMemberId,
+      year: finalYear,
+    }).sort({
+      updatedAt: -1,
+      createdAt: -1,
     });
 
-    await record.save();
+    // Keep the first/original dividend forever.
+    const originalDividend = existing
+      ? Number(existing.dividendAmount || 0)
+      : Number(dividendAmount || 0);
 
-    res.status(201).json({
+    const previousRemaining = existing
+      ? Number(existing.remainingAmount || 0)
+      : originalDividend;
+
+    const previousDistributed = existing
+      ? Number(existing.distributedAmount || 0)
+      : 0;
+
+    if (currentDistribution <= 0) {
+      return res.status(400).json({
+        message: "Distribution amount must be greater than zero",
+      });
+    }
+
+    if (currentDistribution > previousRemaining) {
+      return res.status(400).json({
+        message: `Distribution cannot exceed remaining dividend (${previousRemaining.toFixed(
+          2
+        )} ETB)`,
+      });
+    }
+
+    const newRemaining =
+      previousRemaining - currentDistribution;
+
+    const newDistributed =
+      previousDistributed + currentDistribution;
+
+    const distribution =
+      await ProfitDistribution.findOneAndUpdate(
+        {
+          memberId: finalMemberId,
+          year: finalYear,
+        },
+        {
+          employeeId: employee._id,
+          memberId: finalMemberId,
+          year: finalYear,
+
+          // Logic 1: never replace the original dividend.
+          dividendAmount: originalDividend,
+
+          savingAmount:
+            Number(existing?.savingAmount || 0) +
+            currentSaving,
+
+          shareAmount:
+            Number(existing?.shareAmount || 0) +
+            currentShare,
+
+          distributedAmount: newDistributed,
+          remainingAmount: Math.max(0, newRemaining),
+          status: "approved",
+          distributedAt: new Date(),
+        },
+        {
+          new: true,
+          upsert: true,
+          setDefaultsOnInsert: true,
+        }
+      );
+
+    res.json({
       success: true,
-      message: "Profit distributed successfully",
-      data: record
+      message: "Profit distribution saved successfully ✅",
+      distribution,
     });
-
   } catch (err) {
+    console.error("Profit distribution error:", err);
+
     res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 });
