@@ -17,6 +17,9 @@ import * as XLSX from "xlsx";
 
 export default function IncomeExpense() {
 
+const isMember =
+    localStorage.getItem("userRole")?.toLowerCase() === "member";
+
     const reportRef = useRef();
 
     const [deposits, setDeposits] = useState([]);
@@ -109,6 +112,7 @@ const lateLoanPenalty = filteredLoanPayments.reduce((s, lp) => s + Number(lp.pen
 
     // ================= SAVE REPORT =================
     const handleSave = async () => {
+      if (isMember) return;
        const payload = {
 
   year: selectedYear,
@@ -338,12 +342,14 @@ const exportPDF = async () => {
     ];
 
 const handleBankIncomeChange = (index, value) => {
+  if (isMember) return;
     const updated = [...bankIncomes];
     updated[index].amount = Number(value) || 0;
     setBankIncomes(updated);
 };
 
 const handleOtherIncomeChange = (index, field, value) => {
+  if (isMember) return;
     const updated = [...otherIncomes];
     updated[index][field] =
         field === "amount" ? Number(value) || 0 : value;
@@ -351,6 +357,7 @@ const handleOtherIncomeChange = (index, field, value) => {
 };
 
 const handleExpenseChange = (index, value) => {
+  if (isMember) return;
     const updated = [...expenseData];
     updated[index].amount = Number(value) || 0;
     setExpenseData(updated);
@@ -359,11 +366,13 @@ const handleExpenseChange = (index, value) => {
 
 // ADD OTHER INCOME ROW
 const addOtherIncomeRow = () => {
+  if (isMember) return;
     setOtherIncomes([...otherIncomes, { name: "", amount: 0 }]);
 };
 
 // REMOVE OTHER INCOME ROW
 const removeOtherIncomeRow = (index) => {
+  if (isMember) return;
     setOtherIncomes(otherIncomes.filter((_, i) => i !== index));
 };
 
@@ -451,13 +460,14 @@ const removeOtherIncomeRow = (index) => {
                         <div key={i} className="table-row">
                             <span>{item.name}</span>
 
-                            <input
-                                type="number"
-                                value={item.amount}
-                                onChange={(e) =>
-                                    handleBankIncomeChange(i, e.target.value)
-                                }
-                            />
+                        <input
+                            type="number"
+                            value={item.amount}
+                            disabled={isMember}
+                            onChange={(e) =>
+                                handleBankIncomeChange(i, e.target.value)
+                            }
+                        />
                         </div>
                     ))}
 
@@ -467,28 +477,35 @@ const removeOtherIncomeRow = (index) => {
                     {otherIncomes.map((income, index) => (
                         <div key={index} className="table-row">
 
-                            <input
-                                placeholder="Income Name"
-                                value={income.name}
-                                onChange={(e) =>
-                                    handleOtherIncomeChange(index, "name", e.target.value)
-                                }
-                            />
+                          <input
+                              placeholder="Income Name"
+                              value={income.name}
+                              disabled={isMember}
+                              onChange={(e) =>
+                                  handleOtherIncomeChange(index, "name", e.target.value)
+                              }
+                          />
 
-                            <input
-                                type="number"
-                                placeholder="Amount"
-                                value={income.amount}
-                                onChange={(e) =>
-                                    handleOtherIncomeChange(index, "amount", e.target.value)
-                                }
-                            />
+                          <input
+                              type="number"
+                              placeholder="Amount"
+                              value={income.amount}
+                              disabled={isMember}
+                              onChange={(e) =>
+                                  handleOtherIncomeChange(index, "amount", e.target.value)
+                              }
+                          />
 
 <button
   className="remove-btn"
   onClick={() => removeOtherIncomeRow(index)}
 >                                ❌
                             </button>
+
+
+
+
+
 
                         </div>
                     ))}
@@ -517,13 +534,14 @@ const removeOtherIncomeRow = (index) => {
                         <div key={i} className="table-row">
                             <span>{item.title}</span>
 
-                            <input
-                                type="number"
-                                value={item.amount}
-                                onChange={(e) =>
-                                    handleExpenseChange(i, e.target.value)
-                                }
-                            />
+                           <input
+                              type="number"
+                              value={item.amount}
+                              disabled={isMember}
+                              onChange={(e) =>
+                                  handleExpenseChange(i, e.target.value)
+                              }
+                          />
                         </div>
                     ))}
 

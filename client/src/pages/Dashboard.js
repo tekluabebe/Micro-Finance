@@ -6,6 +6,14 @@ import "./Dashboard.css"
 export default function Dashboard() {
 const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
 const isMember = userRole === "member";
+const withdrawalNotificationEnabled =
+  localStorage.getItem("withdrawalNotification") !== "false";
+
+const loanNotificationEnabled =
+  localStorage.getItem("loanNotification") !== "false";
+
+const passwordNotificationEnabled =
+  localStorage.getItem("passwordNotification") !== "false";
 const [passwordRequests, setPasswordRequests] = useState([]);
 const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
 
@@ -171,26 +179,32 @@ useEffect(() => {
   // =========================
   // NOTIFICATION COUNTS
   // =========================
- const unreadWithdrawals = withdrawals.filter(
-  (w) =>
-    w.isRead !== true &&
-    w.status !== "approved" &&
-    w.status !== "rejected"
-).length;
+const unreadWithdrawals = withdrawalNotificationEnabled
+  ? withdrawals.filter(
+      (w) =>
+        w.isRead !== true &&
+        w.status !== "approved" &&
+        w.status !== "rejected"
+    ).length
+  : 0;
 
-const unreadLoans = loans.filter(
-  (l) =>
-    l.isRead !== true &&
-    l.status !== "approved" &&
-    l.status !== "rejected"
-).length;
+const unreadLoans = loanNotificationEnabled
+  ? loans.filter(
+      (l) =>
+        l.isRead !== true &&
+        l.status !== "approved" &&
+        l.status !== "rejected"
+    ).length
+  : 0;
 
-const unreadPasswordRequests = passwordRequests.filter(
-  (p) =>
-    p.isRead !== true &&
-    p.status !== "approved" &&
-    p.status !== "rejected"
-).length;
+const unreadPasswordRequests = passwordNotificationEnabled
+  ? passwordRequests.filter(
+      (p) =>
+        p.isRead !== true &&
+        p.status !== "approved" &&
+        p.status !== "rejected"
+    ).length
+  : 0;
 
   const markAsRead = async (type, id) => {
     await API.put(`/${type}/${id}/read`);
@@ -535,17 +549,17 @@ const renderPasswordRequests = () => {
 
         <div className="dashboard-right-controls" style={styles.headerRightSection}>
         
-       {!isMember && (
+
+
+{!isMember && (
   <div style={styles.topBar}>
     <div
-  className="notifItem"
-  onClick={() => setOpenWithdrawals(!openWithdrawals)}
->
+      className="notifItem"
+      onClick={() => setOpenWithdrawals(!openWithdrawals)}
+    >
       🔔 Withdrawals
-      {unreadWithdrawals > 0 && (
-       <span className="badge">
-          {unreadWithdrawals}
-        </span>
+      {withdrawalNotificationEnabled && unreadWithdrawals > 0 && (
+        <span className="badge">{unreadWithdrawals}</span>
       )}
     </div>
 
@@ -554,30 +568,22 @@ const renderPasswordRequests = () => {
       onClick={() => setOpenLoans(!openLoans)}
     >
       💰 Loans
-      {unreadLoans > 0 && (
-        <span className="badge">
-          {unreadLoans}
-        </span>
+      {loanNotificationEnabled && unreadLoans > 0 && (
+        <span className="badge">{unreadLoans}</span>
       )}
     </div>
 
     <div
       className="notifItem"
-      onClick={() =>
-        setOpenPasswordRequests(!openPasswordRequests)
-      }
+      onClick={() => setOpenPasswordRequests(!openPasswordRequests)}
     >
       🔑 Password Reset
-
-      {unreadPasswordRequests > 0 && (
-        <span className="badge">
-          {unreadPasswordRequests}
-        </span>
+      {passwordNotificationEnabled && unreadPasswordRequests > 0 && (
+        <span className="badge">{unreadPasswordRequests}</span>
       )}
     </div>
   </div>
 )}
-
           <div style={styles.filterBar}>
             <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="selectInput">
               {months.map((m) => <option key={m}>{m}</option>)}
@@ -601,72 +607,91 @@ const renderPasswordRequests = () => {
       </div>
 
       {/* ================= DROPDOWNS ================= */}
-      {!isMember && openWithdrawals && (
+{!isMember && openWithdrawals && (
+  <div className="dashboard-notif-dropdown" style={styles.dropdown}>
+    {withdrawalNotificationEnabled ? (
+      renderNotifications(withdrawals, "withdrawals")
+    ) : (
+      <p style={styles.empty}>Notifications disabled</p>
+    )}
+  </div>
+)}
+
+{!isMember && openLoans && (
+  <div className="dashboard-notif-dropdown" style={styles.dropdown}>
+    {loanNotificationEnabled ? (
+      renderNotifications(loans, "loans")
+    ) : (
+      <p style={styles.empty}>Notifications disabled</p>
+    )}
+  </div>
+)}
+
+{!isMember && openPasswordRequests && (
+  <div className="notification-panel" style={styles.notificationPanel}>
+    {passwordNotificationEnabled ? (
+      <>
         <div
-  className="dashboard-notif-dropdown"
-  style={{
-    ...styles.dropdown,
-    right: openWithdrawals ? 20 : "auto"
-  }}
->
-          {renderNotifications(withdrawals, "withdrawals")}
+          className="notification-header"
+          style={styles.notificationHeader}
+        >
+          <h4 style={{ margin: 0 }}>Notifications</h4>
+
+          <span
+            style={styles.markAll}
+            onClick={markAllPasswordRequestsRead}
+          >
+            Mark all as read
+          </span>
         </div>
-      )}
 
-      {!isMember && openLoans && (
-        <div className="dashboard-notif-dropdown" style={{ ...styles.dropdown, right: openWithdrawals ? 20 : "auto" }}>
-          {renderNotifications(loans, "loans")}
+        <div
+          className="notification-tabs"
+          style={styles.notificationTabs}
+        >
+          <button
+            onClick={() => setNotifFilter("all")}
+            style={
+              notifFilter === "all"
+                ? styles.activeTab
+                : styles.tab
+            }
+          >
+            All
+          </button>
+
+          <button
+            onClick={() => setNotifFilter("unread")}
+            style={
+              notifFilter === "unread"
+                ? styles.activeTab
+                : styles.tab
+            }
+          >
+            Unread
+          </button>
+
+          <button
+            onClick={() => setNotifFilter("seen")}
+            style={
+              notifFilter === "seen"
+                ? styles.activeTab
+                : styles.tab
+            }
+          >
+            Seen
+          </button>
         </div>
-      )}
 
-  {!isMember && openPasswordRequests && (
-  <div
-  className="notification-panel"
-  style={styles.notificationPanel}
->
-    <div
-  className="notification-header"
-  style={styles.notificationHeader}
->
-      <h4 style={{ margin: 0 }}>Notifications</h4>
-
-      <span
-        style={styles.markAll}
-        onClick={markAllPasswordRequestsRead}
-      >
-        Mark all as read
-      </span>
-    </div>
-
-    <div
-  className="notification-tabs"
-  style={styles.notificationTabs}
->
-  <button
-    onClick={() => setNotifFilter("all")}
-    style={notifFilter === "all" ? styles.activeTab : styles.tab}
-  >
-    All
-  </button>
-
-  <button
-    onClick={() => setNotifFilter("unread")}
-    style={notifFilter === "unread" ? styles.activeTab : styles.tab}
-  >
-    Unread
-  </button>
-
-  <button
-    onClick={() => setNotifFilter("seen")}
-    style={notifFilter === "seen" ? styles.activeTab : styles.tab}
-  >
-    Seen
-  </button>
-</div>
-
-    <div style={styles.notificationList}>
-      {renderPasswordRequests()}
-    </div>
+        <div style={styles.notificationList}>
+          {renderPasswordRequests()}
+        </div>
+      </>
+    ) : (
+      <p style={styles.empty}>
+        Password reset notifications are disabled
+      </p>
+    )}
   </div>
 )}
 

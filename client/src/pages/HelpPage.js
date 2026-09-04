@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API from "../services/api";
 import {
   FaBullhorn,
   FaBookOpen,
@@ -11,11 +12,165 @@ import {
   FaKeyboard,
   FaQuestionCircle,
   FaInfoCircle,
+    FaGoogle,
+  FaPaperPlane,
+  FaTimes,
 } from "react-icons/fa";
 
 export default function HelpPage({ isSidebarOpen = true }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showSupportModal, setShowSupportModal] = useState(false);
+const [supportMode, setSupportMode] = useState("login");
+const [supportUser, setSupportUser] = useState(null);
+const [supportRequests, setSupportRequests] = useState([]);
+const [supportResponses, setSupportResponses] = useState([]);
+const [showRequestsList, setShowRequestsList] = useState(false);
+const [showResponsesList, setShowResponsesList] = useState(false);
+const [unreadRequestsCount, setUnreadRequestsCount] = useState(0);
+const [unreadResponsesCount, setUnreadResponsesCount] = useState(0);
+const [responseText, setResponseText] = useState("");
+const [selectedRequestId, setSelectedRequestId] = useState(null);
+ const [isAdmin, setIsAdmin] = useState(false); 
+const [supportForm, setSupportForm] = useState({
+  name: "",
+  email: "",
+  password: "",
+  recipientEmail: "",
+  question: "",
+});
+
+// Delete these lines from their current location:
+const isNotificationEnabled = (key) =>
+  localStorage.getItem(key) !== "false";
+
+const supportNotificationEnabled =
+  isNotificationEnabled("emailNotification");
+
+// (or wherever you handle login)
+
+const handleLogin = async (e) => {
+  e.preventDefault();
+  
+  try {
+    const { data } = await API.post("/auth/login", {
+      memberId,
+      password,
+      role
+    });
+
+    if (data.success) {
+      // 🔥 Save userRole to localStorage
+      localStorage.setItem("userRole", data.user.role);
+      localStorage.setItem("memberId", data.user.memberId);
+      localStorage.setItem("fullName", data.user.fullName);
+      
+      // Redirect to dashboard
+      window.location.href = "/dashboard";
+    }
+  } catch (err) {
+    alert(err.response?.data?.message || "Login failed");
+  }
+};
+const [sendingRequest, setSendingRequest] = useState(false);
+
+const handleSupportChange = (e) => {
+  setSupportForm((prev) => ({
+    ...prev,
+    [e.target.name]: e.target.value,
+  }));
+};
+
+
+
+const handleSupportAuth = async (e) => {
+  e.preventDefault();
+
+  try {
+    const endpoint =
+      supportMode === "login"
+        ? "/support/auth/login"
+        : "/support/auth/register";
+
+    const { data } = await API.post(endpoint, {
+      name: supportForm.name,
+      email: supportForm.email,
+      password: supportForm.password,
+    });
+
+    // 🔥 Save supportUser to localStorage
+    localStorage.setItem("supportToken", data.token);
+    localStorage.setItem("supportUser", JSON.stringify(data.user || data));
+    
+    setSupportUser(data.user || data);
+    
+    alert(
+      supportMode === "login"
+        ? "Support account login successful."
+        : "Support account created successfully."
+    );
+  } catch (error) {
+    console.error("Support request error:", error.response?.data || error);
+    alert(
+      error.response?.data?.message ||
+      "Unable to process support request."
+    );
+  }
+};
+
+const handleGoogleLogin = () => {
+  window.location.href = `${API.defaults.baseURL}/support/auth/google`;
+};
+
+const handleSendSupportRequest = async (e) => {
+  e.preventDefault();
+
+  if (!supportForm.recipientEmail || !supportForm.question.trim()) {
+    alert("Please enter the recipient email and your question.");
+    return;
+  }
+
+  setSendingRequest(true);
+
+  try {
+await API.post(
+  "/support/requests",
+  {
+    recipientEmail: supportForm.recipientEmail,
+    question: supportForm.question,
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("supportToken")}`,
+    },
+  }
+);
+
+    alert("Your support request was sent successfully.");
+
+    setSupportForm((prev) => ({
+      ...prev,
+      question: "",
+    }));
+
+    setShowSupportModal(false);
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+        "Unable to send the support request."
+    );
+  } finally {
+    setSendingRequest(false);
+  }
+};
+
+useEffect(() => {
+  const userRole = localStorage.getItem("userRole");
+  console.log("🔍 DEBUG - userRole from localStorage:", userRole);
+  console.log("🔍 DEBUG - isAdmin will be:", userRole?.toLowerCase() === "admin");
+  
+  setIsAdmin(userRole?.toLowerCase() === "admin");
+}, []);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
@@ -23,6 +178,179 @@ export default function HelpPage({ isSidebarOpen = true }) {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+    useEffect(() => {
+    const userRole = localStorage.getItem("userRole");
+    console.log("📌 User Role from localStorage:", userRole); // Debug log
+    setIsAdmin(userRole?.toLowerCase() === "admin");
+  }, []);
+
+
+useEffect(() => {
+  if (!isAdmin || !supportNotificationEnabled) {
+    setSupportRequests([]);
+    setUnreadRequestsCount(0);
+    return;
+  }
+
+  fetch(`${process.env.REACT_APP_API_URL}/api/support/requests/admin/all`)
+    .then((res) => res.json())
+    .then((data) => {
+      setSupportRequests(Array.isArray(data) ? data : []);
+      setUnreadRequestsCount(Array.isArray(data) ? data.length : 0);
+    })
+    .catch((err) => {
+      console.error("Support request notification error:", err);
+      setSupportRequests([]);
+      setUnreadRequestsCount(0);
+    });
+}, [isAdmin, supportNotificationEnabled]); // Depend on isAdmin
+
+// Make sure this useEffect is fetching responses correctly for NON-ADMIN users
+useEffect(() => {
+  if (isAdmin || !supportNotificationEnabled) {
+    setSupportResponses([]);
+    setUnreadResponsesCount(0);
+    return;
+  }
+
+  const savedUser = localStorage.getItem("supportUser");
+  if (!savedUser) return;
+
+  try {
+    const user = JSON.parse(savedUser);
+    const userId = user.id || user._id;
+
+    if (!userId) return;
+
+    fetch(
+      `${process.env.REACT_APP_API_URL}/api/support/responses/${userId}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const responses = Array.isArray(data) ? data : [];
+        setSupportResponses(responses);
+        setUnreadResponsesCount(responses.length);
+      })
+      .catch((err) => {
+        console.error("Support response notification error:", err);
+        setSupportResponses([]);
+        setUnreadResponsesCount(0);
+      });
+  } catch {
+    setSupportResponses([]);
+    setUnreadResponsesCount(0);
+  }
+}, [isAdmin, supportNotificationEnabled]); // Re-run when isAdmin changes // Depend on isAdmin
+
+
+// Add handler for sending response (Admin)
+// Add handler for sending response (Admin)
+const handleSendResponse = async (requestId) => {
+  if (!responseText.trim()) {
+    alert("Please enter a response message");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${process.env.REACT_APP_API_URL}/api/support/responses`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supportRequestId: requestId,
+          response: responseText,
+        }),
+      }
+    );
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("Response sent successfully ✅");
+      setResponseText("");
+      setSelectedRequestId(null);
+      
+      // 🔥 REMOVE the replied request from the list immediately
+      setSupportRequests(prev => 
+        prev.filter(req => req._id !== requestId)
+      );
+      
+      // 🔥 UPDATE the badge count
+      setUnreadRequestsCount(prev => Math.max(0, prev - 1));
+      
+    } else {
+      alert(data.message || "Failed to send response");
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    alert("Error sending response");
+  }
+};
+
+// Add handler to mark response as read (User)
+// Add handler to mark response as read (User)
+const handleMarkResponseRead = async (responseId) => {
+  try {
+    const res = await fetch(
+      `${process.env.REACT_APP_API_URL}/api/support/responses/${responseId}/read`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    if (res.ok) {
+      // 🔥 Remove from list
+      setSupportResponses(prev => 
+        prev.filter(r => r._id !== responseId)
+      );
+      
+      // 🔥 Decrease the badge count
+      setUnreadResponsesCount(prev => Math.max(0, prev - 1));
+      
+      alert("✅ Marked as read");
+    }
+  } catch (err) {
+    console.error("Error:", err);
+  }
+};
+
+
+
+// Add this useEffect to handle redirect after Google login:
+
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get("supportToken");
+  const error = params.get("error");
+
+  if (error) {
+    alert("Google login failed. Please try again.");
+    return;
+  }
+
+  if (token) {
+    localStorage.setItem("supportToken", token);
+    
+    // 🔥 Parse token and save supportUser
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const supportUserData = {
+      id: payload.id,
+      email: payload.email,
+    };
+    
+    localStorage.setItem("supportUser", JSON.stringify(supportUserData));
+    setSupportUser(supportUserData);
+
+    // Show the support modal to send request
+    setShowSupportModal(true);
+    
+    window.history.replaceState({}, document.title, "/help");
+  }
+}, []);
+
+const userRole = localStorage.getItem("userRole")?.toLowerCase();
 
   const currentLeftMargin = isMobile
     ? "0px"
@@ -108,9 +436,149 @@ export default function HelpPage({ isSidebarOpen = true }) {
     showSupport ||
     showHours ||
     searchableText.includes(searchTerm.toLowerCase());
-
+ 
   return (
     <div className="help-page-container" style={dynamicContainerStyle}>
+
+           {/* ADMIN SUPPORT REQUESTS PANEL */}
+          {isAdmin && (
+              <div style={styles.notificationBadge}>
+                <button
+                  onClick={() => setShowRequestsList(!showRequestsList)}
+                  style={styles.supportButton}
+                >
+                  📧 Support Requests
+                  {supportRequests.length > 0 && (
+                    <span style={styles.badge}>{supportRequests.length}</span>
+                  )}
+                </button>
+
+          {showRequestsList && (
+            <div style={styles.requestsPanel}>
+              <h3 style={styles.panelTitle}>Support Requests</h3>
+              
+              {supportRequests.length === 0 ? (
+                <p style={styles.emptyMessage}>No pending requests</p>
+              ) : (
+                 supportRequests.map(request => (
+                  <div key={request._id} style={styles.requestCard}>
+                    <div style={styles.requestHeader}>
+                      <strong style={{ color: "#1e40af" }}>
+                        {request.supportUserId?.name || request.senderEmail}
+                      </strong>
+                      <span style={styles.timestamp}>
+                        {new Date(request.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <p style={styles.requestEmail}>
+                      <strong>Email:</strong> {request.senderEmail}
+                    </p>
+
+                    <p style={styles.requestQuestion}>
+                      <strong>Question:</strong> {request.question}
+                    </p>
+                     {selectedRequestId === request._id ? (
+                      <div style={styles.responseForm}>
+                        <textarea
+                          value={responseText}
+                          onChange={(e) => setResponseText(e.target.value)}
+                          placeholder="Type your response here..."
+                          style={styles.responseTextarea}
+                        />
+                        <div style={styles.responseActions}>
+                          <button
+                            onClick={() => handleSendResponse(request._id)}
+                            style={styles.sendBtn}
+                          >
+                            Send ✓
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedRequestId(null);
+                              setResponseText("");
+                            }}
+                            style={styles.cancelBtn}
+                          >
+                            Cancel ✕
+                          </button>
+                                  </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedRequestId(request._id)}
+                        style={styles.replyBtn}
+                      >
+                        Reply →
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+ {/* USER RESPONSE NOTIFICATIONS PANEL */}
+      {!isAdmin && (
+        <div style={styles.notificationBadge}>
+          <button
+            onClick={() => setShowResponsesList(!showResponsesList)}
+            style={styles.supportButton}
+          >
+            💬 Responses
+            {supportResponses.length > 0 && (
+              <span style={styles.badge}>{supportResponses.length}</span>
+            )}
+          </button>
+
+          {showResponsesList && (
+            <div style={styles.responsesPanel}>
+              <h3 style={styles.panelTitle}>Your Responses</h3>
+              
+              {supportResponses.length === 0 ? (
+                <p style={styles.emptyMessage}>No responses yet</p>
+              ) : (
+                 supportResponses.map(resp => (
+                  <div key={resp._id} style={styles.responseCard}>
+                    <div style={styles.responseHeader}>
+                      <strong style={{ color: "#059669" }}>Response Received</strong>
+                      <span style={styles.timestamp}>
+                        {new Date(resp.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <p style={styles.originalQuestion}>
+                      <strong>Your Question:</strong> {resp.originalQuestion}
+                    </p>
+
+                    <p style={styles.responseMessage}>
+                      <strong>Response:</strong> {resp.response}
+                    </p>
+
+                    <button
+                      onClick={() => handleMarkResponseRead(resp._id)}
+                      style={styles.markReadBtn}
+                    >
+                      Mark as Read ✓
+                    </button>
+                  </div>
+                      ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+{unreadRequestsCount > 0 && (
+  <span style={styles.badge}>{unreadRequestsCount}</span>
+)}
+
+{unreadResponsesCount > 0 && (
+  <span style={styles.badge}>{unreadResponsesCount}</span>
+)}
+
       {/* HERO SECTION */}
       <section className="help-hero">
         <div className="hero-shape hero-shape-one" />
@@ -265,9 +733,13 @@ export default function HelpPage({ isSidebarOpen = true }) {
 
                   <p>
                     <strong>Email:</strong>{" "}
-                    <a href="mailto:tekluabebe0962@gmail.com">
-                      tekluabebe0962@gmail.com
-                    </a>
+                    <button
+  type="button"
+  className="support-contact-link"
+  onClick={() => setShowSupportModal(true)}
+>
+  Contact Technical Support
+</button>
                   </p>
 
                   <p>
@@ -302,6 +774,123 @@ export default function HelpPage({ isSidebarOpen = true }) {
                 </ul>
               </div>
             )}
+            {showSupportModal && (
+  <div className="support-modal-overlay">
+    <div className="support-modal">
+      <button
+        className="support-modal-close"
+        onClick={() => setShowSupportModal(false)}
+      >
+        <FaTimes />
+      </button>
+
+      {!supportUser ? (
+        <>
+          <h2>
+            {supportMode === "login"
+              ? "Support Login"
+              : "Create Support Account"}
+          </h2>
+
+          <p className="support-modal-description">
+            Use a support account to contact the technical support team.
+          </p>
+
+          <form onSubmit={handleSupportAuth}>
+            {supportMode === "register" && (
+              <input
+                name="name"
+                placeholder="Full name"
+                value={supportForm.name}
+                onChange={handleSupportChange}
+                required
+              />
+            )}
+
+            <input
+              type="email"
+              name="email"
+              placeholder="Email address"
+              value={supportForm.email}
+              onChange={handleSupportChange}
+              required
+            />
+
+            <input
+              type="password"
+              name="password"
+              placeholder="Password"
+              value={supportForm.password}
+              onChange={handleSupportChange}
+              required
+            />
+
+            <button type="submit" className="support-primary-btn">
+              {supportMode === "login" ? "Login" : "Create Account"}
+            </button>
+          </form>
+
+          <button
+            type="button"
+            className="google-support-btn"
+            onClick={handleGoogleLogin}
+          >
+            <FaGoogle /> Continue with Google
+          </button>
+
+          <button
+            type="button"
+            className="support-switch-btn"
+            onClick={() =>
+              setSupportMode((mode) =>
+                mode === "login" ? "register" : "login"
+              )
+            }
+          >
+            {supportMode === "login"
+              ? "Create a support account"
+              : "Already have an account? Login"}
+          </button>
+        </>
+      ) : (
+        <>
+          <h2>Contact Technical Support</h2>
+
+          <form onSubmit={handleSendSupportRequest}>
+           <label>Recipient email</label>
+            <input
+              type="email"
+              name="recipientEmail"
+              placeholder="Enter support team email"
+              value={supportForm.recipientEmail}
+              onChange={handleSupportChange}
+              required
+            />
+
+            <label>Your question</label>
+            <textarea
+              name="question"
+              placeholder="Describe your question or problem..."
+              value={supportForm.question}
+              onChange={handleSupportChange}
+              rows="6"
+              required
+            />
+
+            <button
+              type="submit"
+              className="support-primary-btn"
+              disabled={sendingRequest}
+            >
+              <FaPaperPlane />
+              {sendingRequest ? "Sending..." : "Send Request"}
+            </button>
+          </form>
+        </>
+      )}
+    </div>
+  </div>
+)}
           </div>
         )}
       </section>
@@ -310,6 +899,115 @@ export default function HelpPage({ isSidebarOpen = true }) {
         * {
           box-sizing: border-box;
         }
+// Add to your styles object in HelpPage.js
+        .support-contact-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #5865f2;
+  cursor: pointer;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.support-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(10, 15, 45, 0.72);
+}
+
+.support-modal {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.support-modal h2 {
+  margin-top: 0;
+  color: #3f4be7;
+}
+
+.support-modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.support-modal input,
+.support-modal textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d9ddec;
+  border-radius: 8px;
+  outline: none;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.support-modal input:focus,
+.support-modal textarea:focus {
+  border-color: #5865f2;
+}
+
+.support-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 0;
+  background: transparent;
+  color: #657089;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.support-primary-btn,
+.google-support-btn,
+.support-switch-btn {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.support-primary-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: #5865f2;
+  color: #ffffff;
+}
+
+.google-support-btn {
+  margin-top: 12px;
+  background: #ffffff;
+  color: #333333;
+  border: 1px solid #d9ddec;
+}
+
+.support-switch-btn {
+  margin-top: 10px;
+  background: transparent;
+  color: #5865f2;
+}
+
+@media (max-width: 520px) {
+  .support-modal {
+    padding: 22px;
+  }
+}
 
         .help-page-container {
           font-family: Arial, sans-serif;
@@ -638,5 +1336,206 @@ const styles = {
     minHeight: "100vh",
     padding: 0,
     boxSizing: "border-box",
+  },
+  notificationBadge: {
+    position: "fixed",
+    top: "80px",
+    right: "20px",
+    zIndex: 999,
+  },
+  supportButton: {
+    padding: "10px 16px",
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "600",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    position: "relative",
+    boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
+  },
+
+  badge: {
+    position: "absolute",
+    top: "-8px",
+    right: "-8px",
+    background: "#ef4444",
+    color: "#fff",
+    borderRadius: "50%",
+    width: "24px",
+    height: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "12px",
+    fontWeight: "700",
+  },
+   requestsPanel: {
+    position: "absolute",
+    top: "45px",
+    right: "0",
+    width: "450px",
+    maxWidth: "90vw",
+    maxHeight: "600px",
+    overflowY: "auto",
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+    padding: "16px",
+  },
+  responsesPanel: {
+    position: "absolute",
+    top: "45px",
+    right: "0",
+    width: "450px",
+    maxWidth: "90vw",
+    maxHeight: "600px",
+    overflowY: "auto",
+    background: "#fff",
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.15)",
+    padding: "16px",
+  },
+   panelTitle: {
+    margin: "0 0 16px 0",
+    color: "#1f2937",
+    fontSize: "16px",
+    fontWeight: "700",
+  },
+  emptyMessage: {
+    textAlign: "center",
+    color: "#9ca3af",
+    padding: "20px",
+  },
+  requestCard: {
+    padding: "12px",
+    border: "1px solid #e5e7eb",
+    borderRadius: "8px",
+    marginBottom: "12px",
+    background: "#f9fafb",
+  },
+  requestHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "8px",
+  },
+  timestamp: {
+    fontSize: "12px",
+    color: "#9ca3af",
+  },
+  requestEmail: {
+    margin: "6px 0",
+    fontSize: "13px",
+    color: "#374151",
+  },
+   requestQuestion: {
+    margin: "8px 0",
+    fontSize: "13px",
+    color: "#1f2937",
+    fontStyle: "italic",
+    padding: "8px",
+    background: "#fff",
+    borderRadius: "4px",
+    borderLeft: "3px solid #4f46e5",
+  },
+  responseForm: {
+    marginTop: "12px",
+  },
+   responseTextarea: {
+    width: "100%",
+    padding: "8px",
+    border: "1px solid #d1d5db",
+    borderRadius: "6px",
+    fontFamily: "inherit",
+    fontSize: "13px",
+    minHeight: "80px",
+    resize: "vertical",
+  },
+   responseActions: {
+    display: "flex",
+    gap: "8px",
+    marginTop: "8px",
+  },
+  sendBtn: {
+    flex: 1,
+    padding: "6px 12px",
+    background: "#10b981",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "12px",
+  },
+   cancelBtn: {
+    flex: 1,
+    padding: "6px 12px",
+    background: "#ef4444",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "12px",
+  },
+  replyBtn: {
+    width: "100%",
+    padding: "8px 12px",
+    background: "#4f46e5",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "12px",
+    marginTop: "8px",
+  },
+  responseCard: {
+    padding: "12px",
+    border: "1px solid #d1fae5",
+    borderRadius: "8px",
+    marginBottom: "12px",
+    background: "#f0fdf4",
+  },
+  responseHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "8px",
+  },
+  originalQuestion: {
+    margin: "8px 0",
+    fontSize: "13px",
+    color: "#374151",
+    padding: "6px",
+    background: "#fff",
+    borderRadius: "4px",
+  },
+  responseMessage: {
+    margin: "8px 0",
+    fontSize: "13px",
+    color: "#1f2937",
+    padding: "8px",
+    background: "#fff",
+    borderRadius: "4px",
+    borderLeft: "3px solid #10b981",
+  },
+  markReadBtn: {
+    width: "100%",
+    padding: "6px 12px",
+    background: "#10b981",
+    color: "#fff",
+    border: "none",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "12px",
+    marginTop: "8px",
   },
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./SettingsPage.css";
 
 import {
@@ -31,22 +31,41 @@ export default function SettingsPage() {
     setLanguage 
   } = useAppContext();
 
-
+const getNotificationPreference = (key, defaultValue = true) =>
+  localStorage.getItem(key) === null
+    ? defaultValue
+    : localStorage.getItem(key) === "true";
 
   const [penalty,setPenalty] = useState(50);
 
 
-  const [emailNotification,setEmailNotification]
-  = useState(true);
+ const [emailNotification, setEmailNotification] = useState(() =>
+    getNotificationPreference("emailNotification")
+  );
 
+  const [loanNotification, setLoanNotification] = useState(() =>
+    getNotificationPreference("loanNotification")
+  );
 
-  const [loanNotification,setLoanNotification]
-  = useState(true);
+  const [passwordNotification, setPasswordNotification] = useState(() =>
+    getNotificationPreference("passwordNotification")
+  );
 
+  const [withdrawalNotification, setWithdrawalNotification] = useState(() =>
+    getNotificationPreference("withdrawalNotification")
+  );
 
-  const [passwordNotification,setPasswordNotification]
-  = useState(true);
-
+  useEffect(() => {
+    localStorage.setItem("emailNotification", emailNotification);
+    localStorage.setItem("loanNotification", loanNotification);
+    localStorage.setItem("passwordNotification", passwordNotification);
+    localStorage.setItem("withdrawalNotification", withdrawalNotification);
+  }, [
+      emailNotification,
+    loanNotification,
+    passwordNotification,
+    withdrawalNotification,
+  ]);
 
 
   const texts = {
@@ -462,7 +481,23 @@ export default function SettingsPage() {
 
           </div>
 
+      <div className="settings-toggle-item">
+  <div>
+    <h4>Withdrawal Requests</h4>
+    <p>Receive withdrawal request notifications</p>
+  </div>
 
+  <label className="settings-switch">
+    <input
+      type="checkbox"
+      checked={withdrawalNotification}
+      onChange={() =>
+        setWithdrawalNotification((current) => !current)
+      }
+    />
+    <span className="settings-slider"></span>
+  </label>
+</div>
 
 
 

@@ -1,6 +1,12 @@
+require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const app = express();
 
@@ -336,6 +342,472 @@ const LoanPayment = mongoose.model(
 );
 
 
+const supportUserSchema = new mongoose.Schema(
+  {
+    name: String,
+    email: { type: String, required: true, unique: true, lowercase: true },
+    password: String,
+    googleId: String,
+    provider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+  },
+  { timestamps: true }
+);
+
+const SupportUser = mongoose.model("SupportUser", supportUserSchema);
+
+const supportRequestSchema = new mongoose.Schema(
+  {
+    supportUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SupportUser",
+      required: true,
+    },
+    senderEmail: { type: String, required: true },
+    recipientEmail: { type: String, required: true },
+    question: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["pending", "resolved"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
+);
+
+const SupportRequest = mongoose.model(
+  "SupportRequest",
+  supportRequestSchema
+);
+
+// Add this after supportRequestSchema
+
+const supportResponseSchema = new mongoose.Schema(
+  {
+    supportRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SupportRequest",
+      required: true,
+    },
+    supportUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SupportUser",
+      required: true,
+    },
+    senderEmail: { type: String, required: true },
+    recipientEmail: { type: String, required: true },
+    originalQuestion: { type: String, required: true },
+    response: { type: String, required: true },
+    isRead: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ["pending", "resolved"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
+);
+
+const SupportResponse = mongoose.model(
+  "SupportResponse",
+  supportResponseSchema
+);
+
+// ==========================================
+// GET ALL SUPPORT REQUESTS (For Admin)
+// ==========================================
+// ==========================================
+// GET ALL SUPPORT REQUESTS (For Admin) - SHOW ONLY PENDING
+// ==========================================
+// ==========================================
+// GET ALL SUPPORT REQUESTS (For Admin)
+// ==========================================
+app.get("/api/support/requests/admin/all", async (req, res) => {
+  try {
+    // 🔥 Only fetch requests that haven't been responded to yet
+    const requests = await SupportRequest.find({
+      status: "pending"  // Only show requests without responses
+    })
+      .populate("supportUserId")
+      .sort({ createdAt: -1 });
+
+    console.log("Fetched pending requests:", requests.length);
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// GET SUPPORT REQUEST COUNT (For Admin)
+// ==========================================
+app.get("/api/support/requests/unread-count", async (req, res) => {
+  try {
+    const count = await SupportRequest.countDocuments({
+      status: "pending",
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// SEND SUPPORT RESPONSE (Admin Response)
+// ==========================================
+
+app.post("/api/support/responses", async (req, res) => {
+  try {
+    const { supportRequestId, response } = req.body;
+
+    const request = await SupportRequest.findById(supportRequestId);
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Support request not found",
+      });
+    }
+
+    // Create response
+    const supportResponse = await SupportResponse.create({
+      supportRequestId,
+      supportUserId: request.supportUserId,
+      senderEmail: request.senderEmail,
+      recipientEmail: request.recipientEmail,
+      originalQuestion: request.question,
+      response: response.trim(),
+      status: "pending",
+    });
+
+    // 🔥 Update original request status to "resolved"
+    request.status = "resolved";
+    await request.save();
+
+    console.log("✅ Request status updated to resolved:", request._id);
+
+    // Try to send email response
+    try {
+      await mailTransporter.sendMail({
+        from: `"Microfinance Support" <${process.env.SMTP_USER}>`,
+        to: request.senderEmail,
+        replyTo: request.recipientEmail,
+        subject: "Response to Your Support Request",
+        text: `Your Question:\n${request.question}\n\nResponse:\n${response.trim()}`,
+      });
+      console.log("Response email sent successfully ✅");
+    } catch (emailErr) {
+      console.error("Email sending failed:", emailErr.message);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Response sent successfully ✅",
+      response: supportResponse,
+    });
+  } catch (err) {
+    console.error("Support response error:", err);
+    res.status(500).json({
+      message: "Unable to send response",
+    });
+  }
+});
+
+// ==========================================
+// GET USER RESPONSES (For User/Member)
+// ==========================================
+app.get("/api/support/responses/:supportUserId", async (req, res) => {
+  try {
+    const responses = await SupportResponse.find({
+      supportUserId: req.params.supportUserId,
+      isRead: false,
+    })
+      .populate("supportRequestId")
+      .sort({ createdAt: -1 });
+
+    res.json(responses);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// MARK RESPONSE AS READ
+// ==========================================
+app.put("/api/support/responses/:id/read", async (req, res) => {
+  try {
+    const response = await SupportResponse.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      message: "Marked as read ✅",
+      response,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ==========================================
+// GET UNREAD RESPONSE COUNT
+// ==========================================
+app.get("/api/support/responses/unread-count/:supportUserId", async (req, res) => {
+  try {
+    const count = await SupportResponse.countDocuments({
+      supportUserId: req.params.supportUserId,
+      isRead: false,
+    });
+    res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.use(passport.initialize());
+
+const createSupportToken = (user) =>
+  jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      type: "support",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+
+const requireSupportAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
+      return res.status(401).json({ message: "Support login required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (decoded.type !== "support") {
+      return res.status(403).json({ message: "Invalid support account" });
+    }
+
+    req.supportUser = await SupportUser.findById(decoded.id);
+
+    if (!req.supportUser) {
+      return res.status(401).json({ message: "Support account not found" });
+    }
+
+    next();
+  } catch {
+    res.status(401).json({ message: "Invalid or expired login" });
+  }
+};
+
+app.post("/api/support/auth/register", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password || password.length < 6) {
+      return res.status(400).json({
+        message: "Name, email, and a password of at least 6 characters are required",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const exists = await SupportUser.findOne({ email: normalizedEmail });
+
+    if (exists) {
+      return res.status(409).json({
+        message: "Support account already exists",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await SupportUser.create({
+      name: name.trim(),
+      email: normalizedEmail,
+      password: hashedPassword,
+      provider: "local",
+    });
+
+    res.status(201).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      token: createSupportToken(user),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.post("/api/support/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await SupportUser.findOne({
+      email: email.trim().toLowerCase(),
+    });
+
+    if (!user || !user.password) {
+      return res.status(401).json({
+        message: "Invalid support email or password",
+      });
+    }
+
+    const valid = await bcrypt.compare(password, user.password);
+
+    if (!valid) {
+      return res.status(401).json({
+        message: "Invalid support email or password",
+      });
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      token: createSupportToken(user),
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+    },
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        const email = profile.emails?.[0]?.value?.toLowerCase();
+
+        const user = await SupportUser.findOneAndUpdate(
+          { email },
+          {
+            name: profile.displayName,
+            email,
+            googleId: profile.id,
+            provider: "google",
+          },
+          { new: true, upsert: true }
+        );
+
+        done(null, user);
+      } catch (err) {
+        done(err);
+      }
+    }
+  )
+);
+
+app.get(
+  "/api/support/auth/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })
+);
+
+// Find this section and update it:
+
+app.get(
+  "/api/support/auth/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: `${process.env.CLIENT_URL}/help?error=google`,
+  }),
+  (req, res) => {
+    const token = jwt.sign(
+      {
+        id: req.user._id,
+        email: req.user.email,
+        type: "support",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    res.redirect(
+      `${process.env.CLIENT_URL}/help?supportToken=${encodeURIComponent(token)}`
+    );
+  }
+);
+
+
+const mailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
+
+app.post(
+  "/api/support/requests",
+  requireSupportAuth,
+  async (req, res) => {
+    try {
+     const { recipientEmail, question } = req.body;
+
+if (!recipientEmail?.trim() || !question?.trim()) {
+  return res.status(400).json({
+    message: "Recipient email and question are required",
+  });
+}
+
+     const supportRequest = await SupportRequest.create({
+  supportUserId: req.supportUser._id,
+  senderEmail: req.supportUser.email,
+  recipientEmail: recipientEmail.trim(),
+  question: question.trim(),
+});
+
+     const senderEmail = req.supportUser.email;
+
+// Try to send email, but don't fail if it doesn't work
+try {
+  await mailTransporter.sendMail({
+    from: `"Microfinance Support" <${process.env.SMTP_USER}>`,
+    to: recipientEmail.trim(),
+    replyTo: senderEmail,
+    subject: "Technical Support Request",
+    text:
+      `Sender: ${senderEmail}\n\n` +
+      question.trim(),
+  });
+  console.log("Email sent successfully ✅");
+} catch (emailErr) {
+  console.error("Email sending failed (request still saved):", emailErr.message);
+}
+
+      res.status(201).json({
+        success: true,
+        message: "Support request sent successfully ✅",
+        request: supportRequest,
+      });
+    } catch (err) {
+      console.error("Support Error:", err);
+      res.status(500).json({
+        message: "Unable to send support request",
+      });
+    }
+  }
+);
 
 // =======================
 // AUTH ROUTES (ይህንን ጨምር)
@@ -366,15 +838,16 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Wrong role ❌" });
     }
 
-  res.json({
-    success:true,
-  
-  user:{
-    memberId: user.memberId,
-    fullName: user.fullName,
-    role: user.role
-  }
-});
+    // 🔥 RETURN userRole in response
+    res.json({
+      success: true,
+      user: {
+        memberId: user.memberId,
+        fullName: `${user.firstName} ${user.lastName}`,
+        role: user.role,  // 🔥 Make sure role is returned
+        userRole: user.role  // 🔥 Add this too
+      }
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -1341,7 +1814,7 @@ app.post("/api/loans", async (req, res) => {
 
     if (hasActiveSameTypeLoan) {
       return res.status(400).json({ 
-        message: `ያልተከፈለ የ${loanType} ብድር ስላለብዎት፣ ተጨማሪ የ${loanType} ብድር መውሰድ አይችሉም! ❌` 
+        message: `ያልተከፈለ የ${loanType} ብድር ስላለብዎት፣ ተጨማሪ ዋስ ማስገባት ግዴታ ነው! ❌` 
       });
     }
 
@@ -1398,7 +1871,7 @@ app.post("/api/loans", async (req, res) => {
         let errorParts = [];
         
         if (overLimitNames.length > 0) {
-          errorParts.push(`${overLimitNames.join(", ")} አስቀድሞ ለ 2 ብድሮች ዋስ ስለሆነ/ስለሆኑ ተጨማሪ ዋስትና መስጠት አይችልም/አይችሉም! ❌`);
+          errorParts.push(`${overLimitNames.join(", ")} አስቀድሞ ለ 2 ብድሮች ዋስ ስለሆኑ/ስለሆኑ ተጨማሪ ዋስትና መስጠት አይችልም/አይችሉም! ❌`);
         }
         if (hasLoanNames.length > 0) {
           errorParts.push(`${hasLoanNames.join(", ")} ያልተከፈለ ብድር ስላለበት/ስላለባቸው ዋስ መሆን አይችልም/አይችሉም! ❌`);
@@ -2956,6 +3429,7 @@ app.get("/api/profit-distribution/year-summary/:year", async (req, res) => {
   }
 });
 
+
 // ==========================================
 // GET REPORT BY YEAR
 // ==========================================
@@ -3042,8 +3516,6 @@ app.put("/api/financial-reports/:id", async (req, res) => {
     });
   }
 });
-
-
 
 
 // GET LOAN PAYMENTS

@@ -13,6 +13,8 @@ for (let i = 2023; i <= 2035; i++) {
 }
 
 const BalanceSheet = () => {
+   const isMember =
+    localStorage.getItem("userRole")?.toLowerCase() === "member";
 
   const [year, setYear] = useState(2026);
   const [previousYear, setPreviousYear] = useState(2025);
@@ -90,7 +92,13 @@ const BalanceSheet = () => {
 
   }, [formData]);
 
+  const difference =
+  totals.totalAssets - totals.totalLiabilitiesEquity;
+
+const isBalanced = Math.abs(difference) < 0.01;
+
   const handleChange = (e) => {
+    if (isMember) return;
 
     const { name, value } = e.target;
 
@@ -101,17 +109,33 @@ const BalanceSheet = () => {
 
   };
 
-  const saveData = () => {
+const saveData = () => {
+     if (isMember) {
+      alert("Members cannot save balance sheet data.");
+      return;
+    }
+  if (!isBalanced) {
+    alert(
+      `Balance sheet is not balanced.\nDifference: ${difference.toLocaleString()} ETB`
+    );
+    return;
+  }
 
-    console.log({
-      year,
-      previousYear,
-      formData
-    });
-
-    alert("Ready to connect API.");
-
+  const savedData = {
+    year: Number(year),
+    previousYear: Number(previousYear),
+    formData,
+    totals,
+    savedAt: new Date().toISOString(),
   };
+
+  localStorage.setItem(
+    `balanceSheet-${year}`,
+    JSON.stringify(savedData)
+  );
+
+  alert(`Balance sheet for ${year} saved successfully.`);
+};
 
   const downloadExcel = () => {
 
@@ -269,10 +293,9 @@ const BalanceSheet = () => {
           <label>Year</label>
 
           <select style={{ color: '#141414' }}
+          disabled={isMember}
             value={year}
-            onChange={(e) =>
-              setYear(e.target.value)
-            }
+           onChange={(e) => setYear(Number(e.target.value))}
           >
 
             {years.map((y) => (
@@ -294,10 +317,9 @@ const BalanceSheet = () => {
           <label>Previous Year</label>
 
           <select style={{ color: '#080808' }}
+          disabled={isMember}
             value={previousYear}
-            onChange={(e) =>
-              setPreviousYear(e.target.value)
-            }
+          onChange={(e) => setPreviousYear(Number(e.target.value))} 
           >
 
             {years.map((y) => (
@@ -328,6 +350,7 @@ const BalanceSheet = () => {
             type="number"
             value={formData.cashOnHand}
             onChange={handleChange}
+            disabled={isMember}
           />
 
           <label>Cash At Bank</label>
@@ -501,12 +524,20 @@ const BalanceSheet = () => {
         </h2>
 
       </div>
+<div className={`balance-status ${isBalanced ? "balanced" : "unbalanced"}`}>
+  <strong>
+    {isBalanced ? "✓ Balance Sheet Balanced" : "⚠ Balance Sheet Not Balanced"}
+  </strong>
 
+  {!isBalanced && (
+    <span>
+      Difference: {difference.toLocaleString()} ETB
+    </span>
+  )}
+</div>
       <div className="buttons">
 
-        <button onClick={saveData}>
-          Save
-        </button>
+     
 
         <button onClick={downloadExcel}>
           Download Excel
@@ -517,6 +548,15 @@ const BalanceSheet = () => {
         </button>
 
       </div>
+      <div lassName="buttons">
+  {!isMember && (
+    <button onClick={saveData}>
+      Save
+    </button>
+  )}
+
+  
+</div>
 
     </div>
 

@@ -359,66 +359,66 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
             )}
           </li>
 
-          {!isMember && (
-            <li style={styles.listItem}>
-              <div
-                onClick={() => setOpenFinancials((current) => !current)}
-                style={{
-                  ...getLinkStyle(false, openFinancials),
-                  justifyContent: "space-between",
-                }}
-              >
-                <div style={styles.menuLeft}>
-                  <span style={styles.icon}>
-                    <FaFileInvoiceDollar />
-                  </span>
+{/* Remove: {!isMember && ( */}
 
-                  {(isOpen || isMobile) && (
-                    <span>{t.financialReports}</span>
-                  )}
-                </div>
+<li style={styles.listItem}>
+  <div
+    onClick={() => setOpenFinancials((current) => !current)}
+    style={{
+      ...getLinkStyle(false, openFinancials),
+      justifyContent: "space-between",
+    }}
+  >
+    <div style={styles.menuLeft}>
+      <span style={styles.icon}>
+        <FaFileInvoiceDollar />
+      </span>
 
-                {(isOpen || isMobile) &&
-                  (openFinancials ? <FaCaretDown /> : <FaCaretRight />)}
-              </div>
+      {(isOpen || isMobile) && (
+        <span>{t.financialReports}</span>
+      )}
+    </div>
 
-              {openFinancials && (isOpen || isMobile) && (
-                <ul style={styles.subMenu}>
-                  <li
-                    onClick={() => handleNavigation("/income-expense")}
-                    style={getLinkStyle(currentPath === "/income-expense")}
-                  >
-                    <FaExchangeAlt style={styles.icon} />
-                    {t.incomeExpense}
-                  </li>
+    {(isOpen || isMobile) &&
+      (openFinancials ? <FaCaretDown /> : <FaCaretRight />)}
+  </div>
 
-                <li
+  {openFinancials && (isOpen || isMobile) && (
+    <ul style={styles.subMenu}>
+      <li
+        onClick={() => handleNavigation("/income-expense")}
+        style={getLinkStyle(currentPath === "/income-expense")}
+      >
+        <FaExchangeAlt style={styles.icon} />
+        {t.incomeExpense}
+      </li>
+      <li
   onClick={() => handleNavigation("/balance-sheet")}
   style={getLinkStyle(currentPath === "/balance-sheet")}
 >
   <FaBalanceScale style={styles.icon} />
   {t.balanceSheet}
 </li>
+  <li
+      onClick={() => handleNavigation("/cash-flow")}
+      style={getLinkStyle(currentPath === "/cash-flow")}
+    >
+      <FaWallet style={styles.icon} />
+      {t.cashFlow}
+    </li>
 
-                  <li
-                    onClick={() => handleNavigation("/cash-flow")}
-                    style={getLinkStyle(currentPath === "/cash-flow")}
-                  >
-                    <FaWallet style={styles.icon} />
-                    {t.cashFlow}
-                  </li>
+      <li
+            onClick={() => handleNavigation("/check-balance")}
+            style={getLinkStyle(currentPath === "/check-balance")}
+          >
+            <FaFileAlt style={styles.icon} />
+            {t.checkBalance}
+          </li>
+    </ul>
+  )}
+</li>
 
-                  <li
-                    onClick={() => handleNavigation("/check-balance")}
-                    style={getLinkStyle(currentPath === "/check-balance")}
-                  >
-                    <FaFileAlt style={styles.icon} />
-                    {t.checkBalance}
-                  </li>
-                </ul>
-              )}
-            </li>
-          )}
+
         </ul>
 
         <div style={styles.footer}>

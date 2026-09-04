@@ -119,60 +119,67 @@ export default function CashFlow() {
         CALCULATIONS
     =========================================================*/
 
-  const operatingTotal = useMemo(() => {
-    const op = cashFlow?.operating || {};
+const amount = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
 
-    return (
-      Number(op.profit ?? 0) +
-      Number(op.depreciation ?? 0) +
-      Number(op.inventoryDecrease ?? 0) +
-      Number(op.payableIncrease ?? 0) -
-      Number(op.receivableIncrease ?? 0) +
-      Number(op.otherAdjustment ?? 0)
-    );
-  }, [cashFlow]);
+const operatingTotal = useMemo(() => {
+  const op = cashFlow.operating || {};
 
-  const investingTotal = useMemo(() => {
-    const inv = cashFlow?.investing || {};
+  return (
+    amount(op.profit) +
+    amount(op.depreciation) -
+    amount(op.receivableIncrease) +
+    amount(op.payableIncrease) +
+    amount(op.inventoryDecrease) +
+    amount(op.otherAdjustment)
+  );
+}, [cashFlow.operating]);
 
-    return (
-      Number(inv.saleAsset ?? 0) +
-      Number(inv.investmentSale ?? 0) -
-      Number(inv.purchaseAsset ?? 0) -
-      Number(inv.investmentPurchase ?? 0)
-    );
-  }, [cashFlow]);
+const investingTotal = useMemo(() => {
+  const inv = cashFlow.investing || {};
 
-  const financingTotal = useMemo(() => {
-    const fin = cashFlow?.financing || {};
+  return (
+    amount(inv.saleAsset) +
+    amount(inv.investmentSale) -
+    amount(inv.purchaseAsset) -
+    amount(inv.investmentPurchase)
+  );
+}, [cashFlow.investing]);
 
-    return (
-      Number(fin.shareCapital ?? 0) +
-      Number(fin.loanReceived ?? 0) -
-      Number(fin.loanRepayment ?? 0) -
-      Number(fin.dividendPaid ?? 0)
-    );
-  }, [cashFlow]);
+const financingTotal = useMemo(() => {
+  const fin = cashFlow.financing || {};
 
-  const netCashIncrease = useMemo(() => {
-    return operatingTotal + investingTotal + financingTotal;
-  }, [operatingTotal, investingTotal, financingTotal]);
+  return (
+    amount(fin.shareCapital) +
+    amount(fin.loanReceived) -
+    amount(fin.loanRepayment) -
+    amount(fin.dividendPaid)
+  );
+}, [cashFlow.financing]);
 
-  const closingCash = useMemo(() => {
-    return Number(cashFlow?.openingCash ?? 0) + netCashIncrease;
-  }, [cashFlow, netCashIncrease]);
+const netCashIncrease =
+  operatingTotal + investingTotal + financingTotal;
+
+const openingCash = amount(cashFlow.openingCash);
+const closingCash = openingCash + netCashIncrease;
 
   /*=========================================================
         FORMAT MONEY
     =========================================================*/
 
-  const money = (value) => {
-    return Number(value ?? 0).toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-  };
+const money = (value) => {
+  return amount(value).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
+const outflow = (value) => {
+  const number = amount(value);
+  return number === 0 ? "-" : `(${money(number)})`;
+};
   /*=========================================================
     EXPORT PDF
 =========================================================*/
@@ -512,7 +519,7 @@ return (
 
                     <tr>
                         <td>Increase in Accounts Receivable</td>
-                        <td>({money(op.receivableIncrease)})</td>
+                        <td>{outflow(op.receivableIncrease)}</td>
                     </tr>
 
                     <tr>
@@ -547,7 +554,8 @@ return (
 
                     <tr>
                         <td>Purchase of Property & Equipment</td>
-                        <td>({money(inv.purchaseAsset)})</td>
+                        <td>{outflow(inv.purchaseAsset)}</td>
+
                     </tr>
 
                     <tr>
@@ -557,7 +565,8 @@ return (
 
                     <tr>
                         <td>Investment Purchase</td>
-                        <td>({money(inv.investmentPurchase)})</td>
+                        <td>{outflow(inv.investmentPurchase)}</td>
+
                     </tr>
 
                     <tr>
@@ -592,12 +601,12 @@ return (
 
                     <tr>
                         <td>Loan Repayment</td>
-                        <td>({money(fin.loanRepayment)})</td>
+                        <td>{outflow(fin.loanRepayment)}</td>
                     </tr>
 
                     <tr>
                         <td>Dividend Paid</td>
-                        <td>({money(fin.dividendPaid)})</td>
+                        <td>{outflow(fin.dividendPaid)}</td>
                     </tr>
 
                     <tr className="total-row">
