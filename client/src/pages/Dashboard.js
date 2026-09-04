@@ -548,9 +548,6 @@ const renderPasswordRequests = () => {
 </div>
 
         <div className="dashboard-right-controls" style={styles.headerRightSection}>
-        
-
-
 {!isMember && (
   <div style={styles.topBar}>
     <div
