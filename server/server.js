@@ -7,6 +7,12 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} = require("@simplewebauthn/server");
 
 const app = express();
 
@@ -44,6 +50,15 @@ const employeeSchema = new mongoose.Schema({
   maritalStatus: String,
   role: String,
   password: String,
+  passkeyRegistrationChallenge: String,
+  passkeyAuthenticationChallenge: String,
+
+  passkeys: [{
+    credentialID: { type: String, required: true },
+    publicKey: { type: Buffer, required: true },
+    counter: { type: Number, default: 0 },
+    transports: [String],
+  }],
 
   // 🔥 ADD THESE SAVINGS FIELDS
   totalSaving: { type: Number, default: 0 },
@@ -71,6 +86,22 @@ const Employee = mongoose.model(
   "Employee",
   employeeSchema
 );
+
+const webAuthnRpID = process.env.WEBAUTHN_RP_ID || "localhost";
+const webAuthnOrigin = process.env.CLIENT_URL || "http://localhost:3000";
+const createMemberToken = (user) => jwt.sign({
+  id: user._id,
+  memberId: user.memberId,
+  role: user.role,
+  type: "member",
+}, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+const memberResponse = (user) => ({
+  memberId: user.memberId,
+  fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+  role: user.role,
+  userRole: user.role,
+});
 
 
 // =======================
@@ -841,12 +872,8 @@ app.post("/api/auth/login", async (req, res) => {
     // 🔥 RETURN userRole in response
     res.json({
       success: true,
-      user: {
-        memberId: user.memberId,
-        fullName: `${user.firstName} ${user.lastName}`,
-        role: user.role,  // 🔥 Make sure role is returned
-        userRole: user.role  // 🔥 Add this too
-      }
+      user: memberResponse(user),
+      token: createMemberToken(user)
     });
 
   } catch (err) {
@@ -3884,4 +3911,131 @@ app.get("*", (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running successfully on port ${PORT} 🚀`);
+});
+
+app.post("/api/auth/passkey/register/options", async (req, res) => {
+  try {
+    const { memberId, password, role } = req.body;
+    const user = await Employee.findOne({ memberId: memberId?.trim() });
+
+    if (!user || !user.password || !(await bcrypt.compare(password || "", user.password))) {
+      return res.status(401).json({ message: "Password login is required before enabling fingerprint login" });
+    }
+    if (user.role?.toLowerCase() !== role?.toLowerCase()) {
+      return res.status(401).json({ message: "Wrong role" });
+    }
+
+    const options = await generateRegistrationOptions({
+      rpName: "Micro-Finance",
+      rpID: webAuthnRpID,
+      userName: user.memberId,
+      userDisplayName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.memberId,
+      userID: new TextEncoder().encode(String(user._id)),
+      excludeCredentials: (user.passkeys || []).map((key) => ({
+        id: key.credentialID,
+        transports: key.transports,
+      })),
+      authenticatorSelection: {
+        residentKey: "preferred",
+        userVerification: "required",
+      },
+    });
+
+    user.passkeyRegistrationChallenge = options.challenge;
+    await user.save();
+    res.json(options);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.post("/api/auth/passkey/register/verify", async (req, res) => {
+  try {
+    const { memberId, password, role, response } = req.body;
+    const user = await Employee.findOne({ memberId: memberId?.trim() });
+    if (!user || !(await bcrypt.compare(password || "", user.password))) {
+      return res.status(401).json({ message: "Password login is required before enabling fingerprint login" });
+    }
+    if (user.role?.toLowerCase() !== role?.toLowerCase() || !user.passkeyRegistrationChallenge) {
+      return res.status(400).json({ message: "Invalid passkey registration" });
+    }
+
+    const verification = await verifyRegistrationResponse({
+      response,
+      expectedChallenge: user.passkeyRegistrationChallenge,
+      expectedOrigin: webAuthnOrigin,
+      expectedRPID: webAuthnRpID,
+    });
+    if (!verification.verified || !verification.registrationInfo) {
+      return res.status(400).json({ message: "Fingerprint registration failed" });
+    }
+
+    const { credential } = verification.registrationInfo;
+    user.passkeys = (user.passkeys || []).filter((key) => key.credentialID !== credential.id);
+    user.passkeys.push({
+      credentialID: credential.id,
+      publicKey: Buffer.from(credential.publicKey),
+      counter: credential.counter,
+      transports: response.response.transports || [],
+    });
+    user.passkeyRegistrationChallenge = undefined;
+    await user.save();
+    res.json({ success: true, message: "Fingerprint login enabled" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+app.post("/api/auth/passkey/login/options", async (req, res) => {
+  try {
+    const user = await Employee.findOne({ memberId: req.body.memberId?.trim() });
+    if (!user || !user.passkeys?.length) {
+      return res.status(404).json({ message: "Fingerprint login is not enabled for this member" });
+    }
+    const options = await generateAuthenticationOptions({
+      rpID: webAuthnRpID,
+      allowCredentials: user.passkeys.map((key) => ({
+        id: key.credentialID,
+        transports: key.transports,
+      })),
+      userVerification: "required",
+    });
+    user.passkeyAuthenticationChallenge = options.challenge;
+    await user.save();
+    res.json(options);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+app.post("/api/auth/passkey/login/verify", async (req, res) => {
+  try {
+    const { memberId, role, response } = req.body;
+    const user = await Employee.findOne({ memberId: memberId?.trim() });
+    const passkey = user?.passkeys?.find((key) => key.credentialID === response?.id);
+    if (!user || !passkey || user.role?.toLowerCase() !== role?.toLowerCase()) {
+      return res.status(401).json({ message: "Invalid fingerprint login" });
+    }
+
+    const verification = await verifyAuthenticationResponse({
+      response,
+      expectedChallenge: user.passkeyAuthenticationChallenge,
+      expectedOrigin: webAuthnOrigin,
+      expectedRPID: webAuthnRpID,
+      credential: {
+        id: passkey.credentialID,
+        publicKey: passkey.publicKey,
+        counter: passkey.counter,
+        transports: passkey.transports,
+      },
+    });
+    if (!verification.verified) return res.status(401).json({ message: "Fingerprint verification failed" });
+
+    passkey.counter = verification.authenticationInfo.newCounter;
+    user.passkeyAuthenticationChallenge = undefined;
+    await user.save();
+    res.json({ success: true, user: memberResponse(user), token: createMemberToken(user) });
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
 });

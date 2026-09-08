@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import "./Login.css";
 import { useSearchParams } from "react-router-dom";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 
 
 export default function Login() {
@@ -11,6 +12,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("member");
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -44,6 +46,49 @@ const handleLogin = async (e) => {
 
   } catch (err) {
     setError(err.response?.data?.message || "Login failed!");
+  }
+};
+
+const saveLogin = (data) => {
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("userRole", data.user.role);
+  localStorage.setItem("memberId", data.user.memberId);
+  localStorage.setItem("user", JSON.stringify(data.user));
+  window.location.href = data.user.role.toLowerCase() === "admin" ? "/" : "/member-profile";
+};
+
+const enableFingerprint = async () => {
+  setError("");
+  setMessage("");
+  try {
+    if (!window.PublicKeyCredential) throw new Error("This browser does not support fingerprint login");
+    const optionsResponse = await API.post("/auth/passkey/register/options", {
+      memberId: memberId.trim(), password, role,
+    });
+    const registration = await startRegistration({ optionsJSON: optionsResponse.data });
+    await API.post("/auth/passkey/register/verify", {
+      memberId: memberId.trim(), password, role, response: registration,
+    });
+    setMessage("Fingerprint login enabled on this phone.");
+  } catch (err) {
+    setError(err.response?.data?.message || err.message || "Could not enable fingerprint login");
+  }
+};
+
+const handleFingerprintLogin = async () => {
+  setError("");
+  try {
+    if (!memberId.trim()) throw new Error("Enter your Member ID first");
+    const optionsResponse = await API.post("/auth/passkey/login/options", {
+      memberId: memberId.trim(),
+    });
+    const authentication = await startAuthentication({ optionsJSON: optionsResponse.data });
+    const response = await API.post("/auth/passkey/login/verify", {
+      memberId: memberId.trim(), role, response: authentication,
+    });
+    saveLogin(response.data);
+  } catch (err) {
+    setError(err.response?.data?.message || err.message || "Fingerprint login failed");
   }
 };
 
@@ -110,7 +155,16 @@ if (res.data.isAdmin) {
           </div>
 
           {error && <p className="error-msg">{error}</p>}
+          {message && <p className="success-msg">{message}</p>}
           <button type="submit" className="login-btn">Login</button>
+
+          <button type="button" className="login-btn" onClick={handleFingerprintLogin}>
+            Login with fingerprint
+          </button>
+
+          <button type="button" className="forgot-btn" onClick={enableFingerprint}>
+            Enable fingerprint login
+          </button>
 
           <button
   type="button"
