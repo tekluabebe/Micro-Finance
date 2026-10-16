@@ -5,6 +5,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 
 const years = [];
 
@@ -13,6 +15,8 @@ for (let i = 2023; i <= 2035; i++) {
 }
 
 const BalanceSheet = () => {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
    const isMember =
     localStorage.getItem("userRole")?.toLowerCase() === "member";
 
@@ -284,13 +288,13 @@ const saveData = () => {
 
     <div className="balance-sheet-container">
 
-      <h1>Balance Sheet</h1>
+      <h1>{t("Balance Sheet")}</h1>
 
       <div className="top-bar">
 
         <div>
 
-          <label>Year</label>
+          <label>{t("Year")}</label>
 
           <select style={{ color: '#141414' }}
           disabled={isMember}
@@ -314,7 +318,7 @@ const saveData = () => {
 
         <div>
 
-          <label>Previous Year</label>
+          <label>{t("Previous Year")}</label>
 
           <select style={{ color: '#080808' }}
           disabled={isMember}
@@ -340,11 +344,11 @@ const saveData = () => {
 
       <div className="section">
 
-        <h2>Current Assets</h2>
+        <h2>{t("Current Assets")}</h2>
 
         <div className="grid">
 
-          <label>Cash On Hand</label>
+          <label>{t("Cash On Hand")}</label>
           <input 
             name="cashOnHand"
             type="number"
@@ -353,7 +357,7 @@ const saveData = () => {
             disabled={isMember}
           />
 
-          <label>Cash At Bank</label>
+          <label>{t("Cash At Bank")}</label>
           <input
             name="cashAtBank"
             type="number"
@@ -361,7 +365,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Accounts Receivable</label>
+          <label>{t("Accounts Receivable")}</label>
           <input
             name="accountsReceivable"
             type="number"
@@ -369,7 +373,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Other Receivable</label>
+          <label>{t("Other Receivable")}</label>
           <input
             name="otherReceivable"
             type="number"
@@ -380,7 +384,7 @@ const saveData = () => {
         </div>
 
         <h3 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Current Assets :
+          {t("Total Current Assets")} :
           {totals.currentAssets.toLocaleString()}
         </h3>
 
@@ -388,11 +392,11 @@ const saveData = () => {
 
       <div className="section">
 
-        <h2>Fixed Assets</h2>
+        <h2>{t("Fixed Assets")}</h2>
 
         <div className="grid">
 
-          <label>Office Equipment</label>
+          <label>{t("Office Equipment")}</label>
           <input
             name="officeEquipment"
             type="number"
@@ -400,7 +404,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Furniture</label>
+          <label>{t("Furniture")}</label>
           <input
             name="furniture"
             type="number"
@@ -408,7 +412,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Vehicle</label>
+          <label>{t("Vehicle")}</label>
           <input
             name="vehicle"
             type="number"
@@ -416,7 +420,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Building</label>
+          <label>{t("Building")}</label>
           <input
             name="building"
             type="number"
@@ -427,7 +431,7 @@ const saveData = () => {
         </div>
 
         <h3 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Fixed Assets :
+          {t("Total Fixed Assets")} :
           {totals.fixedAssets.toLocaleString()}
         </h3>
 
@@ -435,11 +439,11 @@ const saveData = () => {
 
       <div className="section">
 
-        <h2>Liabilities</h2>
+        <h2>{t("Liabilities")}</h2>
 
         <div className="grid">
 
-          <label>Accounts Payable</label>
+          <label>{t("Accounts Payable")}</label>
           <input
             name="accountsPayable"
             type="number"
@@ -447,7 +451,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Tax Payable</label>
+          <label>{t("Tax Payable")}</label>
           <input
             name="taxPayable"
             type="number"
@@ -455,7 +459,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Other Liability</label>
+          <label>{t("Other Liability")}</label>
           <input
             name="otherLiability"
             type="number"
@@ -466,7 +470,7 @@ const saveData = () => {
         </div>
 
         <h3 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Liabilities :
+          {t("Total Liabilities")} :
           {totals.liabilities.toLocaleString()}
         </h3>
 
@@ -474,11 +478,11 @@ const saveData = () => {
 
       <div className="section">
 
-        <h2>Equity</h2>
+        <h2>{t("Equity")}</h2>
 
         <div className="grid">
 
-          <label>Capital</label>
+          <label>{t("Capital")}</label>
           <input
             name="capital"
             type="number"
@@ -486,7 +490,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Reserve</label>
+          <label>{t("Reserve")}</label>
           <input
             name="reserve"
             type="number"
@@ -494,7 +498,7 @@ const saveData = () => {
             onChange={handleChange}
           />
 
-          <label>Retained Earnings</label>
+          <label>{t("Retained Earnings")}</label>
           <input
             name="retainedEarnings"
             type="number"
@@ -505,7 +509,7 @@ const saveData = () => {
         </div>
 
         <h3 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Equity :
+          {t("Total Equity")} :
           {totals.equity.toLocaleString()}
         </h3>
 
@@ -514,24 +518,24 @@ const saveData = () => {
       <div className="grand-total">
 
         <h2 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Assets :
+          {t("Total Assets")} :
           {totals.totalAssets.toLocaleString()}
         </h2>
 
         <h2 style={{ color: 'rgb(8, 151, 240)' }}>
-          Total Liabilities & Equity :
+          {t("Total Liabilities & Equity")} :
           {totals.totalLiabilitiesEquity.toLocaleString()}
         </h2>
 
       </div>
 <div className={`balance-status ${isBalanced ? "balanced" : "unbalanced"}`}>
   <strong>
-    {isBalanced ? "✓ Balance Sheet Balanced" : "⚠ Balance Sheet Not Balanced"}
+    {isBalanced ? `✓ ${t("Balance Sheet Balanced")}` : `⚠ ${t("Balance Sheet Not Balanced")}`}
   </strong>
 
   {!isBalanced && (
     <span>
-      Difference: {difference.toLocaleString()} ETB
+      {t("Difference:")} {difference.toLocaleString()} ETB
     </span>
   )}
 </div>

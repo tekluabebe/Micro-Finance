@@ -7,6 +7,8 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 
 import {
   FaFilePdf,
@@ -59,6 +61,8 @@ const defaultCashFlow = {
 };
 
 export default function CashFlow() {
+    const { language } = useAppContext();
+    const t = (text) => translate(language, text);
   /*=========================================================
         STATES
     =========================================================*/
@@ -393,10 +397,10 @@ return (
 
                 <h1>
                     <FaMoneyCheckAlt />
-                    Cash Flow Statement
+                    {t("Cash Flow Statement")}
                 </h1>
 
-                <p>Statement of Cash Flow</p>
+                <p>{t("Statement of Cash Flow")}</p>
 
             </div>
 
@@ -407,7 +411,7 @@ return (
                     onClick={loadCashFlow}
                 >
                     <FaSyncAlt />
-                    Refresh
+                    {t("Refresh")}
                 </button>
 
                 <button
@@ -431,7 +435,7 @@ return (
                     onClick={printReport}
                 >
                     <FaPrint />
-                    Print
+                    {t("Print")}
                 </button>
 
             </div>
@@ -448,7 +452,7 @@ return (
 
                     <FaCalendarAlt />
 
-                    Financial Year
+                    {t("Financial Year")}
 
                 </label>
 
@@ -475,10 +479,10 @@ return (
 
             <div className="report-title">
 
-                <h2>Cash Flow Statement</h2>
+                <h2>{t("Cash Flow Statement")}</h2>
 
                 <span>
-                    For the Year Ended December 31, {year}
+                    {t("For the Year Ended December 31,")} {year}
                 </span>
 
             </div>
@@ -489,9 +493,9 @@ return (
 
                     <tr>
 
-                        <th>Description</th>
+                        <th>{t("Description")}</th>
 
-                        <th>Amount</th>
+                        <th>{t("Amount")}</th>
 
                     </tr>
 
@@ -503,43 +507,43 @@ return (
 
                     <tr className="section-row">
                         <td colSpan="2">
-                            Cash Flow from Operating Activities
+                            {t("Cash Flow from Operating Activities")}
                         </td>
                     </tr>
 
                     <tr>
-                        <td>Profit Before Tax</td>
+                        <td>{t("Profit Before Tax")}</td>
                         <td>{money(op.profit)}</td>
                     </tr>
 
                     <tr>
-                        <td>Depreciation Expense</td>
+                        <td>{t("Depreciation Expense")}</td>
                         <td>{money(op.depreciation)}</td>
                     </tr>
 
                     <tr>
-                        <td>Increase in Accounts Receivable</td>
+                        <td>{t("Increase in Accounts Receivable")}</td>
                         <td>{outflow(op.receivableIncrease)}</td>
                     </tr>
 
                     <tr>
-                        <td>Increase in Accounts Payable</td>
+                        <td>{t("Increase in Accounts Payable")}</td>
                         <td>{money(op.payableIncrease)}</td>
                     </tr>
 
                     <tr>
-                        <td>Decrease in Inventory</td>
+                        <td>{t("Decrease in Inventory")}</td>
                         <td>{money(op.inventoryDecrease)}</td>
                     </tr>
 
                     <tr>
-                        <td>Other Adjustments</td>
+                        <td>{t("Other Adjustments")}</td>
                         <td>{money(op.otherAdjustment)}</td>
                     </tr>
 
                     <tr className="total-row">
                         <td>
-                            Net Cash from Operating Activities
+                            {t("Net Cash from Operating Activities")}
                         </td>
                         <td>{money(operatingTotal)}</td>
                     </tr>
@@ -548,35 +552,35 @@ return (
 
                     <tr className="section-row">
                         <td colSpan="2">
-                            Cash Flow from Investing Activities
+                            {t("Cash Flow from Investing Activities")}
                         </td>
                     </tr>
 
                     <tr>
-                        <td>Purchase of Property & Equipment</td>
+                        <td>{t("Purchase of Property & Equipment")}</td>
                         <td>{outflow(inv.purchaseAsset)}</td>
 
                     </tr>
 
                     <tr>
-                        <td>Sale of Property</td>
+                        <td>{t("Sale of Property")}</td>
                         <td>{money(inv.saleAsset)}</td>
                     </tr>
 
                     <tr>
-                        <td>Investment Purchase</td>
+                        <td>{t("Investment Purchase")}</td>
                         <td>{outflow(inv.investmentPurchase)}</td>
 
                     </tr>
 
                     <tr>
-                        <td>Investment Sale</td>
+                        <td>{t("Investment Sale")}</td>
                         <td>{money(inv.investmentSale)}</td>
                     </tr>
 
                     <tr className="total-row">
                         <td>
-                            Net Cash from Investing Activities
+                            {t("Net Cash from Investing Activities")}
                         </td>
                         <td>{money(investingTotal)}</td>
                     </tr>
@@ -585,33 +589,33 @@ return (
 
                     <tr className="section-row">
                         <td colSpan="2">
-                            Cash Flow from Financing Activities
+                            {t("Cash Flow from Financing Activities")}
                         </td>
                     </tr>
 
                     <tr>
-                        <td>Share Capital Issued</td>
+                        <td>{t("Share Capital Issued")}</td>
                         <td>{money(fin.shareCapital)}</td>
                     </tr>
 
                     <tr>
-                        <td>Loan Received</td>
+                        <td>{t("Loan Received")}</td>
                         <td>{money(fin.loanReceived)}</td>
                     </tr>
 
                     <tr>
-                        <td>Loan Repayment</td>
+                        <td>{t("Loan Repayment")}</td>
                         <td>{outflow(fin.loanRepayment)}</td>
                     </tr>
 
                     <tr>
-                        <td>Dividend Paid</td>
+                        <td>{t("Dividend Paid")}</td>
                         <td>{outflow(fin.dividendPaid)}</td>
                     </tr>
 
                     <tr className="total-row">
                         <td>
-                            Net Cash from Financing Activities
+                            {t("Net Cash from Financing Activities")}
                         </td>
                         <td>{money(financingTotal)}</td>
                     </tr>
@@ -621,7 +625,7 @@ return (
                     <tr className="grand-total-row">
 
                         <td>
-                            Net Increase in Cash
+                            {t("Net Increase in Cash")}
                         </td>
 
                         <td>
@@ -633,7 +637,7 @@ return (
                     <tr>
 
                         <td>
-                            Opening Cash Balance
+                            {t("Opening Cash Balance")}
                         </td>
 
                         <td>
@@ -645,7 +649,7 @@ return (
                     <tr className="closing-row">
 
                         <td>
-                            Closing Cash Balance
+                            {t("Closing Cash Balance")}
                         </td>
 
                         <td>
@@ -662,7 +666,7 @@ return (
 
                 <div className="loading-box">
 
-                    Loading Cash Flow...
+                    {t("Loading Cash Flow...")}
 
                 </div>
 

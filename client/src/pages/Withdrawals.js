@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import { FaUserMinus, FaListUl, FaMoneyCheckAlt } from "react-icons/fa";
 import './withdrawals.css';
 
 export default function Withdrawals() {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
   const isMember = userRole === "member";
   const [employees, setEmployees] = useState([]);
@@ -139,12 +143,12 @@ const calculateSaving = (employeeId, employee = null) => {
   // =======================
   const submit = async () => {
     if (!data.employeeId || !data.reason) {
-      alert("Please fill all required fields");
+      alert(t("Please fill all required fields"));
       return;
     }
 
     if (hasActiveLoan(data.employeeId)) {
-      alert("Please finish your loan before proceeding withdrawals ❌");
+      alert(t("Please finish your loan before proceeding withdrawals ❌"));
       return;
     }
 
@@ -164,7 +168,7 @@ const calculateSaving = (employeeId, employee = null) => {
         isRead: false,
       });
 
-      alert("Employee moved to terminated list ✅");
+      alert(`${t("Employee moved to terminated list")} ✅`);
 
       setEmployees((prev) =>
         prev.filter((e) => e._id !== data.employeeId)
@@ -179,7 +183,7 @@ const calculateSaving = (employeeId, employee = null) => {
 
     } catch (err) {
       console.error("FRONT ERROR:", err.response?.data || err.message);
-      alert("Error processing withdrawal ❌");
+      alert(`${t("Error processing withdrawal")} ❌`);
     }
   };
 
@@ -193,20 +197,20 @@ const calculateSaving = (employeeId, employee = null) => {
               onClick={() => (window.location.href = "/Micro-Finance/#/terminated")}
               className="view-btn"
             >
-              <FaListUl /> View Terminated
+              <FaListUl /> {t("View Terminated")}
             </button>
           </div>
         )}
 
         <h2 className="withdraw-title">
           <FaUserMinus color="#8e44ad" /> 
-          Leave Request Form/የመውጫ ፎርም
+          {t("Leave Request Form")}
         </h2>
 
         {/* EMPLOYEE */}
         <div className="input-field-group">
           <label className="field-label">
-            Select Employee 
+            {t("Select Employee")}
           </label>
 
           <select
@@ -219,7 +223,7 @@ const calculateSaving = (employeeId, employee = null) => {
             {!isMember ? (
               <>
                 <option value="">
-                  Choose an employee...
+                  {t("Choose an employee...")}
                 </option>
 
                 {employees.map((emp) => (
@@ -230,7 +234,7 @@ const calculateSaving = (employeeId, employee = null) => {
                     {emp.memberId} - {emp.firstName}{" "}
                     {emp.lastName}
                     {hasActiveLoan(emp._id)
-                      ? " (Active Loan ❌)"
+                      ? ` (${t("Active Loan ❌")})`
                       : ""}
                   </option>
                 ))}
@@ -256,10 +260,10 @@ const calculateSaving = (employeeId, employee = null) => {
 
         {/* FULL NAME */}
         <div className="input-field-group">
-          <label className="field-label">Employee Full Name</label>
+          <label className="field-label">{t("Employee Full Name")}</label>
           <input
             value={data.fullName}
-            placeholder="Full Name (Auto-filled)"
+            placeholder={t("Full Name (Auto-filled)")}
             readOnly
             className="readonly modern-input"
           />
@@ -269,17 +273,17 @@ const calculateSaving = (employeeId, employee = null) => {
         <div className="info success">
           <div className="info-icon-title">
             <FaMoneyCheckAlt size={18} />
-            <span>Total Saving:</span>
+            <span>{t("Total Saving")}:</span>
           </div>
           <strong className="amount-highlight">{data.totalSaving || 0} ETB</strong>
         </div>
 
         {/* REASON */}
         <div className="input-field-group">
-          <label className="field-label">Reason for Withdrawal *</label>
+          <label className="field-label">{t("Reason for Withdrawal *")}</label>
           <textarea
             name="reason"
-            placeholder="Please specify the clear reason for leaving or withdrawal..."
+            placeholder={t("Please specify the clear reason for leaving or withdrawal...")}
             value={data.reason}
             onChange={handleChange}
             className="modern-textarea"
@@ -288,7 +292,7 @@ const calculateSaving = (employeeId, employee = null) => {
 
         {/* BUTTON */}
         <button onClick={submit} className="withdraw-btn">
-          Save & Terminate Member
+          {t("Save & Terminate Member")}
         </button>
 
       </div>

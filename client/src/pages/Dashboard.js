@@ -1,21 +1,93 @@
 import React, { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import "./Dashboard.css"
 
 export default function Dashboard() {
-const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
-const isMember = userRole === "member";
-const withdrawalNotificationEnabled =
+  const { language } = useAppContext();
+  const amharic = language === "Amharic";
+  const tr = (text) => amharic ? ({
+    "No notifications": "ምንም ማሳወቂያ የለም",
+    "No password reset requests": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ የለም",
+    "Password Reset Request": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ",
+    "Member ID": "የአባል መለያ",
+    "Password reset requested": "የይለፍ ቃል ዳግም ማስጀመር ተጠይቋል",
+    "Reason": "ምክንያት",
+    "Amount": "መጠን",
+    "Employee ID:": "የሰራተኛ መለያ:",
+    "Borrower:": "ተበዳሪ:",
+    "Guarantors (ዋሶች):": "ዋሶች:",
+    "No guarantors listed!": "ምንም ዋስ አልተዘረዘረም!",
+    "Status:": "ሁኔታ:",
+    "approved": "ጸድቋል",
+    "rejected": "ውድቅ ተደርጓል",
+    "pending": "በመጠባበቅ ላይ",
+    "Welcome to Micro-finance Dashboard": "ወደ ማይክሮፋይናንስ ዳሽቦርድ እንኳን በደህና መጡ",
+    "User Avatar": "የተጠቃሚ ምስል",
+    "Withdrawals": "ገንዘብ ማውጣት",
+    "Loans": "ብድሮች",
+    "Password Reset": "የይለፍ ቃል ዳግም ማስጀመር",
+    "Filter by month": "በወር አጣራ",
+    "Filter by year": "በዓመት አጣራ",
+    "Switch to light theme": "ወደ ብርሃን ገጽታ ቀይር",
+    "Switch to dark theme": "ወደ ጨለማ ገጽታ ቀይር",
+    "Light": "ብርሃን",
+    "Dark": "ጨለማ",
+    "Notifications disabled": "ማሳወቂያዎች ተሰናክለዋል",
+    "Notifications": "ማሳወቂያዎች",
+    "Mark all as read": "ሁሉንም እንደተነበቡ ምልክት አድርግ",
+    "All": "ሁሉም",
+    "Unread": "ያልተነበቡ",
+    "Seen": "የታዩ",
+    "Password reset notifications are disabled": "የይለፍ ቃል ዳግም ማስጀመር ማሳወቂያዎች ተሰናክለዋል",
+    "Members": "አባላት",
+    "Total Savings": "ጠቅላላ ቁጠባ",
+    "Active Loans": "ንቁ ብድሮች",
+    "Deposits": "ተቀማጭ ገንዘብ",
+    "Registration Fees": "የምዝገባ ክፍያ",
+    "Late Penalties": "የዘገየ ክፍያ ቅጣቶች",
+    "Savings Analytics": "የቁጠባ ትንተና",
+    "Loading...": "በመጫን ላይ...",
+    "Unavailable": "አይገኝም",
+    "Monthly Savings (ETB)": "ወርሃዊ ቁጠባ (ብር)",
+    "Loan Distribution": "የብድር ስርጭት",
+    "Total": "ጠቅላላ",
+    "Loading savings data...": "የቁጠባ መረጃ በመጫን ላይ...",
+    "Savings data is unavailable.": "የቁጠባ መረጃ አይገኝም።",
+    "No savings recorded for this year.": "ለዚህ ዓመት ቁጠባ አልተመዘገበም።",
+    "Max:": "ከፍተኛ:",
+    "Loading loan data...": "የብድር መረጃ በመጫን ላይ...",
+    "Loan data is unavailable.": "የብድር መረጃ አይገኝም።",
+    "No loan requests to display.": "የሚታይ የብድር ጥያቄ የለም።",
+    "Approved": "የጸደቀ",
+    "Pending": "በመጠባበቅ ላይ",
+    "Rejected": "ውድቅ የተደረገ",
+    "Dashboard data could not be loaded. Please try again.": "የዳሽቦርድ መረጃ መጫን አልተቻለም። እንደገና ይሞክሩ።",
+    "User": "ተጠቃሚ",
+    "member": "አባል",
+    "admin": "አስተዳዳሪ",
+  }[text] || text) : translate(language, text);
+  const monthLabels = {
+    January: "ጃንዋሪ", February: "ፌብሩዋሪ", March: "ማርች",
+    April: "ኤፕሪል", May: "ሜይ", June: "ጁን",
+    July: "ጁላይ", August: "ኦገስት", September: "ሴፕቴምበር",
+    October: "ኦክቶበር", November: "ኖቬምበር", December: "ዲሴምበር",
+  };
+  const displayMonth = (month) => amharic ? monthLabels[month] || month : month;
+  const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
+  const isMember = userRole === "member";
+  const withdrawalNotificationEnabled =
   localStorage.getItem("withdrawalNotification") !== "false";
 
-const loanNotificationEnabled =
+  const loanNotificationEnabled =
   localStorage.getItem("loanNotification") !== "false";
 
-const passwordNotificationEnabled =
+  const passwordNotificationEnabled =
   localStorage.getItem("passwordNotification") !== "false";
-const [passwordRequests, setPasswordRequests] = useState([]);
-const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
+  const [passwordRequests, setPasswordRequests] = useState([]);
+  const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
 
   const [withdrawals, setWithdrawals] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -25,12 +97,19 @@ const [openPasswordRequests, setOpenPasswordRequests] = useState(false);
   const [openLoans, setOpenLoans] = useState(false);
   const [notifFilter, setNotifFilter] = useState("all"); 
   const [darkMode, setDarkMode] = useState(true);
-const user = JSON.parse(localStorage.getItem("user"));
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  })() || {};
 
-console.log(user.fullName);
-
-const fullName =
-  `${user.firstName || ""} ${user.lastName || ""}`;
+  const fullName =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.fullName ||
+    user.name ||
+    tr("User");
 
   // =========================
   // FILTERS
@@ -56,6 +135,8 @@ const fullName =
     totalRegistrationFees: 0,
     totalLatePenalties: 0,
   });
+  const [isLoading, setIsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
 
   const [savingsData, setSavingsData] = useState([]);
   const [loanDistribution, setLoanDistribution] = useState({});
@@ -94,6 +175,8 @@ useEffect(() => {
   // =========================
   useEffect(() => {
     const fetchStats = async () => {
+      setIsLoading(true);
+      setStatsError("");
       try {
         const [empRes, depRes, loanRes] = await Promise.all([
           API.get("/employees"),
@@ -168,9 +251,12 @@ useEffect(() => {
           rejected: loansData.filter((l) => l.status === "rejected").length,
         };
         setLoanDistribution(distribution);
+        setIsLoading(false);
 
       } catch (err) {
         console.log("Dashboard stats error:", err);
+        setStatsError("Dashboard data could not be loaded. Please try again.");
+        setIsLoading(false);
       }
     };
     fetchStats();
@@ -379,7 +465,7 @@ const renderPasswordRequests = () => {
   if (!pending.length) {
     return (
       <p style={styles.empty}>
-        No password reset requests
+        {tr("No password reset requests")}
       </p>
     );
   }
@@ -396,11 +482,11 @@ const renderPasswordRequests = () => {
 
       <div style={{ flex: 1 }}>
         <strong>
-          Password Reset Request
+          {tr("Password Reset Request")}
         </strong>
 
         <p style={styles.notificationText}>
-          Member ID: {item.memberId}
+          {tr("Member ID")}: {item.memberId}
         </p>
 
         <p style={styles.notificationText}>
@@ -408,7 +494,7 @@ const renderPasswordRequests = () => {
         </p>
 
         <p style={styles.notificationTime}>
-          Password reset requested
+          {tr("Password reset requested")}
         </p>
       </div>
 
@@ -451,7 +537,7 @@ const renderPasswordRequests = () => {
 
   const renderNotifications = (items, type) => {
     const unreadItems = items.filter((i) => i.isRead !== true && i.status !== "Rejected");
-    if (!unreadItems.length) return <p style={styles.empty}>No notifications</p>;
+    if (!unreadItems.length) return <p style={styles.empty}>{tr("No notifications")}</p>;
 
     return unreadItems.map((item) => (
       <div key={item._id} style={{ ...styles.item, background: "#eaf7ff" }}>
@@ -471,34 +557,34 @@ const renderPasswordRequests = () => {
     </strong>
 
     <p style={styles.text}>
-      Reason: {item.reason}
+      {tr("Reason")}: {item.reason}
     </p>
 
     <p style={styles.text}>
-      Amount: {item.totalSaving} ETB
+      {tr("Amount")}: {item.totalSaving} ETB
     </p>
   </>
 )}
 
           {type === "loans" && (
             <>
-              <p style={styles.text}><strong>Employee ID:</strong> {item.employeeId?.memberId || "N/A"}</p>
-              <p style={styles.text}><strong>Borrower:</strong> {item.employeeId?.firstName} {item.employeeId?.lastName}</p>
-              <p style={styles.text}><strong>Amount:</strong> {item.principalAmount} ETB</p>
+              <p style={styles.text}><strong>{tr("Employee ID:")}</strong> {item.employeeId?.memberId || "N/A"}</p>
+              <p style={styles.text}><strong>{tr("Borrower:")}</strong> {item.employeeId?.firstName} {item.employeeId?.lastName}</p>
+              <p style={styles.text}><strong>{tr("Amount")}:</strong> {item.principalAmount} ETB</p>
               <div style={{ marginTop: "5px", padding: "5px", background: "#fff", borderRadius: "5px", border: "1px solid #ddd" }}>
-                <strong style={{ fontSize: "11px", color: "#555" }}>Guarantors (ዋሶች):</strong>
+                <strong style={{ fontSize: "11px", color: "#555" }}>{tr("Guarantors (ዋሶች):")}</strong>
                 <ul style={{ margin: "3px 0", paddingLeft: "15px", listStyleType: "square" }}>
                   {item.guarantors && item.guarantors.length > 0 ? (
                     item.guarantors.map((g, index) => <li key={index} style={{ fontSize: "11px", color: "#333" }}>{g.firstName} {g.lastName}</li>)
                   ) : (
-                    <li style={{ fontSize: "11px", color: "red" }}>No guarantors listed!</li>
+                    <li style={{ fontSize: "11px", color: "red" }}>{tr("No guarantors listed!")}</li>
                   )}
                 </ul>
               </div>
               <p style={styles.text}>
-                <strong>Status:</strong>{" "}
+                <strong>{tr("Status:")}</strong>{" "}
                 <span style={{ color: item.status === "approved" ? "green" : item.status === "rejected" ? "red" : "orange", fontWeight: "bold" }}>
-                  {item.status || "pending"}
+                  {tr(item.status || "pending")}
                 </span>
               </p>
             </>
@@ -515,8 +601,8 @@ const renderPasswordRequests = () => {
     ));
   };
 
-  const maxSavings = Math.max(...savingsData, 1);
-  const totalLoans = Object.values(loanDistribution).reduce((a, b) => a + b, 1);
+  const maxSavings = Math.max(...savingsData, 0);
+  const totalLoans = Object.values(loanDistribution).reduce((a, b) => a + b, 0);
 
   return (
 <div
@@ -529,20 +615,20 @@ const renderPasswordRequests = () => {
 <div className="welcome-section">
   <div className="welcome-left">
     <h1 className="welcome-title">
-      👋 Welcome to Micro-finance Dashboard
+      👋 {tr("Welcome to Micro-finance Dashboard")}
     </h1>
   </div>
 
   <div className="user-profile-box">
   <img
     src="/avator.jpg"
-    alt="User Avatar"
+    alt={tr("User Avatar")}
     className="user-avatar"
   />
 
   <div>
     <h3>{fullName}</h3>
-    <span>{userRole}</span>
+    <span>{tr(userRole)}</span>
   </div>
 </div>
 </div>
@@ -550,43 +636,52 @@ const renderPasswordRequests = () => {
         <div className="dashboard-right-controls" style={styles.headerRightSection}>
 {!isMember && (
   <div style={styles.topBar}>
-    <div
+    <button
+      type="button"
       className="notifItem"
+      aria-expanded={openWithdrawals}
+      aria-controls="withdrawal-notifications"
       onClick={() => setOpenWithdrawals(!openWithdrawals)}
     >
-      🔔 Withdrawals
+      🔔 {tr("Withdrawals")}
       {withdrawalNotificationEnabled && unreadWithdrawals > 0 && (
         <span className="badge">{unreadWithdrawals}</span>
       )}
-    </div>
+    </button>
 
-    <div
+    <button
+      type="button"
       className="notifItem"
+      aria-expanded={openLoans}
+      aria-controls="loan-notifications"
       onClick={() => setOpenLoans(!openLoans)}
     >
-      💰 Loans
+      💰 {tr("Loans")}
       {loanNotificationEnabled && unreadLoans > 0 && (
         <span className="badge">{unreadLoans}</span>
       )}
-    </div>
+    </button>
 
-    <div
+    <button
+      type="button"
       className="notifItem"
+      aria-expanded={openPasswordRequests}
+      aria-controls="password-reset-notifications"
       onClick={() => setOpenPasswordRequests(!openPasswordRequests)}
     >
-      🔑 Password Reset
+      🔑 {tr("Password Reset")}
       {passwordNotificationEnabled && unreadPasswordRequests > 0 && (
         <span className="badge">{unreadPasswordRequests}</span>
       )}
-    </div>
+    </button>
   </div>
 )}
           <div style={styles.filterBar}>
-            <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="selectInput">
-              {months.map((m) => <option key={m}>{m}</option>)}
+            <select aria-label={tr("Filter by month")} value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="selectInput">
+              {months.map((m) => <option key={m} value={m}>{displayMonth(m)}</option>)}
             </select>
 
-            <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="selectInput">
+            <select aria-label={tr("Filter by year")} value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="selectInput">
               {Array.from({ length: 10 }, (_, i) => {
                 const y = new Date().getFullYear() - i;
                 return <option key={y}>{y}</option>;
@@ -594,10 +689,12 @@ const renderPasswordRequests = () => {
             </select>
              <div className={darkMode ? "dark-dashboard" : "light-dashboard"}>
             <button
+  type="button"
+  aria-label={tr(darkMode ? "Switch to light theme" : "Switch to dark theme")}
   onClick={() => setDarkMode(!darkMode)}
   className="theme-toggle"
 >
-  {darkMode ? "☀️ Light" : "🌙 Dark"}
+  {darkMode ? `☀️ ${tr("Light")}` : `🌙 ${tr("Dark")}`}
 </button> </div>
           </div>
         </div>
@@ -605,40 +702,40 @@ const renderPasswordRequests = () => {
 
       {/* ================= DROPDOWNS ================= */}
 {!isMember && openWithdrawals && (
-  <div className="dashboard-notif-dropdown" style={styles.dropdown}>
+  <div id="withdrawal-notifications" className="dashboard-notif-dropdown" style={styles.dropdown}>
     {withdrawalNotificationEnabled ? (
       renderNotifications(withdrawals, "withdrawals")
     ) : (
-      <p style={styles.empty}>Notifications disabled</p>
+      <p style={styles.empty}>{tr("Notifications disabled")}</p>
     )}
   </div>
 )}
 
 {!isMember && openLoans && (
-  <div className="dashboard-notif-dropdown" style={styles.dropdown}>
+  <div id="loan-notifications" className="dashboard-notif-dropdown" style={styles.dropdown}>
     {loanNotificationEnabled ? (
       renderNotifications(loans, "loans")
     ) : (
-      <p style={styles.empty}>Notifications disabled</p>
+      <p style={styles.empty}>{tr("Notifications disabled")}</p>
     )}
   </div>
 )}
 
 {!isMember && openPasswordRequests && (
-  <div className="notification-panel" style={styles.notificationPanel}>
+  <div id="password-reset-notifications" className="notification-panel" style={styles.notificationPanel}>
     {passwordNotificationEnabled ? (
       <>
         <div
           className="notification-header"
           style={styles.notificationHeader}
         >
-          <h4 style={{ margin: 0 }}>Notifications</h4>
+          <h4 style={{ margin: 0 }}>{tr("Notifications")}</h4>
 
           <span
             style={styles.markAll}
             onClick={markAllPasswordRequestsRead}
           >
-            Mark all as read
+            {tr("Mark all as read")}
           </span>
         </div>
 
@@ -654,7 +751,7 @@ const renderPasswordRequests = () => {
                 : styles.tab
             }
           >
-            All
+            {tr("All")}
           </button>
 
           <button
@@ -665,7 +762,7 @@ const renderPasswordRequests = () => {
                 : styles.tab
             }
           >
-            Unread
+            {tr("Unread")}
           </button>
 
           <button
@@ -676,7 +773,7 @@ const renderPasswordRequests = () => {
                 : styles.tab
             }
           >
-            Seen
+            {tr("Seen")}
           </button>
         </div>
 
@@ -686,7 +783,7 @@ const renderPasswordRequests = () => {
       </>
     ) : (
       <p style={styles.empty}>
-        Password reset notifications are disabled
+        {tr("Password reset notifications are disabled")}
       </p>
     )}
   </div>
@@ -695,41 +792,47 @@ const renderPasswordRequests = () => {
       {/* ================= CARDS ================= */}
       {/* ================= DASHBOARD STATS ================= */}
 
+      {statsError && (
+        <p className="dashboard-error" role="alert">
+          {tr(statsError)}
+        </p>
+      )}
+
 <div className="stats-grid">
 
   <DashboardCard
-    title="Members"
-    value={stats.employees}
+    title={tr("Members")}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : stats.employees}
     icon="👥"
   />
 
   <DashboardCard
-    title="Total Savings"
-    value={`${stats.totalSavings.toFixed(2)} ETB`}
+    title={tr("Total Savings")}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : `${stats.totalSavings.toFixed(2)} ETB`}
     icon="💰"
   />
 
   <DashboardCard
-    title="Active Loans"
-    value={stats.activeLoans}
+    title={tr("Active Loans")}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : stats.activeLoans}
     icon="🏦"
   />
 
   <DashboardCard
-    title={`Deposits (${selectedMonth})`}
-    value={`${stats.monthlyDeposits.toFixed(2)} ETB`}
+    title={`${tr("Deposits")} (${selectedMonth})`}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : `${stats.monthlyDeposits.toFixed(2)} ETB`}
     icon="📈"
   />
 
   <DashboardCard
-    title="Registration Fees"
-    value={`${stats.totalRegistrationFees.toFixed(2)} ETB`}
+    title={tr("Registration Fees")}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : `${stats.totalRegistrationFees.toFixed(2)} ETB`}
     icon="📝"
   />
 
   <DashboardCard
-    title="Late Penalties"
-    value={`${stats.totalLatePenalties.toFixed(2)} ETB`}
+    title={tr("Late Penalties")}
+    value={isLoading ? tr("Loading...") : statsError ? tr("Unavailable") : `${stats.totalLatePenalties.toFixed(2)} ETB`}
     icon="⚠️"
   />
 
@@ -741,46 +844,57 @@ const renderPasswordRequests = () => {
 
   <div className="analytics-card analytics-large">
     <div className="card-header">
-      <h3>Savings Analytics</h3>
+      <h3>{tr("Savings Analytics")}</h3>
       <span>{selectedYear}</span>
     </div>
 
     <div className="line-chart-container" style={styles.chartContainer}>
       <div style={styles.chartBars}>
-        {savingsData.map((value, index) => (
+        {!isLoading && !statsError && savingsData.some((value) => value > 0) ? savingsData.map((value, index) => (
           <div key={index} style={styles.barWrapper}>
             <div
               style={{
                 ...styles.bar,
-                height: `${(value / maxSavings) * 150}px`,
+                height: `${maxSavings ? (value / maxSavings) * 150 : 0}px`,
                 backgroundColor: '#4f46e5'
               }}
-              title={`${months[index]}: ${value.toFixed(2)} ETB`}
+              title={`${displayMonth(months[index])}: ${value.toFixed(2)} ETB`}
             >
               {value > 0 && (
                 <span style={styles.barLabel}>
-                  {(value / 1000).toFixed(1)}K
+                  {value >= 1000 ? `${(value / 1000).toFixed(1)}K` : value.toFixed(0)}
                 </span>
               )}
             </div>
-            <span style={styles.monthLabel}>{months[index].slice(0, 3)}</span>
+            <span style={styles.monthLabel}>{displayMonth(months[index]).slice(0, 3)}</span>
           </div>
-        ))}
+        )) : (
+          <p className="chart-state" role={statsError ? "alert" : undefined}>
+            {isLoading ? tr("Loading savings data...") : statsError ? tr("Savings data is unavailable.") : tr("No savings recorded for this year.")}
+          </p>
+        )}
       </div>
-      <div style={styles.chartLegend}>
-        <p>Monthly Savings (ETB)</p>
-        <small style={{ color: '#888' }}>Max: {(maxSavings / 1000).toFixed(1)}K ETB</small>
+      <div className="chartLegend" style={styles.chartLegend}>
+        <p>{tr("Monthly Savings (ETB)")}</p>
+        <small style={{ color: '#888' }}>{tr("Max:")} {(maxSavings / 1000).toFixed(1)}K ETB</small>
       </div>
     </div>
   </div>
 
   <div className="analytics-card">
     <div className="card-header">
-      <h3>Loan Distribution</h3>
-      <span>{totalLoans} Total</span>
+      <h3>{tr("Loan Distribution")}</h3>
+      <span>{totalLoans} {tr("Total")}</span>
     </div>
 
     <div className="distribution-container" style={styles.distributionContainer}>
+      {isLoading || statsError ? (
+        <p className="chart-state" role={statsError ? "alert" : undefined}>
+          {isLoading ? tr("Loading loan data...") : tr("Loan data is unavailable.")}
+        </p>
+      ) : totalLoans === 0 ? (
+        <p className="chart-state">{tr("No loan requests to display.")}</p>
+      ) : <>
       <div style={styles.distributionItem}>
         <div
           style={{
@@ -788,9 +902,9 @@ const renderPasswordRequests = () => {
             height: `${(loanDistribution.approved / totalLoans) * 150}px`,
             backgroundColor: '#10b981'
           }}
-          title={`Approved: ${loanDistribution.approved}`}
+          title={`${tr("Approved")}: ${loanDistribution.approved}`}
         ></div>
-        <span style={styles.distributionLabel}>Approved</span>
+        <span style={styles.distributionLabel}>{tr("Approved")}</span>
         <strong style={{ color: '#10b981', marginTop: '4px' }}>{loanDistribution.approved}</strong>
       </div>
 
@@ -801,9 +915,9 @@ const renderPasswordRequests = () => {
             height: `${(loanDistribution.pending / totalLoans) * 150}px`,
             backgroundColor: '#f59e0b'
           }}
-          title={`Pending: ${loanDistribution.pending}`}
+          title={`${tr("Pending")}: ${loanDistribution.pending}`}
         ></div>
-        <span style={styles.distributionLabel}>Pending</span>
+        <span style={styles.distributionLabel}>{tr("Pending")}</span>
         <strong style={{ color: '#f59e0b', marginTop: '4px' }}>{loanDistribution.pending}</strong>
       </div>
 
@@ -814,11 +928,12 @@ const renderPasswordRequests = () => {
             height: `${(loanDistribution.rejected / totalLoans) * 150}px`,
             backgroundColor: '#ef4444'
           }}
-          title={`Rejected: ${loanDistribution.rejected}`}
+          title={`${tr("Rejected")}: ${loanDistribution.rejected}`}
         ></div>
-        <span style={styles.distributionLabel}>Rejected</span>
+        <span style={styles.distributionLabel}>{tr("Rejected")}</span>
         <strong style={{ color: '#ef4444', marginTop: '4px' }}>{loanDistribution.rejected}</strong>
       </div>
+      </>}
     </div>
   </div>
 

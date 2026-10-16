@@ -1,11 +1,20 @@
 import React from "react";
+import { useAppContext } from "../pages/context";
 
 export default function Navbar() {
+  const { language } = useAppContext();
+  const title = {
+    English: "Microfinance Management System",
+    Amharic: "የማይክሮፋይናንስ አስተዳደር ስርዓት",
+    Oromiffa: "Sirna Bulchiinsa Maayikiroo Faayinaansii",
+    Tigrigna: "ስርዓት ምምሕዳር ማይክሮ ፋይናንስ",
+  }[language] || "Microfinance Management System";
+
   return (
     <div style={styles.navbarContainer}>
       {/* 💡 ሚዲያ ኳሪው እንዲያገኘው className="navbar-text" ጨምረናል */}
       <span style={styles.blink} className="navbar-text">
-        Microfinance Management System
+        {title}
       </span>
 
       <style>
@@ -60,7 +69,7 @@ export default function Navbar() {
 
 const styles = {
   navbarContainer: {
-    background: "#2c3e50",
+    background: "#202923",
     padding: "15px",
     display: "flex",
     justifyContent: "center",
@@ -77,6 +86,7 @@ const styles = {
   blink: {
     fontSize: "24px", 
     fontWeight: "bold",
-    animation: "glowBlink 2.5s infinite ease-in-out",
+    color: "#e8f2ec",
+    textShadow: "none",
   },
 };

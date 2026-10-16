@@ -1,9 +1,12 @@
-// filepath: d:\micro-finance\client\src\pages\Profit.js
 import React, { useEffect, useState } from "react";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import API from "../services/api";
 import "./ProfitDistribution.css";
 
-export default function ProfitDistribution({ isSidebarOpen = true }) {
+export default function ProfitDistribution() {
+  const { language, isMobile } = useAppContext();
+  const t = (text) => translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -18,44 +21,27 @@ export default function ProfitDistribution({ isSidebarOpen = true }) {
   const [netProfit, setNetProfit] = useState(0);
   const [totalShares, setTotalShares] = useState(0);
   const [availableYears, setAvailableYears] = useState([]);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const resize = () => setIsMobile(window.innerWidth <= 768);
-
-    window.addEventListener("resize", resize);
-    return () => window.removeEventListener("resize", resize);
-  }, []);
-
-  useEffect(() => {
-    fetchDividendCalculationData();
-  }, [selectedYear]);
 
   const getArray = (response) => {
     if (Array.isArray(response)) return response;
     return response?.data || response?.reports || [];
   };
 
-const findDividendHistory = (member, history = dividendHistory) => {
-  return history
-    .filter((item) => {
-      const sameYear =
-        Number(item.year) === Number(selectedYear);
-
-      const sameMember =
-        String(item.memberId || "") ===
-          String(member.memberId || "") ||
-        String(item.employeeId?._id || item.employeeId || "") ===
-          String(member._id || "");
-
-      return sameYear && sameMember;
-    })
-    .sort(
-      (a, b) =>
-        new Date(b.updatedAt || b.createdAt || 0) -
-        new Date(a.updatedAt || a.createdAt || 0)
-    )[0];
-};
+  const findDividendHistory = (member, history = dividendHistory) =>
+    history
+      .filter((item) => {
+        const sameYear = Number(item.year) === Number(selectedYear);
+        const sameMember =
+          String(item.memberId || "") === String(member.memberId || "") ||
+          String(item.employeeId?._id || item.employeeId || "") ===
+            String(member._id || "");
+        return sameYear && sameMember;
+      })
+      .sort(
+        (first, second) =>
+          new Date(second.updatedAt || second.createdAt || 0) -
+          new Date(first.updatedAt || first.createdAt || 0)
+      )[0];
 
   const calculateMemberData = (
     member,
@@ -67,34 +53,26 @@ const findDividendHistory = (member, history = dividendHistory) => {
     const yearDeposits = deposits.filter(
       (deposit) => String(deposit.year) === String(selectedYear)
     );
-
     const memberDeposits = yearDeposits.filter((deposit) => {
-      const depositEmployeeId = String(
+      const employeeId = String(
         deposit.employeeId?._id || deposit.employeeId || ""
       );
-
-      const depositMemberId = String(
+      const memberId = String(
         deposit.memberId || deposit.employeeId?.memberId || ""
       );
-
       return (
-        depositEmployeeId === String(member._id) ||
-        (member.memberId &&
-          depositMemberId === String(member.memberId))
+        employeeId === String(member._id) ||
+        (member.memberId && memberId === String(member.memberId))
       );
     });
-
     const memberShares = memberDeposits.reduce(
       (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
       0
     );
-
     const calculatedDividend =
       sharesTotal > 0
         ? (memberShares / sharesTotal) * Number(profitTotal || 0)
         : 0;
-
-    const historyItem = findDividendHistory(member, history);
 
     return {
       ...member,
@@ -105,50 +83,36 @@ const findDividendHistory = (member, history = dividendHistory) => {
       ownershipPercent:
         sharesTotal > 0 ? (memberShares / sharesTotal) * 100 : 0,
       calculatedDividend,
-      historyItem,
+      historyItem: findDividendHistory(member, history),
     };
   };
 
   const fetchDividendCalculationData = async () => {
     try {
-      const [employeesRes, depositsRes, financialRes, dividendRes] =
+      const [employeesResponse, depositsResponse, reportsResponse, historyResponse] =
         await Promise.all([
           API.get("/employees"),
           API.get("/deposits"),
           API.get(`/financial-reports?year=${selectedYear}`),
           API.get(`/dividends?year=${selectedYear}`),
         ]);
-
-      const allEmployees = getArray(employeesRes.data);
-      const allDeposits = getArray(depositsRes.data);
-      const financialReports = getArray(financialRes.data);
-      const history = getArray(dividendRes.data);
-
+      const allEmployees = getArray(employeesResponse.data);
+      const allDeposits = getArray(depositsResponse.data);
+      const reports = getArray(reportsResponse.data);
+      const history = getArray(historyResponse.data);
       const yearDeposits = allDeposits.filter(
         (deposit) => String(deposit.year) === String(selectedYear)
       );
-
       const shares = yearDeposits.reduce(
         (sum, deposit) => sum + Number(deposit.sharedPurchase || 0),
         0
       );
-
-      const profit = financialReports
-        .filter(
-          (report) => Number(report.year) === Number(selectedYear)
-        )
-        .reduce(
-          (sum, report) => sum + Number(report.netProfit || 0),
-          0
-        );
-
+      const profit = reports
+        .filter((report) => Number(report.year) === Number(selectedYear))
+        .reduce((sum, report) => sum + Number(report.netProfit || 0), 0);
       const years = [
-        ...new Set(
-          financialReports
-            .map((report) => Number(report.year))
-            .filter(Boolean)
-        ),
-      ].sort((a, b) => b - a);
+        ...new Set(reports.map((report) => Number(report.year)).filter(Boolean)),
+      ].sort((first, second) => second - first);
 
       setEmployees(allEmployees);
       setFilteredEmployees(allEmployees);
@@ -160,46 +124,38 @@ const findDividendHistory = (member, history = dividendHistory) => {
       if (selectedMember) {
         const updatedMember = allEmployees.find(
           (employee) =>
-            String(employee.memberId) ===
-            String(selectedMember.memberId)
+            String(employee.memberId) === String(selectedMember.memberId)
         );
-
         if (updatedMember) {
           setSelectedMember(
-            calculateMemberData(
-              updatedMember,
-              allDeposits,
-              shares,
-              profit,
-              history
-            )
+            calculateMemberData(updatedMember, allDeposits, shares, profit, history)
           );
         }
       }
-    } catch (err) {
-      console.error("Profit data error:", err);
+    } catch (error) {
+      console.error("Profit data error:", error);
       setNetProfit(0);
       setTotalShares(0);
       setDividendHistory([]);
     }
   };
 
-  const handleSearch = (e) => {
-    const value = e.target.value;
+  useEffect(() => {
+    fetchDividendCalculationData();
+  }, [selectedYear]);
 
+  const handleSearch = (event) => {
+    const value = event.target.value;
     setSearchTerm(value);
     setShowDropdown(true);
-
     setFilteredEmployees(
       employees.filter((employee) => {
-        const name =
-          `${employee.firstName || ""} ${
-            employee.lastName || ""
-          }`.toLowerCase();
-
+        const fullName = `${employee.firstName || ""} ${
+          employee.lastName || ""
+        }`.toLowerCase();
         return (
           String(employee.memberId || "").includes(value) ||
-          name.includes(value.toLowerCase())
+          fullName.includes(value.toLowerCase())
         );
       })
     );
@@ -207,85 +163,53 @@ const findDividendHistory = (member, history = dividendHistory) => {
 
   const handleSelect = async (member) => {
     try {
-      const depositsRes = await API.get("/deposits");
-      const deposits = getArray(depositsRes.data);
-
-      setSelectedMember(
-        calculateMemberData(member, deposits)
-      );
-
+      const response = await API.get("/deposits");
+      setSelectedMember(calculateMemberData(member, getArray(response.data)));
       setShowDropdown(false);
       setSearchTerm("");
-    } catch (err) {
-      console.error("Member selection error:", err);
+    } catch (error) {
+      console.error("Member selection error:", error);
     }
   };
 
-const historyItem = selectedMember
-  ? findDividendHistory(selectedMember)
-  : null;
+  const historyItem = selectedMember
+    ? findDividendHistory(selectedMember)
+    : null;
+  const dividend = historyItem
+    ? Number(historyItem.remainingAmount ?? 0)
+    : Number(selectedMember?.calculatedDividend || 0);
+  const saving = Number(distribution.savingAmount || 0);
+  const shareMoney = Number(distribution.shareAmount || 0);
+  const extraShares = shareMoney / 500;
+  const totalDistributed = saving + shareMoney;
+  const remaining = Math.max(0, dividend - totalDistributed);
+  const isFullyDistributed =
+    Boolean(historyItem) && Number(historyItem.remainingAmount || 0) <= 0.01;
 
-const originalDividend = historyItem
-  ? Number(
-      historyItem.dividendAmount ??
-        selectedMember?.calculatedDividend ??
-        0
-    )
-  : Number(selectedMember?.calculatedDividend || 0);
+  const handleApprove = async () => {
+    if (!selectedMember) {
+      alert(t("Please select a member."));
+      return;
+    }
+    if (isFullyDistributed) {
+      alert(t("This member's dividend is already fully distributed."));
+      return;
+    }
+    if (totalDistributed <= 0) {
+      alert(t("Enter saving amount or share amount."));
+      return;
+    }
+    if (totalDistributed > dividend) {
+      alert(`Distribution cannot exceed ${dividend.toFixed(2)} ETB.`);
+      return;
+    }
+    if (shareMoney > 0 && shareMoney % 500 !== 0) {
+      alert(t("Share money must be a multiple of 500 ETB."));
+      return;
+    }
 
-const dividend = historyItem
-  ? Number(historyItem.remainingAmount ?? 0)
-  : originalDividend;
-
-const saving = Number(distribution.savingAmount || 0);
-const shareMoney = Number(distribution.shareAmount || 0);
-const extraShares = shareMoney / 500;
-const totalDistributed = saving + shareMoney;
-
-const remaining = Math.max(
-  0,
-  dividend - totalDistributed
-);
-
-// filepath: d:\micro-finance\client\src\pages\Profit.js
-
-const isFullyDistributed =
-  Boolean(historyItem) &&
-  Number(historyItem.remainingAmount || 0) <= 0.01;
-
-const handleApprove = async () => {
-  if (!selectedMember) {
-    alert("Please select a member.");
-    return;
-  }
-
- // filepath: d:\micro-finance\client\src\pages\Profit.js
-
-if (isFullyDistributed) {
-  alert("This member's dividend is already fully distributed.");
-  return;
-}
-
-  if (totalDistributed <= 0) {
-    alert("Enter saving amount or share amount.");
-    return;
-  }
-
-  if (totalDistributed > dividend) {
-    alert(`Distribution cannot exceed ${dividend.toFixed(2)} ETB.`);
-    return;
-  }
-
-  if (shareMoney > 0 && shareMoney % 500 !== 0) {
-    alert("Share money must be a multiple of 500 ETB.");
-    return;
-  }
-
-  try {
-    // Save distribution first.
-    const distributionResponse = await API.post(
-      "/profit-distributions",
-      {
+    try {
+      await API.post("/profit-distributions", {
         employeeId: selectedMember._id,
         memberId: selectedMember.memberId,
         year: Number(selectedYear),
@@ -295,114 +219,76 @@ if (isFullyDistributed) {
         distributedAmount: totalDistributed,
         remainingAmount: remaining,
         status: "approved",
+      });
+
+      if (saving > 0) {
+        await API.post("/deposits", {
+          employeeId: selectedMember._id,
+          memberId: selectedMember.memberId,
+          month: `Dividend-${Date.now()}`,
+          year: String(selectedYear),
+          normalSaving: saving,
+          voluntarySaving: 0,
+          sharedPurchase: 0,
+          registrationFee: 0,
+          latePenalty: 0,
+          depositForPurchase: 0,
+        });
       }
-    );
+      if (extraShares > 0) {
+        await API.post("/deposits", {
+          employeeId: selectedMember._id,
+          memberId: selectedMember.memberId,
+          month: `Dividend-Shares-${Date.now()}`,
+          year: String(selectedYear),
+          normalSaving: 0,
+          voluntarySaving: 0,
+          sharedPurchase: extraShares,
+          registrationFee: 0,
+          latePenalty: 0,
+          depositForPurchase: shareMoney,
+        });
+      }
 
-    // Save saving as a deposit.
-    if (saving > 0) {
-      await API.post("/deposits", {
-        employeeId: selectedMember._id,
-        memberId: selectedMember.memberId,
-        month: `Dividend-${Date.now()}`,
-        year: String(selectedYear),
-        normalSaving: saving,
-        voluntarySaving: 0,
-        sharedPurchase: 0,
-        registrationFee: 0,
-        latePenalty: 0,
-        depositForPurchase: 0,
-      });
+      alert(`✅ Distribution saved.\n${t("Remaining")}: ${remaining.toFixed(2)} ETB`);
+      setDistribution({ savingAmount: "", shareAmount: "" });
+      const historyResponse = await API.get(`/dividends?year=${selectedYear}`);
+      setDividendHistory(getArray(historyResponse.data));
+      await fetchDividendCalculationData();
+    } catch (error) {
+      console.error("Distribution save error:", error.response?.data || error.message);
+      alert(error.response?.data?.message || "Failed to save distribution ❌");
     }
+  };
 
-    // Save shares as a deposit.
-    if (extraShares > 0) {
-      await API.post("/deposits", {
-        employeeId: selectedMember._id,
-        memberId: selectedMember.memberId,
-        month: `Dividend-Shares-${Date.now()}`,
-        year: String(selectedYear),
-        normalSaving: 0,
-        voluntarySaving: 0,
-        sharedPurchase: extraShares,
-        registrationFee: 0,
-        latePenalty: 0,
-        depositForPurchase: shareMoney,
-      });
-    }
-
-    console.log(
-      "Saved distribution:",
-      distributionResponse.data
-    );
-
-    alert(
-      `✅ Distribution saved.\nRemaining: ${remaining.toFixed(2)} ETB`
-    );
-
-    setDistribution({
-      savingAmount: "",
-      shareAmount: "",
-    });
-
-    const updatedDividendRes = await API.get(
-  `/dividends?year=${selectedYear}`
-);
-
-setDividendHistory(getArray(updatedDividendRes.data));
-
-await fetchDividendCalculationData();
-  } catch (err) {
-    console.error(
-      "Distribution save error:",
-      err.response?.data || err.message
-    );
-
-    alert(
-      err.response?.data?.message ||
-        "Failed to save distribution ❌"
-    );
-  }
-};
-
-  const currentLeftMargin = isMobile
-    ? "0px"
-    : isSidebarOpen
-    ? "35px"
-    : "30px";
+  const currentLeftMargin = isMobile ? "0px" : "35px";
 
   return (
     <div
       className="pd-main-wrapper"
       style={{
         marginLeft: currentLeftMargin,
-        width: isMobile
-          ? "100%"
-          : `calc(100% - ${currentLeftMargin})`,
+        width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
       }}
     >
       <div className="pd-top-bar">
-        <h2>የትርፍ ክፍፍል</h2>
-        <p>
-          Search and select a member to distribute annual dividends.
-        </p>
-
+        <h2>{t("Dividend Distribution")}</h2>
+        <p>{t("Search and select a member to distribute annual dividends.")}</p>
         <div className="member-search-wrapper">
           <div className="search-container">
             <div className="search-box">
               <span className="search-icon">🔍</span>
-
               <input
                 type="text"
-                placeholder="Search member by Name or Member ID..."
+                placeholder={t("Search member by Name or Member ID...")}
                 value={searchTerm}
                 onChange={handleSearch}
                 onFocus={() => setShowDropdown(true)}
               />
             </div>
-
             {showDropdown && searchTerm && (
               <div className="dropdown">
-                {filteredEmployees.length > 0 ? (
+                {filteredEmployees.length ? (
                   filteredEmployees.map((employee) => (
                     <button
                       key={employee._id}
@@ -414,23 +300,14 @@ await fetchDividendCalculationData();
                         {employee.firstName?.charAt(0)}
                         {employee.lastName?.charAt(0)}
                       </span>
-
                       <span className="dropdown-member-info">
-                        <strong>
-                          {employee.firstName}{" "}
-                          {employee.lastName}
-                        </strong>
-
-                        <small>
-                          Member ID: {employee.memberId}
-                        </small>
+                        <strong>{employee.firstName} {employee.lastName}</strong>
+                        <small>{t("Member ID")}: {employee.memberId}</small>
                       </span>
                     </button>
                   ))
                 ) : (
-                  <div className="dropdown-empty">
-                    No member found
-                  </div>
+                  <div className="dropdown-empty">{t("No member found")}</div>
                 )}
               </div>
             )}
@@ -441,155 +318,65 @@ await fetchDividendCalculationData();
       {selectedMember ? (
         <div className="cards">
           <div className="year-card">
-            <h3>ዓመት ይምረጡ</h3>
-
+            <h3>{t("Select a year")}</h3>
             <select
               value={selectedYear}
-              onChange={(e) =>
-                setSelectedYear(Number(e.target.value))
-              }
+              onChange={(event) => setSelectedYear(Number(event.target.value))}
               className="year-select"
             >
-              {(availableYears.length
-                ? availableYears
-                : [selectedYear]
-              ).map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
+              {(availableYears.length ? availableYears : [selectedYear]).map((year) => (
+                <option key={year} value={year}>{year}</option>
               ))}
             </select>
           </div>
-
           <div className="member-card">
-            <h3>የአባል መረጃ</h3>
-
-            <div className="member-profile">
-              <img
-                src={
-                  selectedMember.photo ||
-                  selectedMember.profileImage ||
-                  selectedMember.image ||
-                  "/avator.jpg"
-                }
-                alt={selectedMember.fullName}
-                className="member-photo"
-              />
-
-              <div className="member-details">
-                <h2 className="member-name">
-                  {selectedMember.fullName}
-                </h2>
-
-                <p className="member-id">
-                  Member ID: {selectedMember.memberId}
-                </p>
-              </div>
-            </div>
+            <h3>{t("Member Information")}</h3>
+            <h2 className="member-name">{selectedMember.fullName}</h2>
+            <p className="member-id">{t("Member ID")}: {selectedMember.memberId}</p>
           </div>
-
           <div>
-            <h3>
-              ሊከፋፈል የሚገባው ትርፍ ({selectedYear})
-            </h3>
-
-            <h2>
-              {dividend.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{" "}
-              ETB
-            </h2>
-
-            <p>
-              Shares: {selectedMember.employeeShares} (
-              {selectedMember.ownershipPercent.toFixed(2)}%)
-            </p>
-
-            <p>
-              Net Profit: {netProfit.toLocaleString()} ETB
-            </p>
-
-            <p>Total Shares: {totalShares}</p>
+            <h3>{t("Profit to be distributed")} ({selectedYear})</h3>
+            <h2>{dividend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETB</h2>
+            <p>{t("Shares")}: {selectedMember.employeeShares} ({selectedMember.ownershipPercent.toFixed(2)}%)</p>
+            <p>{t("Net Profit")}: {netProfit.toLocaleString()} ETB</p>
+            <p>{t("Total Shares")}: {totalShares}</p>
           </div>
-
           <div>
-            <h3>የክፍፍል ስርጭት</h3>
-
+            <h3>{t("Dividend Distribution")}</h3>
             <input
               type="number"
               min="0"
-              placeholder="Saving"
+              placeholder={t("Saving")}
               value={distribution.savingAmount}
               disabled={isFullyDistributed}
-              onChange={(e) =>
-                setDistribution((prev) => ({
-                  ...prev,
-                  savingAmount: e.target.value,
-                }))
-              }
+              onChange={(event) => setDistribution((previous) => ({ ...previous, savingAmount: event.target.value }))}
             />
-
             <input
               type="number"
               min="0"
               step="500"
-              placeholder="Share money (500 = 1 share)"
+              placeholder={t("Share money (500 = 1 share)")}
               value={distribution.shareAmount}
               disabled={isFullyDistributed}
-              onChange={(e) =>
-                setDistribution((prev) => ({
-                  ...prev,
-                  shareAmount: e.target.value,
-                }))
-              }
+              onChange={(event) => setDistribution((previous) => ({ ...previous, shareAmount: event.target.value }))}
             />
-
             <div className="distribution-summary">
-              <p>
-                <strong>Dividend:</strong>{" "}
-                {dividend.toFixed(2)} ETB
-              </p>
-
-              <p>
-                <strong>Saving:</strong>{" "}
-                {saving.toFixed(2)} ETB
-              </p>
-
-              <p>
-                <strong>Share Purchase:</strong>{" "}
-                {shareMoney.toFixed(2)} ETB
-              </p>
-
-              <p>
-                <strong>New Shares:</strong>{" "}
-                {extraShares}
-              </p>
+              <p><strong>{t("Dividend")}:</strong> {dividend.toFixed(2)} ETB</p>
+              <p><strong>{t("Saving:")}</strong> {saving.toFixed(2)} ETB</p>
+              <p><strong>{t("Share Purchase:")}</strong> {shareMoney.toFixed(2)} ETB</p>
+              <p><strong>{t("New Shares:")}</strong> {extraShares}</p>
             </div>
           </div>
-
           <div>
-            <h3>ማጠቃለያ</h3>
-
-            <p>
-              Remaining: {remaining.toFixed(2)} ETB
-            </p>
-
-        
-
-<button
-  type="button"
-  onClick={handleApprove}
-  disabled={isFullyDistributed}
->
-  {isFullyDistributed
-    ? "Already distributed"
-    : "አጽድቅ"}
-</button>
+            <h3>{t("Summary")}</h3>
+            <p>{t("Remaining")}: {remaining.toFixed(2)} ETB</p>
+            <button type="button" onClick={handleApprove} disabled={isFullyDistributed}>
+              {isFullyDistributed ? t("Already distributed") : t("Approve")}
+            </button>
           </div>
         </div>
       ) : (
-        <p>Select a member</p>
+        <p>{t("Select a member")}</p>
       )}
     </div>
   );

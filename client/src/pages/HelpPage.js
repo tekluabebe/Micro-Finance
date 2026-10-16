@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import {
   FaBullhorn,
   FaBookOpen,
@@ -18,6 +20,8 @@ import {
 } from "react-icons/fa";
 
 export default function HelpPage({ isSidebarOpen = true }) {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
@@ -69,7 +73,7 @@ const handleLogin = async (e) => {
       window.location.href = "/dashboard";
     }
   } catch (err) {
-    alert(err.response?.data?.message || "Login failed");
+    alert(err.response?.data?.message || t("Login failed"));
   }
 };
 const [sendingRequest, setSendingRequest] = useState(false);
@@ -106,8 +110,8 @@ const handleSupportAuth = async (e) => {
     
     alert(
       supportMode === "login"
-        ? "Support account login successful."
-        : "Support account created successfully."
+        ? t("Support account login successful.")
+        : t("Support account created successfully.")
     );
   } catch (error) {
     console.error("Support request error:", error.response?.data || error);
@@ -126,7 +130,7 @@ const handleSendSupportRequest = async (e) => {
   e.preventDefault();
 
   if (!supportForm.recipientEmail || !supportForm.question.trim()) {
-    alert("Please enter the recipient email and your question.");
+    alert(t("Please enter the recipient email and your question."));
     return;
   }
 
@@ -146,7 +150,7 @@ await API.post(
   }
 );
 
-    alert("Your support request was sent successfully.");
+    alert(t("Your support request was sent successfully."));
 
     setSupportForm((prev) => ({
       ...prev,
@@ -157,7 +161,7 @@ await API.post(
   } catch (error) {
     alert(
       error.response?.data?.message ||
-        "Unable to send the support request."
+        t("Unable to send the support request.")
     );
   } finally {
     setSendingRequest(false);
@@ -248,7 +252,7 @@ useEffect(() => {
 // Add handler for sending response (Admin)
 const handleSendResponse = async (requestId) => {
   if (!responseText.trim()) {
-    alert("Please enter a response message");
+    alert(t("Please enter a response message"));
     return;
   }
 
@@ -267,7 +271,7 @@ const handleSendResponse = async (requestId) => {
     const data = await res.json();
 
     if (res.ok) {
-      alert("Response sent successfully ✅");
+      alert(t("Response sent successfully ✅"));
       setResponseText("");
       setSelectedRequestId(null);
       
@@ -280,11 +284,11 @@ const handleSendResponse = async (requestId) => {
       setUnreadRequestsCount(prev => Math.max(0, prev - 1));
       
     } else {
-      alert(data.message || "Failed to send response");
+      alert(data.message || t("Failed to send response"));
     }
   } catch (err) {
     console.error("Error:", err);
-    alert("Error sending response");
+    alert(t("Error sending response"));
   }
 };
 
@@ -309,7 +313,7 @@ const handleMarkResponseRead = async (responseId) => {
       // 🔥 Decrease the badge count
       setUnreadResponsesCount(prev => Math.max(0, prev - 1));
       
-      alert("✅ Marked as read");
+      alert(t("✅ Marked as read"));
     }
   } catch (err) {
     console.error("Error:", err);
@@ -326,7 +330,7 @@ useEffect(() => {
   const error = params.get("error");
 
   if (error) {
-    alert("Google login failed. Please try again.");
+    alert(t("Google login failed. Please try again."));
     return;
   }
 
@@ -366,76 +370,55 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
 
   const faqs = [
     {
-      q: "ለምንድነው ውዝፍ የማይታየው?",
-      a: "ብድሩ ከተወሰደ ገና 2 ወር ካልሞላው የዕፎይታ ጊዜ ስለሆነ ውዝፍ አይታይም።",
+      q: "Why is an overdue amount not showing?",
+      a: "The loan has a two-month grace period, so overdue amounts do not appear until it ends.",
     },
     {
-      q: "የወር ቁጠባዬን ከጨመርኩ ብድር ማግኘት እችላለሁ?",
-      a: "አዎ፣ ሲስተሙ ብድር የሚፈቅደው በወቅታዊ የቁጠባ መጠንዎ 3 እጥፍ ስለሆነ ቁጠባዎ ሲጨምር የመበደር አቅምዎም ይጨምራል።",
+      q: "Can increasing my monthly savings help me qualify for a loan?",
+      a: "Yes. The system allows a loan up to three times your current savings, so higher savings increase your borrowing limit.",
     },
     {
-      q: "የይለፍ ቃሌን (Password) ብረሳ ምን ማድረግ አለኝ?",
-      a: "ወደ ሲስተም አስተዳዳሪው (Admin) በመሄድ ፓስዎርድዎ እንዲቀየር መጠየቅ ይችላሉ።",
+      q: "What should I do if I forget my password?",
+      a: "Contact the system administrator and request a password reset.",
     },
     {
-      q: "ሪፖርት እንዴት ማውረድ እችላለሁ?",
-      a: "ሪፖርት ገጽ ላይ በመግባት የፈለጉትን ወር እና አመት መርጠው Download PDF የሚለውን ቁልፍ ይጫኑ።",
+      q: "How can I download a report?",
+      a: "Open Reports, select a month and year, then choose Download PDF.",
     },
   ];
 
-  const searchableText = `
-    የብድር አጠቃቀም መመሪያ
-    FAQ
-    የደህንነት መመሪያ
-    Quick Actions
-    Technical Support
-    Support Hours
-    Dashboard Reports Settings
-    Teklu Abebe Temitme
-  `.toLowerCase();
-
-  const showLoanGuide =
-    !searchTerm ||
-    "የብድር አጠቃቀም መመሪያ loan payment".includes(
-      searchTerm.toLowerCase()
-    );
-
-  const showFaq =
-    !searchTerm ||
-    "faq ተደጋጋሚ ጥያቄ password report".includes(
-      searchTerm.toLowerCase()
-    );
-
-  const showSecurity =
-    !searchTerm ||
-    "የደህንነት መመሪያ security password logout".includes(
-      searchTerm.toLowerCase()
-    );
-
-  const showQuickActions =
-    !searchTerm ||
-    "quick actions dashboard reports settings".includes(
-      searchTerm.toLowerCase()
-    );
-
-  const showSupport =
-    !searchTerm ||
-    "technical support admin teklu email phone".includes(
-      searchTerm.toLowerCase()
-    );
-
-  const showHours =
-    !searchTerm ||
-    "support hours ሰኞ አርብ ቅዳሜ".includes(searchTerm.toLowerCase());
-
-  const hasResults =
-    showLoanGuide ||
-    showFaq ||
-    showSecurity ||
-    showQuickActions ||
-    showSupport ||
-    showHours ||
-    searchableText.includes(searchTerm.toLowerCase());
+  const helpMatches = (...terms) => {
+    const query = searchTerm.trim().toLowerCase();
+    return !query || terms.some((term) => t(term).toLowerCase().includes(query));
+  };
+  const showLoanGuide = helpMatches(
+    "Loan Usage Guide",
+    "Select an employee first to register a loan.",
+    "Enter the share percentage correctly.",
+    "Loan repayments begin in the third month; the first two months are a grace period.",
+    "Late payments incur an automatic 50 ETB monthly penalty."
+  );
+  const showFaq = helpMatches("FAQ", ...faqs.flatMap((item) => [item.q, item.a]));
+  const showSecurity = helpMatches(
+    "Security Guide",
+    "Always log out when you finish your work.",
+    "Never share your password with anyone.",
+    "Do not try to change system settings if you encounter a problem."
+  );
+  const showQuickActions = helpMatches(
+    "Quick Actions",
+    "Use these links to complete common tasks:",
+    "View the main information",
+    "Download report PDFs",
+    "Adjust penalties"
+  );
+  const showSupport = helpMatches(
+    "Technical Support",
+    "Contact Technical Support",
+    "System Status: Online"
+  );
+  const showHours = helpMatches("Support Hours", "Monday - Friday:", "Saturday:", "Sunday:");
+  const hasResults = showLoanGuide || showFaq || showSecurity || showQuickActions || showSupport || showHours;
  
   return (
     <div className="help-page-container" style={dynamicContainerStyle}>
@@ -447,7 +430,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   onClick={() => setShowRequestsList(!showRequestsList)}
                   style={styles.supportButton}
                 >
-                  📧 Support Requests
+                  📧 {t("Support Requests")}
                   {supportRequests.length > 0 && (
                     <span style={styles.badge}>{supportRequests.length}</span>
                   )}
@@ -455,10 +438,10 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
 
           {showRequestsList && (
             <div style={styles.requestsPanel}>
-              <h3 style={styles.panelTitle}>Support Requests</h3>
+              <h3 style={styles.panelTitle}>{t("Support Requests")}</h3>
               
               {supportRequests.length === 0 ? (
-                <p style={styles.emptyMessage}>No pending requests</p>
+                <p style={styles.emptyMessage}>{t("No pending requests")}</p>
               ) : (
                  supportRequests.map(request => (
                   <div key={request._id} style={styles.requestCard}>
@@ -472,18 +455,18 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                     </div>
 
                     <p style={styles.requestEmail}>
-                      <strong>Email:</strong> {request.senderEmail}
+                      <strong>{t("Email:")}</strong> {request.senderEmail}
                     </p>
 
                     <p style={styles.requestQuestion}>
-                      <strong>Question:</strong> {request.question}
+                      <strong>{t("Question:")}</strong> {request.question}
                     </p>
                      {selectedRequestId === request._id ? (
                       <div style={styles.responseForm}>
                         <textarea
                           value={responseText}
                           onChange={(e) => setResponseText(e.target.value)}
-                          placeholder="Type your response here..."
+                          placeholder={t("Type your response here...")}
                           style={styles.responseTextarea}
                         />
                         <div style={styles.responseActions}>
@@ -491,7 +474,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                             onClick={() => handleSendResponse(request._id)}
                             style={styles.sendBtn}
                           >
-                            Send ✓
+                            {t("Send")} ✓
                           </button>
                           <button
                             onClick={() => {
@@ -500,7 +483,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                             }}
                             style={styles.cancelBtn}
                           >
-                            Cancel ✕
+                            {t("Cancel")} ✕
                           </button>
                                   </div>
                       </div>
@@ -509,7 +492,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                         onClick={() => setSelectedRequestId(request._id)}
                         style={styles.replyBtn}
                       >
-                        Reply →
+                        {t("Reply")} →
                       </button>
                     )}
                   </div>
@@ -527,7 +510,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
             onClick={() => setShowResponsesList(!showResponsesList)}
             style={styles.supportButton}
           >
-            💬 Responses
+            💬 {t("Responses")}
             {supportResponses.length > 0 && (
               <span style={styles.badge}>{supportResponses.length}</span>
             )}
@@ -535,33 +518,33 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
 
           {showResponsesList && (
             <div style={styles.responsesPanel}>
-              <h3 style={styles.panelTitle}>Your Responses</h3>
+              <h3 style={styles.panelTitle}>{t("Your Responses")}</h3>
               
               {supportResponses.length === 0 ? (
-                <p style={styles.emptyMessage}>No responses yet</p>
+                <p style={styles.emptyMessage}>{t("No responses yet")}</p>
               ) : (
                  supportResponses.map(resp => (
                   <div key={resp._id} style={styles.responseCard}>
                     <div style={styles.responseHeader}>
-                      <strong style={{ color: "#059669" }}>Response Received</strong>
+                      <strong style={{ color: "#059669" }}>{t("Response Received")}</strong>
                       <span style={styles.timestamp}>
                         {new Date(resp.createdAt).toLocaleDateString()}
                       </span>
                     </div>
 
                     <p style={styles.originalQuestion}>
-                      <strong>Your Question:</strong> {resp.originalQuestion}
+                      <strong>{t("Your Question:")}</strong> {resp.originalQuestion}
                     </p>
 
                     <p style={styles.responseMessage}>
-                      <strong>Response:</strong> {resp.response}
+                      <strong>{t("Response:")}</strong> {resp.response}
                     </p>
 
                     <button
                       onClick={() => handleMarkResponseRead(resp._id)}
                       style={styles.markReadBtn}
                     >
-                      Mark as Read ✓
+                      {t("Mark as Read")} ✓
                     </button>
                   </div>
                       ))
@@ -589,16 +572,16 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
         <div className="hero-content">
           <div className="hero-logo">
             <FaRegSmile />
-            <span>Cooperative Help Center</span>
+            <span>{t("Cooperative Help Center")}</span>
           </div>
 
-          <h1>Help Center</h1>
+          <h1>{t("Help Center")}</h1>
 
           <div className="search-box">
             <FaSearch />
             <input
               type="text"
-              placeholder="Search"
+              placeholder={t("Search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -608,18 +591,15 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
 
       {/* INTRO SECTION */}
       <section className="help-intro">
-        <h2>Need help? We’ve got your back.</h2>
-        <p>
-          ስለ ብድር፣ ቁጠባ፣ ሪፖርት፣ ፓስዎርድ እና ቴክኒካል ድጋፍ
-          የሚፈልጉትን መረጃ እዚህ ያግኙ።
-        </p>
+        <h2>{t("Need help? We’ve got your back.")}</h2>
+        <p>{t("Find answers about loans, savings, reports, passwords, and technical support here.")}</p>
       </section>
 
       {/* HELP CARDS */}
       <section className="help-cards-section">
         {!hasResults ? (
           <div className="no-results">
-            No help topics found for “{searchTerm}”.
+            {t("No help topics found for")} “{searchTerm}”.
           </div>
         ) : (
           <div className="help-grid">
@@ -630,19 +610,13 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaBookOpen />
                 </div>
 
-                <h3>የብድር አጠቃቀም መመሪያ</h3>
+                <h3>{t("Loan Usage Guide")}</h3>
 
                 <ul className="card-list">
-                  <li>ብድር ለመመዝገብ መጀመሪያ ሰራተኛ መምረጥ አለብዎት።</li>
-                  <li>የድርሻ መጠን (%) በትክክል ያስገቡ።</li>
-                  <li>
-                    ብድሩ በገባ በ3ኛው ወር ክፍያ ይጀምራል
-                    (2 ወር የዕፎይታ ጊዜ አለው)።
-                  </li>
-                  <li>
-                    የመክፈያ ጊዜው ካለፈ ሲስተሙ በወር 50 ብር
-                    ቅጣት በራሱ ያሰላል።
-                  </li>
+                  <li>{t("Select an employee first to register a loan.")}</li>
+                  <li>{t("Enter the share percentage correctly.")}</li>
+                  <li>{t("Loan repayments begin in the third month; the first two months are a grace period.")}</li>
+                  <li>{t("Late payments incur an automatic 50 ETB monthly penalty.")}</li>
                 </ul>
               </div>
             )}
@@ -654,15 +628,15 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaInfoCircle />
                 </div>
 
-                <h3>FAQ (ተደጋጋሚ ጥያቄዎች)</h3>
+                <h3>{t("FAQ")}</h3>
 
                 <div className="faq-scroll">
                   {faqs.map((item, index) => (
                     <div className="faq-item" key={index}>
-                      <strong>ጥያቄ:</strong> {item.q}
+                      <strong>{t("Question:")}</strong> {t(item.q)}
                       <br />
                       <span>
-                        <strong>መልስ:</strong> {item.a}
+                        <strong>{t("Answer:")}</strong> {t(item.a)}
                       </span>
                     </div>
                   ))}
@@ -677,15 +651,12 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaShieldAlt />
                 </div>
 
-                <h3>የደህንነት መመሪያ</h3>
+                <h3>{t("Security Guide")}</h3>
 
                 <ul className="card-list">
-                  <li>ስራዎን ሲጨርሱ ሁልጊዜ Logout ማድረጉን አይርሱ።</li>
-                  <li>የይለፍ ቃልዎን (Password) ለማንም አያጋሩ።</li>
-                  <li>
-                    ሲስተሙ ላይ ችግር ካጋጠመዎት ራጅስትሪውን
-                    ለመቀየር አይሞክሩ።
-                  </li>
+                  <li>{t("Always log out when you finish your work.")}</li>
+                  <li>{t("Never share your password with anyone.")}</li>
+                  <li>{t("Do not try to change system settings if you encounter a problem.")}</li>
                 </ul>
               </div>
             )}
@@ -697,21 +668,21 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaKeyboard />
                 </div>
 
-                <h3>Quick Actions</h3>
+                <h3>{t("Quick Actions")}</h3>
 
                 <p className="card-description">
-                  ለፈጣን ስራ እነዚህን ይጠቀሙ፡
+                  {t("Use these links to complete common tasks:")}
                 </p>
 
                 <ul className="card-list">
                   <li>
-                    <strong>Dashboard:</strong> ዋናውን መረጃ ለማየት
+                    <strong>{t("Dashboard")}:</strong> {t("View the main information")}
                   </li>
                   <li>
-                    <strong>Reports:</strong> የሪፖርት ፒዲኤፍ (PDF) ለማውረድ
+                    <strong>{t("Reports")}:</strong> {t("Download report PDFs")}
                   </li>
                   <li>
-                    <strong>Settings:</strong> ቅጣቶችን ለማስተካከል
+                    <strong>{t("Settings")}:</strong> {t("Adjust penalties")}
                   </li>
                 </ul>
               </div>
@@ -724,31 +695,31 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaHeadset />
                 </div>
 
-                <h3>Technical Support</h3>
+                <h3>{t("Technical Support")}</h3>
 
                 <div className="support-contact">
                   <p>
-                    <strong>Admin:</strong> Teklu Abebe Temitme
+                    <strong>{t("Admin")}:</strong> Teklu Abebe Temitme
                   </p>
 
                   <p>
-                    <strong>Email:</strong>{" "}
+                    <strong>{t("Email:")}</strong>{" "}
                     <button
   type="button"
   className="support-contact-link"
   onClick={() => setShowSupportModal(true)}
 >
-  Contact Technical Support
+  {t("Contact Technical Support")}
 </button>
                   </p>
 
                   <p>
-                    <strong>Phone:</strong>{" "}
+                    <strong>{t("Phone") }:</strong>{" "}
                     <a href="tel:+251905698140">+251905698140</a>
                   </p>
                 </div>
 
-                <div className="status-badge">System Status: Online</div>
+                <div className="status-badge">{t("System Status: Online")}</div>
               </div>
             )}
 
@@ -759,17 +730,17 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
                   <FaClock />
                 </div>
 
-                <h3>Support Hours</h3>
+                <h3>{t("Support Hours")}</h3>
 
                 <ul className="card-list">
                   <li>
-                    <strong>ሰኞ - አርብ:</strong> ከጠዋቱ 2:00 - 11:00
+                    <strong>{t("Monday - Friday:")}</strong> 2:00 - 11:00
                   </li>
                   <li>
-                    <strong>ቅዳሜ:</strong> ከጠዋቱ 2:00 - 6:00
+                    <strong>{t("Saturday:")}</strong> 2:00 - 6:00
                   </li>
                   <li>
-                    <strong>እሁድ:</strong> ዝግ ነው
+                    <strong>{t("Sunday:")}</strong> {t("Closed")}
                   </li>
                 </ul>
               </div>
@@ -788,19 +759,19 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
         <>
           <h2>
             {supportMode === "login"
-              ? "Support Login"
-              : "Create Support Account"}
+              ? t("Support Login")
+                : t("Create Support Account")}
           </h2>
 
           <p className="support-modal-description">
-            Use a support account to contact the technical support team.
+            {t("Use a support account to contact the technical support team.")}
           </p>
 
           <form onSubmit={handleSupportAuth}>
             {supportMode === "register" && (
               <input
                 name="name"
-                placeholder="Full name"
+                placeholder={t("Full name")}
                 value={supportForm.name}
                 onChange={handleSupportChange}
                 required
@@ -810,7 +781,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
             <input
               type="email"
               name="email"
-              placeholder="Email address"
+              placeholder={t("Email address")}
               value={supportForm.email}
               onChange={handleSupportChange}
               required
@@ -819,14 +790,14 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
             <input
               type="password"
               name="password"
-              placeholder="Password"
+              placeholder={t("Password")}
               value={supportForm.password}
               onChange={handleSupportChange}
               required
             />
 
             <button type="submit" className="support-primary-btn">
-              {supportMode === "login" ? "Login" : "Create Account"}
+              {supportMode === "login" ? t("Login") : t("Create Account")}
             </button>
           </form>
 
@@ -835,7 +806,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
             className="google-support-btn"
             onClick={handleGoogleLogin}
           >
-            <FaGoogle /> Continue with Google
+            <FaGoogle /> {t("Continue with Google")}
           </button>
 
           <button
@@ -848,29 +819,29 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
             }
           >
             {supportMode === "login"
-              ? "Create a support account"
-              : "Already have an account? Login"}
+              ? t("Create a support account")
+              : t("Already have an account? Login")}
           </button>
         </>
       ) : (
         <>
-          <h2>Contact Technical Support</h2>
+          <h2>{t("Contact Technical Support")}</h2>
 
           <form onSubmit={handleSendSupportRequest}>
-           <label>Recipient email</label>
+           <label>{t("Recipient email")}</label>
             <input
               type="email"
               name="recipientEmail"
-              placeholder="Enter support team email"
+              placeholder={t("Enter support team email")}
               value={supportForm.recipientEmail}
               onChange={handleSupportChange}
               required
             />
 
-            <label>Your question</label>
+            <label>{t("Your question")}</label>
             <textarea
               name="question"
-              placeholder="Describe your question or problem..."
+              placeholder={t("Describe your question or problem...")}
               value={supportForm.question}
               onChange={handleSupportChange}
               rows="6"
@@ -883,7 +854,7 @@ const userRole = localStorage.getItem("userRole")?.toLowerCase();
               disabled={sendingRequest}
             >
               <FaPaperPlane />
-              {sendingRequest ? "Sending..." : "Send Request"}
+              {sendingRequest ? t("Sending...") : t("Send Request")}
             </button>
           </form>
         </>

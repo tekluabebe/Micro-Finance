@@ -5,8 +5,12 @@ import { saveAs } from "file-saver";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Chart from "chart.js/auto";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 // 💡 ከ App.js የሚመጣውን 'isSidebarOpen' በ props ተቀብለናል
 export default function Employees({ isSidebarOpen = true }) {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -467,7 +471,7 @@ const barInstance = useRef(null);
     fontWeight: "700",
     marginBottom: "20px"
   }}
->Member Management</h2>
+>{t("Member Management")}</h2>
      <div className="emp-actions-bar" style={dynamicActionBarStyle}>
   {!isMember && (
     <button
@@ -482,10 +486,10 @@ const barInstance = useRef(null);
       style={styles.btnStyle}
     >
       {showForm
-        ? "Close Form"
+        ? t("Close Form")
         : editingId
-        ? "Edit Member"
-        : "Register Member"}
+        ? t("Edit Member")
+        : t("Register Member")}
     </button>
   )}
 
@@ -501,7 +505,7 @@ const barInstance = useRef(null);
 
   <input
     type="text"
-    placeholder="Search Member by Name, Member ID or Phone..."
+    placeholder={t("Search Member by Name, Member ID or Phone...")}
     value={search}
     onChange={(e) => setSearch(e.target.value)}
     className="emp-search-input"
@@ -541,7 +545,7 @@ const barInstance = useRef(null);
     color: darkMode ? "#000" : "#fff"
   }}
 >
-  {darkMode ? "☀ Light Mode" : "🌙 Dark Mode"}
+  {darkMode ? `☀ ${t("Light Mode")}` : `🌙 ${t("Dark Mode")}`}
 </button>
 </div>
 {!isMember && showForm && (
@@ -562,16 +566,16 @@ const barInstance = useRef(null);
   ...styles.sectionTitle,
   color: theme.text,
   borderBottom: `2px solid ${theme.primary}`
-}}>Login & Basic Info</h3>
+}}>{t("Login & Basic Info")}</h3>
       <div className="emp-form-grid" style={dynamicGridStyle}>
         <div>
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Member ID (Username)</label>
+}}>{t("Member ID (Username)")}</label>
 <input
   name="memberId"
-  placeholder="Member ID"
+  placeholder={t("Member ID")}
   value={formData.memberId}
   onChange={handleChange}
   disabled={editingId}
@@ -586,7 +590,7 @@ const barInstance = useRef(null);
 />
         </div>
 <div>
-  <label style={styles.labelStyle}>Birth Date</label>
+  <label style={styles.labelStyle}>{t("Birth Date")}</label>
   <input
     type="date"
     name="birthDate"
@@ -597,7 +601,7 @@ const barInstance = useRef(null);
 </div>
 
 <div>
-  <label style={styles.labelStyle}>Age</label>
+  <label style={styles.labelStyle}>{t("Age")}</label>
 <input
   type="number"
   name="age"
@@ -621,16 +625,16 @@ const barInstance = useRef(null);
             <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Marital Status</label>
+}}>{t("Marital Status")}</label>
             <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}>
-              <option value="">Marital Status</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
+              <option value="">{t("Marital Status")}</option>
+              <option value="Single">{t("Single")}</option>
+              <option value="Married">{t("Married")}</option>
             </select>
           </div>
         )}
@@ -638,8 +642,8 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Login Password</label>
-          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} style={{
+}}>{t("Login Password")}</label>
+          <input type="password" name="password" placeholder={t("Password")} value={formData.password} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -650,8 +654,8 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>First Name</label>
-          <input name="firstName" placeholder="First Name" value={formData.firstName} onChange={handleChange} style={{
+}}>{t("First Name")}</label>
+          <input name="firstName" placeholder={t("First Name")} value={formData.firstName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -662,8 +666,8 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Last Name</label>
-          <input name="lastName" placeholder="Last Name" value={formData.lastName} onChange={handleChange} style={{
+}}>{t("Last Name")}</label>
+          <input name="lastName" placeholder={t("Last Name")} value={formData.lastName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -674,24 +678,24 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Gender</label>
+}}>{t("Gender")}</label>
           <select name="gender" value={formData.gender} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}>
-            <option value="">Select Gender</option>
-            <option>Male</option>
-            <option>Female</option>
+            <option value="">{t("Select Gender")}</option>
+            <option value="Male">{t("Male")}</option>
+            <option value="Female">{t("Female")}</option>
           </select>
         </div>
         <div>
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Phone Number</label>
-          <input name="phone" placeholder="Phone" value={formData.phone} onChange={handleChange} style={{
+}}>{t("Phone Number")}</label>
+          <input name="phone" placeholder={t("Phone")} value={formData.phone} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -702,15 +706,15 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>System Role</label>
+}}>{t("System Role")}</label>
           <select name="role" value={formData.role} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}>
-            <option value="Member">Member</option>
-            <option value="Admin">Admin</option>
+            <option value="Member">{t("Member")}</option>
+            <option value="Admin">{t("Admin")}</option>
           </select>
         </div>
       </div>
@@ -724,14 +728,14 @@ const barInstance = useRef(null);
   ...styles.sectionTitle,
   color: theme.text,
   borderBottom: `2px solid ${theme.primary}`
-}}>Family Info</h3>
+}}>{t("Family Info")}</h3>
       <div className="emp-form-grid" style={dynamicGridStyle}>
         <div>
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Father Name</label>
-          <input name="fatherName" placeholder="Father Name" value={formData.fatherName} onChange={handleChange} style={{
+}}>{t("Father Name")}</label>
+          <input name="fatherName" placeholder={t("Father Name")} value={formData.fatherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -742,8 +746,8 @@ const barInstance = useRef(null);
           <label style={{
   ...styles.labelStyle,
   color: theme.secondary
-}}>Mother Name</label>
-          <input name="motherName" placeholder="Mother Name" value={formData.motherName} onChange={handleChange} style={{
+}}>{t("Mother Name")}</label>
+          <input name="motherName" placeholder={t("Mother Name")} value={formData.motherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -755,23 +759,23 @@ const barInstance = useRef(null);
       {/* Spouse Logic */}
       {formData.category !== "Child" && formData.maritalStatus === "Married" && (
         <div style={styles.spouseBox}>
-          <h4 style={styles.subSectionTitle}>{formData.gender === "Male" ? "Spouse Info (Wife)" : "Spouse Info (Husband)"}</h4>
+          <h4 style={styles.subSectionTitle}>{t(formData.gender === "Male" ? "Spouse Info (Wife)" : "Spouse Info (Husband)")}</h4>
           <div className="emp-form-grid" style={dynamicGridStyle}>
             {formData.gender === "Male" ? (
               <>
-                <input name="wifeName" placeholder="Wife Name" value={formData.wifeName} onChange={handleChange} style={{
+                <input name="wifeName" placeholder={t("Wife Name")} value={formData.wifeName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }} />
-                <input name="wifeFatherName" placeholder="Wife Father's Name" value={formData.wifeFatherName} onChange={handleChange} style={{
+                <input name="wifeFatherName" placeholder={t("Wife Father's Name")} value={formData.wifeFatherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }} />
-                <input name="wifeMotherName" placeholder="Wife Mother's Name" value={formData.wifeMotherName} onChange={handleChange} style={{
+                <input name="wifeMotherName" placeholder={t("Wife Mother's Name")} value={formData.wifeMotherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -780,19 +784,19 @@ const barInstance = useRef(null);
               </>
             ) : (
               <>
-                <input name="husbandName" placeholder="Husband Name" value={formData.husbandName} onChange={handleChange} style={{
+                <input name="husbandName" placeholder={t("Husband Name")} value={formData.husbandName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }} />
-                <input name="husbandFatherName" placeholder="Husband Father's Name" value={formData.husbandFatherName} onChange={handleChange} style={{
+                <input name="husbandFatherName" placeholder={t("Husband Father's Name")} value={formData.husbandFatherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }} />
-                <input name="husbandMotherName" placeholder="Husband Mother's Name" value={formData.husbandMotherName} onChange={handleChange} style={{
+                <input name="husbandMotherName" placeholder={t("Husband Mother's Name")} value={formData.husbandMotherName} onChange={handleChange} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
@@ -804,42 +808,42 @@ const barInstance = useRef(null);
         </div>
       )}
 
-      <h4 style={styles.subSectionTitle}>Brothers</h4>
+      <h4 style={styles.subSectionTitle}>{t("Brothers")}</h4>
       {formData.brothers.map((b,i)=>
-        <input key={i} value={b} placeholder="Brother Name" onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={{
+        <input key={i} value={b} placeholder={t("Brother Name")} onChange={(e)=>handleArrayChange(i,"brothers",e.target.value)} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}/>
       )}
-      <button type="button" onClick={()=>addField("brothers")} style={styles.addBtn}>➕ Add Brother</button>
+      <button type="button" onClick={()=>addField("brothers")} style={styles.addBtn}>➕ {t("Add Brother")}</button>
 
-      <h4 style={styles.subSectionTitle}>Sisters</h4>
+      <h4 style={styles.subSectionTitle}>{t("Sisters")}</h4>
       {formData.sisters.map((s,i)=>
-        <input key={i} value={s} placeholder="Sister Name" onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={{
+        <input key={i} value={s} placeholder={t("Sister Name")} onChange={(e)=>handleArrayChange(i,"sisters",e.target.value)} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}/>
       )}
-      <button type="button" onClick={()=>addField("sisters")} style={styles.addBtn}>➕ Add Sister</button>
+      <button type="button" onClick={()=>addField("sisters")} style={styles.addBtn}>➕ {t("Add Sister")}</button>
 
-      <h4 style={styles.subSectionTitle}>Children</h4>
+      <h4 style={styles.subSectionTitle}>{t("Children")}</h4>
       {formData.children.map((c,i)=>
-        <input key={i} value={c} placeholder="Child Name" onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={{
+        <input key={i} value={c} placeholder={t("Child Name")} onChange={(e)=>handleArrayChange(i,"children",e.target.value)} style={{
   ...styles.inputStyle,
   background: theme.input,
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}/>
       )}
-      <button type="button" onClick={()=>addField("children")} style={styles.addBtn}>➕ Add Child</button>
+      <button type="button" onClick={()=>addField("children")} style={styles.addBtn}>➕ {t("Add Child")}</button>
     </div>
 
     <br/><br/>
-    <button type="submit" style={styles.submitBtn}>{editingId ? "Update Info" : "Register & Create Account"}</button>
+    <button type="submit" style={styles.submitBtn}>{editingId ? t("Update Info") : t("Register & Create Account")}</button>
   </form>
 )}
 
@@ -932,7 +936,7 @@ const barInstance = useRef(null);
 </div>
 
 
-  Member List
+  {t("Member List")}
 </h3>      
 <div
   className="emp-table-wrapper"
@@ -950,12 +954,12 @@ const barInstance = useRef(null);
 <table style={styles.tableStyle}>
           <thead>
             <tr>
-              <th style={styles.thStyle}>Member ID</th>
-              <th style={styles.thStyle}>Category</th>
-              <th style={styles.thStyle}>Full Name</th>
-              <th style={styles.thStyle}>Phone</th>
-              <th style={styles.thStyle}>Role</th>
-              <th style={styles.thStyle}>Actions</th>
+              <th style={styles.thStyle}>{t("Member ID")}</th>
+              <th style={styles.thStyle}>{t("Category")}</th>
+              <th style={styles.thStyle}>{t("Full Name")}</th>
+              <th style={styles.thStyle}>{t("Phone")}</th>
+              <th style={styles.thStyle}>{t("Role")}</th>
+              <th style={styles.thStyle}>{t("Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -990,7 +994,7 @@ style={{
    borderTopRightRadius:12,
    borderBottomRightRadius:12
 }}
->{emp.category}</td>
+>{t(emp.category)}</td>
                  <td
  style={{
    ...styles.tdStyle,
@@ -1021,7 +1025,7 @@ background: emp.role === "admin"
 color: "#fff",
                         fontWeight: 'bold'
                     }}>
-                     {(emp.role || "member").toUpperCase()}
+                     {t(emp.role === "admin" ? "Admin" : "Member")}
                     </span>
                   </td>
                  <td
@@ -1065,7 +1069,7 @@ color: "#fff",
         fontStyle: "italic"
       }}
     >
-      View Only
+      {t("View Only")}
     </span>
   )}
 </td>

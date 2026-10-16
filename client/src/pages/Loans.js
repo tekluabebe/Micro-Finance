@@ -1,9 +1,70 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import "./Loans.css";
 
 // 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
 export default function Loans({ isSidebarOpen = true }) {
+  const { language } = useAppContext();
+  const amharic = language === "Amharic";
+  const tr = (text) => amharic ? ({
+    "Loan status updated successfully": "የብድር ሁኔታ በተሳካ ሁኔታ ተዘምኗል",
+    "Failed to update status": "ሁኔታውን ማዘመን አልተሳካም",
+    "Are you sure you want to delete this loan?": "ይህን ብድር ማጥፋት እርግጠኛ ነዎት?",
+    "Loan deleted successfully": "ብድሩ በተሳካ ሁኔታ ተሰርዟል",
+    "Failed to delete loan": "ብድሩን መሰረዝ አልተሳካም",
+    "Select Employee": "ሰራተኛ ይምረጡ",
+    "-- Choose Employee --": "-- ሰራተኛ ይምረጡ --",
+    "Employee Deposit:": "የሰራተኛ ቁጠባ:",
+    "Loan Amount": "የብድር መጠን",
+    "Enter amount (ETB)...": "መጠን ያስገቡ (ብር)...",
+    "Duration (Months)": "የጊዜ ቆይታ (ወራት)",
+    "Month": "ወር",
+    "Months": "ወራት",
+    "Loan Category": "የብድር ዓይነት",
+    "Normal Loan (15%)": "መደበኛ ብድር (15%)",
+    "Holiday Loan (8%)": "የበዓል ብድር (8%)",
+    "Monthly Payment:": "ወርሃዊ ክፍያ:",
+    "Loan Maturity Date:": "የብድር ማብቂያ ቀን:",
+    "Enter an amount and employee to view live calculation summary.": "የቀጥታ ስሌቱን ለማየት መጠን እና ሰራተኛ ያስገቡ።",
+    "Guarantor Verification": "የዋስ ማረጋገጫ",
+    "Loan exceeds employee deposits by:": "ብድሩ የሰራተኛውን ቁጠባ የሚበልጠው:",
+    "Add Guarantor": "ዋስ ያክሉ",
+    "-- Choose Guarantor --": "-- ዋስ ይምረጡ --",
+    "Remove": "አስወግድ",
+    "Total Guarantor Savings:": "የዋሶች ጠቅላላ ቁጠባ:",
+    "✅ Enough guarantor deposits selected.": "✅ በቂ የዋስ ቁጠባ ተመርጧል።",
+    "more": "ተጨማሪ",
+    "🎉 No guarantor required. Employee deposits cover this loan amount.": "🎉 ዋስ አያስፈልግም። የሰራተኛው ቁጠባ ይህን የብድር መጠን ይሸፍናል።",
+    "Create Loan Account": "የብድር ሂሳብ ፍጠር",
+    "Hide History": "ታሪኩን ደብቅ",
+    "Loan History": "የብድር ታሪክ",
+    "Member": "አባል",
+    "Amount": "መጠን",
+    "Type": "ዓይነት",
+    "Status": "ሁኔታ",
+    "Remaining": "ቀሪ",
+    "Created": "የተፈጠረበት ቀን",
+    "Update Status": "ሁኔታ አዘምን",
+    "Delete": "ሰርዝ",
+    "No loan records found": "ምንም የብድር መዝገብ አልተገኘም",
+    "ID:": "መለያ:",
+    "Unknown Member": "ያልታወቀ አባል",
+    "Employee record not found": "የሰራተኛ መዝገብ አልተገኘም",
+    "completed": "ተጠናቋል",
+    "The payment has been completed": "ክፍያው ተጠናቋል",
+    "Payment Started": "ክፍያ ተጀምሯል",
+    "Pending": "በመጠባበቅ ላይ",
+    "Approved": "ጸድቋል",
+    "Rejected": "ውድቅ ተደርጓል",
+    "pending": "በመጠባበቅ ላይ",
+    "approved": "ጸድቋል",
+    "rejected": "ውድቅ ተደርጓል",
+    "normal": "መደበኛ",
+    "holiday": "የበዓል",
+    "Cannot Delete (Payment Started)": "መሰረዝ አይቻልም (ክፍያ ተጀምሯል)",
+  }[text] || text) : translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -117,7 +178,7 @@ const updateLoanStatus = async (loanId, status) => {
     loadLoanHistory();
     fetchData();
 
-    alert("Loan status updated successfully");
+    alert(tr("Loan status updated successfully"));
   } catch (err) {
     console.error("ERROR:", err.response?.data);
     console.error("STATUS:", err.response?.status);
@@ -125,7 +186,7 @@ const updateLoanStatus = async (loanId, status) => {
 
     alert(
       err.response?.data?.message ||
-      "Failed to update status"
+      tr("Failed to update status")
     );
   }
 };
@@ -330,7 +391,7 @@ console.log("Rounded Total:", roundedTotalLoan);
 
   const deleteLoan = async (loanId) => {
   const confirmDelete = window.confirm(
-    "Are you sure you want to delete this loan?"
+    tr("Are you sure you want to delete this loan?")
   );
 
   if (!confirmDelete) return;
@@ -341,13 +402,13 @@ console.log("Rounded Total:", roundedTotalLoan);
     await loadLoanHistory();
     await fetchData();
 
-    alert("Loan deleted successfully");
+    alert(tr("Loan deleted successfully"));
   } catch (err) {
     console.error(err);
 
     alert(
       err.response?.data?.message ||
-      "Failed to delete loan"
+      tr("Failed to delete loan")
     );
   }
 };
@@ -357,14 +418,14 @@ console.log("Rounded Total:", roundedTotalLoan);
   return (
     <div className="loan-container" style={dynamicContainerStyle}>
       <div className="loan-card">
-        <h2 className="loan-title">Create Loan Form/የብድር መጠየቂያ ፎርም</h2>
+        <h2 className="loan-title">{amharic ? "የብድር መጠየቂያ ቅጽ" : "Create Loan Form"}</h2>
 
         <div className="loan-form-grid">
           
           {/* ግራውንድ 1: የብድር ቅጽ (Loan Configuration) */}
           <div className="loan-form-section">
             <div className="loan-input-group">
-              <label>Select Employee</label>
+              <label>{tr("Select Employee")}</label>
               <select
   name="employeeId"
   value={loan.employeeId}
@@ -373,7 +434,7 @@ console.log("Rounded Total:", roundedTotalLoan);
 >
   {!isMember ? (
     <>
-      <option value="">-- Choose Employee --</option>
+      <option value="">{tr("-- Choose Employee --")}</option>
 
       {employees.map((emp) => (
         <option key={emp._id} value={emp._id}>
@@ -398,16 +459,16 @@ console.log("Rounded Total:", roundedTotalLoan);
 
             {loan.employeeId && (
               <div className="info-box success-box">
-                Employee Deposit: <strong>{totalSaving.toLocaleString()} ETB</strong>
+                {tr("Employee Deposit:")} <strong>{totalSaving.toLocaleString()} ETB</strong>
               </div>
             )}
 
             <div className="loan-input-group">
-              <label>Loan Amount</label>
+              <label>{tr("Loan Amount")}</label>
              <input
   type="number"
   name="principalAmount"
-  placeholder="Enter amount (ETB)..."
+  placeholder={tr("Enter amount (ETB)...")}
   value={loan.principalAmount}
   onChange={handleChange}
   style={{
@@ -427,19 +488,19 @@ console.log("Rounded Total:", roundedTotalLoan);
             )}
 
             <div className="loan-input-group">
-              <label>Duration (Months)</label>
+              <label>{tr("Duration (Months)")}</label>
               <select name="durationMonths" value={loan.durationMonths} onChange={handleChange}>
                 {[1,2,3,4,5,6,7,8,9,10,11,12].map((m) => (
-                  <option key={m} value={m}>{m} Month{m > 1 ? "s" : ""}</option>
+                  <option key={m} value={m}>{m} {tr(m > 1 ? "Months" : "Month")}</option>
                 ))}
               </select>
             </div>
 
             <div className="loan-input-group">
-              <label>Loan Category</label>
+              <label>{tr("Loan Category")}</label>
               <select name="loanType" value={loan.loanType} onChange={handleChange}>
-                <option value="normal">Normal Loan (15%)</option>
-                <option value="holiday">Holiday Loan (8%)</option>
+                <option value="normal">{tr("Normal Loan (15%)")}</option>
+                <option value="holiday">{tr("Holiday Loan (8%)")}</option>
               </select>
             </div>
           </div>
@@ -450,18 +511,18 @@ console.log("Rounded Total:", roundedTotalLoan);
   {monthlyPayment > 0 ? (
     <div className="info-box summary-card">
       <div className="summary-row">
-        <span>Monthly Payment:</span>
+        <span>{tr("Monthly Payment:")}</span>
         <strong>{monthlyPayment.toLocaleString()} ETB</strong>
       </div>
 
       <div className="summary-row">
-        <span>Loan Maturity Date:</span>
+        <span>{tr("Loan Maturity Date:")}</span>
         <strong>{loanEndDate}</strong>
       </div>
     </div>
   ) : (
     <div className="info-box empty-summary">
-      ℹ️ Enter an amount and employee to view live calculation summary.
+      ℹ️ {tr("Enter an amount and employee to view live calculation summary.")}
     </div>
   )}
 
@@ -469,11 +530,11 @@ console.log("Rounded Total:", roundedTotalLoan);
   {requiredGuarantee > 0 && (
     <div className="guarantor-card">
       <h3 className="section-subtitle">
-        Guarantor Verification
+        {tr("Guarantor Verification")}
       </h3>
 
       <p className="guarantor-warning-text">
-        Loan exceeds employee deposits by:{" "}
+        {tr("Loan exceeds employee deposits by:")}{" "}
         <strong>
           {requiredGuarantee.toLocaleString()} ETB
         </strong>
@@ -484,7 +545,7 @@ console.log("Rounded Total:", roundedTotalLoan);
         className="loan-input-group"
         style={{ marginTop: "15px" }}
       >
-        <label>Add Guarantor</label>
+        <label>{tr("Add Guarantor")}</label>
 
         <select
           value=""
@@ -493,7 +554,7 @@ console.log("Rounded Total:", roundedTotalLoan);
           }
         >
           <option value="">
-            -- Choose Guarantor --
+            {tr("-- Choose Guarantor --")}
           </option>
 
           {employees
@@ -547,7 +608,7 @@ console.log("Rounded Total:", roundedTotalLoan);
                 }
                 className="remove-guarantor-btn"
               >
-                Remove
+                {tr("Remove")}
               </button>
             </div>
           );
@@ -555,7 +616,7 @@ console.log("Rounded Total:", roundedTotalLoan);
       </div>
 
       <div className="guarantor-total-footer">
-        Total Guarantor Savings:{" "}
+        {tr("Total Guarantor Savings:")}{" "}
         <strong>
           {totalGuarantorSavings.toLocaleString()}{" "}
           ETB
@@ -589,8 +650,7 @@ console.log("Rounded Total:", roundedTotalLoan);
       totalGuarantorSavings >=
       requiredGuarantee ? (
         <>
-          ✅ Enough guarantor deposits
-          selected.
+          {tr("✅ Enough guarantor deposits selected.")}
         </>
       ) : (
         <>
@@ -602,14 +662,12 @@ console.log("Rounded Total:", roundedTotalLoan);
             ).toLocaleString()}{" "}
             ETB
           </strong>{" "}
-          more
+          {tr("more")}
         </>
       )
     ) : (
       <>
-        🎉 No guarantor required.
-        Employee deposits cover this
-        loan amount.
+        {tr("🎉 No guarantor required. Employee deposits cover this loan amount.")}
       </>
     )}
   </div>
@@ -628,7 +686,7 @@ console.log("Rounded Total:", roundedTotalLoan);
         totalGuarantorSavings < requiredGuarantee
       }
     >
-      Create Loan Account
+      {tr("Create Loan Account")}
     </button>
 
   {!isMember && (
@@ -644,8 +702,8 @@ console.log("Rounded Total:", roundedTotalLoan);
     }}
   >
     {showHistory
-      ? "Hide History"
-      : "Loan History"}
+      ? tr("Hide History")
+      : tr("Loan History")}
   </button>
 )}
   </div>
@@ -663,20 +721,20 @@ console.log("Rounded Total:", roundedTotalLoan);
 {showHistory && (
   <div className="loan-history-card">
     <h2 className="loan-history-title">
-      Loan History
+      {tr("Loan History")}
     </h2>
 
     <table className="loan-history-table">
       <thead>
         <tr>
-          <th>Member</th>
-          <th>Amount</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th>Remaining</th>
-          <th>Created</th>
-          <th>Update Status</th>
-          <th>Delete</th>
+          <th>{tr("Member")}</th>
+          <th>{tr("Amount")}</th>
+          <th>{tr("Type")}</th>
+          <th>{tr("Status")}</th>
+          <th>{tr("Remaining")}</th>
+          <th>{tr("Created")}</th>
+          <th>{tr("Update Status")}</th>
+          <th>{tr("Delete")}</th>
         </tr>
       </thead>
 
@@ -690,7 +748,7 @@ console.log("Rounded Total:", roundedTotalLoan);
                 padding: "30px",
               }}
             >
-              No loan records found
+              {tr("No loan records found")}
             </td>
           </tr>
         ) : (
@@ -721,17 +779,17 @@ console.log("Rounded Total:", roundedTotalLoan);
                       </span>
 
                       <span className="member-id">
-                        ID: {employee.memberId}
+                        {tr("ID:")} {employee.memberId}
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="member-name">
-                        Unknown Member
+                        {tr("Unknown Member")}
                       </span>
 
                       <span className="member-id">
-                        Employee record not found
+                        {tr("Employee record not found")}
                       </span>
                     </>
                   )}
@@ -745,14 +803,14 @@ console.log("Rounded Total:", roundedTotalLoan);
                 </td>
 
                 <td>
-                  {loanItem.loanType}
+                  {tr(loanItem.loanType)}
                 </td>
 
                 <td>
                   <span
                     className={`status-${loanItem.status}`}
                   >
-                    {loanItem.status}
+                    {tr(loanItem.status)}
                   </span>
                 </td>
 
@@ -773,11 +831,11 @@ console.log("Rounded Total:", roundedTotalLoan);
 <td>
   {loanItem.status === "completed" ? (
     <span className="payment-completed">
-      The payment has been completed
+      {tr("The payment has been completed")}
     </span>
   ) : paymentStarted ? (
     <span className="payment-started">
-      Payment Started
+      {tr("Payment Started")}
     </span>
   ) : (
     <select
@@ -790,9 +848,9 @@ console.log("Rounded Total:", roundedTotalLoan);
         )
       }
     >
-      <option value="pending">Pending</option>
-      <option value="approved">Approved</option>
-      <option value="rejected">Rejected</option>
+      <option value="pending">{tr("Pending")}</option>
+      <option value="approved">{tr("Approved")}</option>
+      <option value="rejected">{tr("Rejected")}</option>
     </select>
   )}
 </td>
@@ -806,7 +864,7 @@ console.log("Rounded Total:", roundedTotalLoan);
       className="delete-btn"
       onClick={() => deleteLoan(loanItem._id)}
     >
-      Delete
+      {tr("Delete")}
     </button>
   ) : !paymentStarted ? (
     // ✅ Allow delete if payment has NOT started
@@ -814,7 +872,7 @@ console.log("Rounded Total:", roundedTotalLoan);
       className="delete-btn"
       onClick={() => deleteLoan(loanItem._id)}
     >
-      Delete
+      {tr("Delete")}
     </button>
   ) : (
     // ❌ Block delete if payment started and not completed
@@ -822,7 +880,7 @@ console.log("Rounded Total:", roundedTotalLoan);
       className="delete-btn disabled-delete-btn"
       disabled
     >
-      Cannot Delete (Payment Started)
+      {tr("Cannot Delete (Payment Started)")}
     </button>
   )}
 </td>

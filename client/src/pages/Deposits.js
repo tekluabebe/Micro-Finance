@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import { FaPiggyBank, FaInfoCircle, FaCalendarAlt, FaMoneyBillWave } from "react-icons/fa";
 import "./Deposits.css"
 
 export default function Deposits() {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [deposits, setDeposits] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -157,7 +161,7 @@ if (alreadyPaid) {
 
 const submit = async () => {
   if (!data.employeeId || !data.month || !data.year) {
-    setErrorMessage("Please select member, month, and year!");
+    setErrorMessage(t("Please select member, month, and year!"));
     return;
   }
 
@@ -250,7 +254,7 @@ const submit = async () => {
 
   } catch (err) {
     console.error(err);
-    setErrorMessage("Failed to save deposit data ❌");
+    setErrorMessage(t("Failed to save deposit data ❌"));
   }
 };
 
@@ -260,7 +264,7 @@ const submit = async () => {
     <div className="deposit-container">
       <div className="deposit-card">
         <h2 className="form-title">
-          <FaPiggyBank color="#3498db" /> Member Deposit Portal/የአባሉ ገንዘብ ማስቀመጫ
+          <FaPiggyBank color="#3498db" /> {t("Member Deposit Portal")}
         </h2>
 
         {errorMessage && (
@@ -273,9 +277,9 @@ const submit = async () => {
         <div className="selection-row-container">
           <div className="selection-section">
             <div className="input-group full">
-              <label>SELECT MEMBER/አባል ይምረጡ</label>
+              <label>{t("Select Member")}</label>
               <select name="employeeId" value={data.employeeId} onChange={handleChange} className="modern-select">
-                <option value="">-- Choose Member/አባል ይምረጡ --</option>
+                <option value="">-- {t("Select Member")} --</option>
                 {employees.map(emp => (
                   <option key={emp._id} value={emp._id}>{emp.memberId} - {emp.firstName} {emp.lastName}</option>
                 ))}
@@ -284,16 +288,16 @@ const submit = async () => {
             
             <div className="input-row">
               <div className="input-group">
-                <label><FaCalendarAlt /> Month/ወር</label>
+                <label><FaCalendarAlt /> {t("Month")}</label>
                 <select name="month" value={data.month} onChange={handleChange} className="modern-select">
-                  <option value="">Month</option>
-                  {months.map(m => <option key={m}>{m}</option>)}
+                  <option value="">{t("Month")}</option>
+                  {months.map(m => <option key={m} value={m}>{t(m)}</option>)}
                 </select>
               </div>
               <div className="input-group">
-                <label><FaCalendarAlt /> Year/አመት</label>
+                <label><FaCalendarAlt /> {t("Year")}</label>
                 <select name="year" value={data.year} onChange={handleChange} className="modern-select">
-                  <option value="">Year</option>
+                  <option value="">{t("Year")}</option>
                   {[2025, 2026, 2027].map(y => <option key={y}>{y}</option>)}
                 </select>
               </div>
@@ -305,26 +309,26 @@ const submit = async () => {
   {selectedEmployeeData ? (
     <>
       <h3 className="status-title">
-        Active Member Status
+        {t("Active Member Status")}
       </h3>
 
       <div className="member-status-grid">
 
         <div className="status-card blue-card">
-          <span className="status-label">Member Name</span>
+          <span className="status-label">{t("Member Name")}</span>
           <h4>
             {selectedEmployeeData.firstName} {selectedEmployeeData.lastName}
           </h4>
         </div>
 
         <div className="status-card purple-card">
-          <span className="status-label">Member ID</span>
+          <span className="status-label">{t("Member ID")}</span>
           <h4>{selectedEmployeeData.memberId}</h4>
         </div>
 
         <div className="status-card green-card">
-          <span className="status-label">Category</span>
-          <h4>{selectedEmployeeData.category}</h4>
+          <span className="status-label">{t("Category")}</span>
+          <h4>{t(selectedEmployeeData.category)}</h4>
         </div>
 
         <div
@@ -332,12 +336,12 @@ const submit = async () => {
             missingMonthsCount > 0 ? "red-card" : "success-card"
           }`}
         >
-          <span className="status-label">Deposit Status</span>
+          <span className="status-label">{t("Deposit Status")}</span>
 
           <h4>
             {missingMonthsCount > 0
-              ? `${missingMonthsCount} Months Overdue`
-              : "Up To Date"}
+              ? `${missingMonthsCount} ${t("Months Overdue")}`
+              : t("Up To Date")}
           </h4>
         </div>
 
@@ -350,7 +354,7 @@ const submit = async () => {
       </div>
 
       <p>
-        Please select a member and date to view member status.
+        {t("Please select a member and date to view member status.")}
       </p>
     </div>
   )}
@@ -367,12 +371,12 @@ const submit = async () => {
        {/* የታችኛው ክፍል ግሪድ ቁመትና ስፋቱ እንዲጨምር ተደርጓል */}
 <div className="deposit-grid">
   <div className="input-group field-large">
-    <label>AMOUNT TO PAY / NORMAL SAVING(መደበኛ ቁጠባ) (ETB)</label>
-    <input name="normalSaving" type="number" value={data.normalSaving} onChange={handleChange} className="modern-input green-glow" placeholder="Enter amount..." />
+    <label>{t("AMOUNT TO PAY / NORMAL SAVING (ETB)")}</label>
+    <input name="normalSaving" type="number" value={data.normalSaving} onChange={handleChange} className="modern-input green-glow" placeholder={t("Enter amount...")} />
   </div>
   
   <div className="input-group field-large">
-    <label>VOLUNTARY SAVING(የፍቃደኝነት ቁጠባ) (ETB)</label>
+    <label>{t("VOLUNTARY SAVING (ETB)")}</label>
     <input name="voluntarySaving" type="number" value={data.voluntarySaving} onChange={handleChange} className="modern-input" placeholder="0" />
   </div>
 
@@ -382,11 +386,11 @@ const submit = async () => {
     color: selectedEmployeeData?.category === "Child" ? "#ef4444" : "#3b82f6", // ቀይ ለልጅ፣ ሰማያዊ ለአዋቂ
     fontWeight: "bold" 
   }}>
-    SHARED PURCHASE(የሚገዙት አክሲዮን) 
+    {t("SHARED PURCHASE")}
     <span style={{ fontSize: "13px", marginLeft: "5px" }}>
       {selectedEmployeeData?.category === "Child" 
-        ? "(ለህጻናት የ አክሲዮን ግዢ አይፈቀድም።)" 
-        : " (አዋቂዎች ቢያንስ 1 አክሲዮን መግዛት አለባችው።)"}
+        ? t("Share purchases are unavailable for children.")
+        : t("Adults must purchase at least one share.")}
     </span>
   </label>
   
@@ -396,7 +400,7 @@ const submit = async () => {
     value={selectedEmployeeData?.category === "Child" ? "0" : data.sharedPurchase} 
     onChange={handleChange} 
     className="modern-input" 
-    placeholder={selectedEmployeeData?.category === "Child" ? "Inactive" : "Enter amount..."}
+    placeholder={selectedEmployeeData?.category === "Child" ? t("Inactive") : t("Enter amount...")}
     disabled={selectedEmployeeData?.category === "Child"} 
     style={{ 
       borderColor: selectedEmployeeData?.category === "Child" ? "#ef4444" : "#cbd5e1" 
@@ -405,7 +409,7 @@ const submit = async () => {
   {showDepositForPurchase && (
   <div className="input-group field-large highlight">
     <label>
-      DEPOSIT FOR PURCHASE (500 ETB per unit)
+      {t("DEPOSIT FOR PURCHASE (500 ETB per unit)")}
     </label>
 
     <input
@@ -420,20 +424,20 @@ const submit = async () => {
 </div>
 
   <div className="input-group field-large">
-    <label>LATE PENALTY (AUTO-CALCULATED)</label>
+    <label>{t("LATE PENALTY (AUTO-CALCULATED)")}</label>
     <input name="latePenalty" type="number" value={data.latePenalty} onChange={handleChange} className={`modern-input ${isLate ? "error-border" : ""}`} placeholder="0" />
   </div>
 
   {isNewEmployee && (
     <div className="input-group field-large success-group">
-      <label>REGISTRATION FEE</label>
+      <label>{t("REGISTRATION FEE")}</label>
       <input name="registrationFee" type="number" value={data.registrationFee} onChange={handleChange} className="modern-input" />
     </div>
   )}
 </div>
 
         <button onClick={submit} className="submit-btn">
-          <FaMoneyBillWave /> Confirm & Complete Deposit(መረጃዉን አስቀምጥ)
+          <FaMoneyBillWave /> {t("Confirm & Complete Deposit")}
         </button>
       </div>
 

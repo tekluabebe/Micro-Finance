@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import "./LoanPayments.css";
 
 // 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
 export default function LoanPayments({ isSidebarOpen = true }) {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [loans, setLoans] = useState([]);
   const [selectedLoan, setSelectedLoan] = useState(null);
@@ -448,7 +452,7 @@ payload
 const isMultiple = monthsToPay.length > 1;
 
 if (isMultiple) {
-  alert("Multiple month payment saved successfully ✅");
+  alert(t("Multiple month payment saved successfully ✅"));
 } else {
   alert(`Your payment for ${monthsToPay[0]} is successful ✅`);
 }
@@ -502,7 +506,7 @@ const getAvailableMonths = (loanCreatedAt) => {
  return (
     <div className="loan-payment-container" style={dynamicContainerStyle}>
       <div className="loan-payment-card">
-        <h2 className="loan-payment-title">Loan Repayment Portal/የብድር መክፈያ ፎርም</h2>
+        <h2 className="loan-payment-title">{t("Loan Repayment Portal")}</h2>
           
         {/* 💡 ዋና ማስተካከያ፦ የ CSS ግሪዱ እንዲሰራ ሁሉንም ፎርሞች በዚህ ዲቭ እንጠቅልላቸዋለን */}
         <div className="loan-form-grid">
@@ -510,9 +514,9 @@ const getAvailableMonths = (loanCreatedAt) => {
           {/* ግራውንድ 1፦ አባል መምረጫ */}
           <div className="loan-selection-box">
             <div className="loan-input-group">
-              <label>Select Member</label>
+              <label>{t("Select Member")}</label>
               <select onChange={handleEmployeeChange} value={payment.employeeId}>
-                <option value="">-- Choose Member --</option>
+                <option value="">-- {t("Select Member")} --</option>
                 {employees.map(e => (
                   <option key={e._id} value={e._id}>{e.memberId} - {e.firstName} {e.lastName}</option>
                 ))}
@@ -521,14 +525,14 @@ const getAvailableMonths = (loanCreatedAt) => {
 
             {payment.employeeId && (
               <div className="loan-input-group">
-                <label>Loan Category</label>
+                <label>{t("Loan Category")}</label>
                 <select value={loanType} onChange={(e) => {
   setErrorMessage("");
   setLoanType(e.target.value);
 }}>
-                  <option value="">-- Select Loan Type --</option>
-                  <option value="normal">Normal Loan (15%)</option>
-                  <option value="holiday">Holiday Loan (8%)</option>
+                  <option value="">-- {t("Loan Category")} --</option>
+                  <option value="normal">{t("Normal Loan (15%)")}</option>
+                  <option value="holiday">{t("Holiday Loan (8%)")}</option>
                 </select>
               </div>
             )}
@@ -560,51 +564,51 @@ style={{
 
 )}
               <div className="status-row">
-                <span>Start Date:</span>
+                <span>{t("Start Date:")}</span>
                 <strong>{new Date(selectedLoan.createdAt).toLocaleDateString()}</strong>
               </div>
               <div className="status-row">
-                <span>Grace Period:</span>
-                <span className="badge-green">2 Months Included</span>
+                <span>{t("Grace Period:")}</span>
+                <span className="badge-green">2 {t("Months Included")}</span>
               </div>
               <div className="status-row highlight-row">
-                <span>Overdue Months:</span>
+                <span>{t("Overdue Months:")}</span>
                 <strong className={missingMonths > 0 ? "text-danger" : "text-success"}>
-                  {missingMonths} Months
+                  {missingMonths} {t("Months")}
                 </strong>
               </div>
          
          <div className="status-grid">
 
   <div className="status-item">
-    <label>Principal Amount</label>
+    <label>{t("Principal Amount")}</label>
 <p>
   {selectedLoan.principalAmount} ETB
 </p>
 </div>
 
   <div className="status-item">
-    <label>Total Amount</label>
+    <label>{t("Total Amount")}</label>
     <p>
   {Math.round(selectedLoan.totalAmount)} ETB
      </p>
   </div>
 
   <div className="status-item">
-  <label>Monthly Principal</label>
+  <label>{t("Monthly Principal")}</label>
   <p>{monthlyPrincipal} ETB</p>
 </div>
 
 <div className="status-item">
-  <label>Monthly Interest</label>
+  <label>{t("Monthly Interest")}</label>
   <p>{monthlyInterest} ETB</p>
 </div>
      <div className="status-item">
-  <label>Monthly Payment</label>
+  <label>{t("Monthly Payment")}</label>
   <p>{monthlyPayment} ETB</p>
 </div>
   <div className="status-item">
-    <label>Remaining Balance</label>
+    <label>{t("Remaining Balance")}</label>
     <p style={{ color: "#ef4444" }}>
       {selectedLoan.remainingAmount} ETB
     </p>
@@ -617,7 +621,7 @@ style={{
             <div className="loan-status-panel loan-status-placeholder">
               <div className="placeholder-icon">ℹ️</div>
               <p className="placeholder-text">
-                Please select a member and loan type to view current status.
+                {t("Please select a member and loan type to view current status.")}
               </p>
             </div>
           )}
@@ -643,7 +647,7 @@ setErrorMessage("");
 }}
 />
 
-&nbsp; Pay Multiple Months
+&nbsp; {t("Pay Multiple Months")}
 </label>
 
 </div>
@@ -654,7 +658,7 @@ setErrorMessage("");
 
 <div className="loan-input-group">
 
-<label>Select Payment Month</label>
+<label>{t("Select Payment Month")}</label>
 
 
 <select
@@ -683,7 +687,7 @@ key={month}
 value={month}
 >
 
-{month}
+{t(month)}
 
 </option>
 
@@ -707,7 +711,7 @@ multiplePayment && (
 <div className="loan-input-group">
 
 <label>
-Select Months For Payment
+{t("Select Months For Payment")}
 </label>
 
 
@@ -766,7 +770,7 @@ m=>m!==month
 ></input>
 
 
-{month}
+{t(month)}
 
 
 </label>
@@ -790,19 +794,19 @@ m=>m!==month
 
   </div>
             <div className="loan-input-group">
-              <label>Amount to Pay</label>
+              <label>{t("Amount to Pay")}</label>
               <input 
                 name="amountPaid" 
                 type="number" 
                 className="main-payment-input"
                 value={payment.amountPaid} 
                 onChange={handleChange} 
-                placeholder="Enter amount..." 
+                placeholder={t("Enter amount...")} 
               />
             </div>
 
             <div className="loan-input-group">
-              <label>Late Penalty (Auto-calculated)</label>
+              <label>{t("Late Penalty (Auto-calculated)")}</label>
               <input 
                 name="penalty" 
                 type="number" 
@@ -815,7 +819,7 @@ m=>m!==month
 
           {/* 4፦ ማረጋገጫ ማቅረቢያ ቁልፍ (Submit Button) */}
           <button onClick={submit} className="loan-submit-btn">
-            Confirm Payment
+            {t("Confirm Payment")}
           </button>
 {errorMessage && (
   <div

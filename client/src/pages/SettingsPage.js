@@ -76,7 +76,11 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       title:"System Settings",
 
+      intro:"Configure system preferences and personalization.",
+
       finance:"Finance Settings",
+
+      general:"General Settings",
 
       penaltyLabel:"Monthly Late Penalty",
 
@@ -88,6 +92,8 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       darkMode:"Dark Mode",
 
+      appearanceHint:"Switch between light and dark appearance",
+
       langLabel:"Language",
 
 
@@ -96,6 +102,24 @@ const getNotificationPreference = (key, defaultValue = true) =>
       changePass:"Change Admin Password",
 
       logout:"Logout",
+
+      notifications:"Notifications",
+
+      emailAlerts:"Email Alerts",
+
+      receiveEmails:"Receive system emails",
+
+      loanRequests:"Loan Requests",
+
+      receiveLoanRequests:"Receive loan request notifications",
+
+      withdrawalRequests:"Withdrawal Requests",
+
+      receiveWithdrawals:"Receive withdrawal request notifications",
+
+      passwordReset:"Password Reset",
+
+      receivePasswordResets:"Notify when password reset is requested",
 
 
       about:"About System",
@@ -107,6 +131,10 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
       version:"System Version",
+
+      versionNumber:"Version 1.0.4",
+
+      release:"Stable Release",
 
       devInfo:"Developer",
 
@@ -124,8 +152,12 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       title:"የሲስተም ቅንብሮች",
 
+      intro:"የሲስተሙን ምርጫዎች እና ግላዊ ቅንብሮች ያስተካክሉ።",
+
 
       finance:"የፋይናንስ ቅንብሮች",
+
+      general:"አጠቃላይ ቅንብሮች",
 
 
       penaltyLabel:"የወር ውዝፍ ቅጣት",
@@ -138,7 +170,9 @@ const getNotificationPreference = (key, defaultValue = true) =>
       appearance:"የገጽታ ቅንብሮች",
 
 
-      darkMode:"Dark Mode",
+      darkMode:"ጨለማ ገጽታ",
+
+      appearanceHint:"በብርሃን እና በጨለማ ገጽታ መካከል ይቀያይሩ።",
 
 
       langLabel:"ቋንቋ",
@@ -151,6 +185,24 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
       logout:"ውጣ",
+
+      notifications:"ማሳወቂያዎች",
+
+      emailAlerts:"የኢሜይል ማሳወቂያዎች",
+
+      receiveEmails:"የሲስተሙን ኢሜይሎች ተቀበል",
+
+      loanRequests:"የብድር ጥያቄዎች",
+
+      receiveLoanRequests:"ስለ ብድር ጥያቄዎች ማሳወቂያ ተቀበል",
+
+      withdrawalRequests:"የገንዘብ ማውጣት ጥያቄዎች",
+
+      receiveWithdrawals:"ስለ ገንዘብ ማውጣት ጥያቄዎች ማሳወቂያ ተቀበል",
+
+      passwordReset:"የይለፍ ቃል ዳግም ማስጀመር",
+
+      receivePasswordResets:"የይለፍ ቃል ዳግም ማስጀመር ሲጠየቅ አሳውቅ",
 
 
       about:"ስለ ሲስተሙ",
@@ -165,6 +217,10 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       version:"ስሪት",
 
+      versionNumber:"ስሪት 1.0.4",
+
+      release:"የተረጋጋ ልቀት",
+
 
       devInfo:"አልሚ",
 
@@ -172,9 +228,77 @@ const getNotificationPreference = (key, defaultValue = true) =>
       developer:"ተክሉ አበበ",
 
 
-      pro:"Full Stack Software Engineer"
+      pro:"ሙሉ ስታክ ሶፍትዌር መሐንዲስ"
 
 
+    },
+
+    Oromiffa:{
+      title:"Sajoo Sirnaa",
+      intro:"Filannoo sirnaa fi dhuunfaa qindeessaa.",
+      finance:"Sajoo Faayinaansii",
+      general:"Sajoo Waliigalaa",
+      penaltyLabel:"Adabbii Ji'a Ji'aan",
+      penaltyHint:"Maallaqni kun kaffaltii yeroo isaa darbeef ji'a ji'aan kaffalama.",
+      appearance:"Bifa",
+      darkMode:"Bifa Dukkanaa",
+      appearanceHint:"Bifa ifaa fi dukkanaa gidduutti jijjiiri.",
+      langLabel:"Afaan",
+      security:"Nageenya",
+      changePass:"Jecha Darbii Bulchaa Jijjiiri",
+      logout:"Ba'i",
+      notifications:"Beeksisawwan",
+      emailAlerts:"Beeksisa Imeelii",
+      receiveEmails:"Imeeliiwwan sirnaa fudhadhu",
+      loanRequests:"Gaaffii Liqii",
+      receiveLoanRequests:"Beeksisa gaaffii liqii fudhadhu",
+      withdrawalRequests:"Gaaffii Maallaqa Baasuu",
+      receiveWithdrawals:"Beeksisa gaaffii maallaqa baasuu fudhadhu",
+      passwordReset:"Jecha Darbii Haaromsuu",
+      receivePasswordResets:"Yeroo jechi darbii haaromfamu beeksisi",
+      about:"Waa'ee Sirnichaa",
+      mission:"Kaayyoo",
+      missionText:"Dhaabbilee maayikiroo faayinaansiif sirna bulchiinsa faayinaansii bu'a qabeessa dhiyeessuu.",
+      version:"Gosa Sirnaa",
+      versionNumber:"Gosa 1.0.4",
+      release:"Gosa tasgabbaa'aa",
+      devInfo:"Misraachoo",
+      developer:"Teklu Abebe",
+      pro:"Injinarri Sooftiweerii Full Stack"
+    },
+
+    Tigrigna:{
+      title:"ቅንብራት ስርዓት",
+      intro:"ምርጫታት ስርዓትን ናይ ባዕልኻ ቅንብራትን ኣስተኻኽል።",
+      finance:"ቅንብራት ፋይናንስ",
+      general:"ሓፈሻዊ ቅንብራት",
+      penaltyLabel:"ወርሓዊ መቕጻዕቲ ውዑል ክፍሊት",
+      penaltyHint:"እዚ መጠን ንዝደንጎየ ክፍሊት ብወርሒ ይኽፈል።",
+      appearance:"መልክዕ",
+      darkMode:"ጸልማት መልክዕ",
+      appearanceHint:"ኣብ ብሩህን ጸልማትን መልክዕ ቀያይር።",
+      langLabel:"ቋንቋ",
+      security:"ድሕንነት",
+      changePass:"ናይ ኣስተዳዳሪ መሕለፊ ቃል ቀይር",
+      logout:"ውጻእ",
+      notifications:"ሓበሬታታት",
+      emailAlerts:"ናይ ኢመይል ሓበሬታ",
+      receiveEmails:"ናይ ስርዓት ኢመይላት ተቐበል",
+      loanRequests:"ሕቶታት ልቓሕ",
+      receiveLoanRequests:"ሓበሬታ ሕቶ ልቓሕ ተቐበል",
+      withdrawalRequests:"ሕቶታት ምውጻእ ገንዘብ",
+      receiveWithdrawals:"ሓበሬታ ሕቶ ምውጻእ ገንዘብ ተቐበል",
+      passwordReset:"ዳግማይ ምምሕያሽ መሕለፊ ቃል",
+      receivePasswordResets:"መሕለፊ ቃል ክምሓየሽ እንከሎ ኣፍልጥ",
+      about:"ብዛዕባ እቲ ስርዓት",
+      mission:"ዕላማ",
+      missionText:"ንትካላት ማይክሮ ፋይናንስ ውጽኢታዊ ስርዓት ምምሕዳር ፋይናንስ ምቕራብ።",
+      version:"ስሪት ስርዓት",
+      versionNumber:"ስሪት 1.0.4",
+      release:"ዝተረጋገጸ ልቀት",
+      devInfo:"ኣማዕባሊ",
+      developer:"ተክሉ ኣበበ",
+      pro:"Full Stack ኢንጂነር ሶፍትዌር"
     }
 
 
@@ -234,7 +358,7 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
           <p>
-            Configure system preferences and personalization.
+            {t.intro}
           </p>
 
 
@@ -262,7 +386,7 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
             <h3>
-              General Settings
+              {t.general}
             </h3>
 
 
@@ -376,7 +500,7 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
             <h3>
-              Notifications
+              {t.notifications}
             </h3>
 
 
@@ -392,12 +516,12 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <h4>
-                Email Alerts
+                {t.emailAlerts}
               </h4>
 
 
               <p>
-                Receive system emails
+                {t.receiveEmails}
               </p>
 
 
@@ -442,12 +566,12 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <h4>
-                Loan Requests
+                {t.loanRequests}
               </h4>
 
 
               <p>
-                Receive loan request notifications
+                {t.receiveLoanRequests}
               </p>
 
 
@@ -483,8 +607,8 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       <div className="settings-toggle-item">
   <div>
-    <h4>Withdrawal Requests</h4>
-    <p>Receive withdrawal request notifications</p>
+    <h4>{t.withdrawalRequests}</h4>
+    <p>{t.receiveWithdrawals}</p>
   </div>
 
   <label className="settings-switch">
@@ -508,12 +632,12 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <h4>
-                Password Reset
+                {t.passwordReset}
               </h4>
 
 
               <p>
-                Notify when password reset is requested
+                {t.receivePasswordResets}
               </p>
 
 
@@ -612,7 +736,7 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
                 <p>
-                  Switch between light and dark appearance
+                  {t.appearanceHint}
                 </p>
 
 
@@ -822,12 +946,12 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <p>
-                Version 1.0.4
+                {t.versionNumber}
               </p>
 
 
               <small>
-                Stable Release
+                {t.release}
               </small>
 
 

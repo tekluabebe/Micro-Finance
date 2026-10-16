@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from "react";
 import API from "../services/api";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import "./Dividend.css";
 
 export default function Dividend() {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
     const [selectedYear, setSelectedYear] = useState(
@@ -174,19 +178,19 @@ const selectedYearExists =
   <div className="dividend-page-container">
     <div className="dividend-header-box">
       <h2 className="dividend-title">
-        የትርፍ ክፍፍል ማጠቃለያ (Dividend Summary)
+        {t("Dividend Summary")}
       </h2>
 
       <div className="summary-cards-grid">
         <div className="dividend-stat-card">
-          <span className="dividend-label">ጠቅላላ ቁጠባ</span>
+          <span className="dividend-label">{t("Total Savings")}</span>
           <strong className="dividend-value">
             {totals.totalSaving.toLocaleString()} ETB
           </strong>
         </div>
 
         <div className="dividend-stat-card shares-card">
-          <span className="dividend-label">ጠቅላላ ዕጣ (Shares)</span>
+          <span className="dividend-label">{t("Total Shares")}</span>
           <strong className="dividend-value">
             {totals.totalShares.toLocaleString()}
           </strong>
@@ -194,7 +198,7 @@ const selectedYearExists =
 
         <div className="dividend-stat-card profit-card">
           <span className="dividend-label">
-            {selectedYear} ዓ.ም ሊከፋፈል የሚገባው ትርፍ
+            {t("Profit to be distributed")} ({selectedYear})
           </span>
 
           <strong className="dividend-value">
@@ -206,7 +210,7 @@ const selectedYearExists =
 
     <div className="dividend-controls">
       <div className="year-filter-box">
-        <label>Select Year:</label>
+        <label>{t("Select Year:")}</label>
 
         <select
           value={selectedYear}
@@ -219,7 +223,7 @@ const selectedYearExists =
               </option>
             ))
           ) : (
-            <option value="">No Financial Reports Found</option>
+            <option value="">{t("No Financial Reports Found")}</option>
           )}
         </select>
       </div>
@@ -241,7 +245,7 @@ const selectedYearExists =
 
   <input
     type="text"
-    placeholder="Search members..."
+    placeholder={t("Search members...")}
     value={searchQuery}
     onChange={handleSearch}
     className="dividend-search-input"
@@ -253,10 +257,10 @@ const selectedYearExists =
       <table className="dividend-table">
         <thead>
           <tr>
-            <th>የአባሉ ስም</th>
-            <th>ያለው ዕጣ (Shares)</th>
-            <th>የድርሻ መጠን (%)</th>
-            <th>የትርፍ ክፍፍል (Dividend)</th>
+            <th>{t("Member Name")}</th>
+            <th>{t("Shares")}</th>
+            <th>{t("Share Percentage (%)")}</th>
+            <th>{t("Dividend")}</th>
           </tr>
         </thead>
 
@@ -303,7 +307,7 @@ const selectedYearExists =
     })
   ) : (
     <tr className="empty-dividend-row">
-      <td colSpan="4">ምንም ዳታ አልተገኘም</td>
+      <td colSpan="4">{t("No data found")}</td>
     </tr>
   )}
 </tbody>

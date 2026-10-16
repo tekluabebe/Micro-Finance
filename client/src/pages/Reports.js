@@ -15,11 +15,15 @@ import {
 } from "react-icons/fa";
 import "./Reports.css";
 import axios from "axios";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 
 // ከ API ሰርቪሱ ፋንታ በቀጥታ እዚህ ጋር መግለጽ
 
 
 const Reports = () => {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
   const [employees, setEmployees] = useState([]);
   const [employeeId, setEmployeeId] = useState("");
   const [month, setMonth] = useState("01");
@@ -194,6 +198,12 @@ doc.text(
   "11": "November",
   "12": "December",
 };
+const reportTypeTitle = {
+  "individual-monthly": t("Individual Monthly"),
+  "individual-annual": t("Individual Annual"),
+  "total-monthly": t("Total Monthly"),
+  "total-annual": t("Total Annual"),
+}[reportType];
 
   return (
     <div className="reports-container">
@@ -206,23 +216,22 @@ doc.text(
             <div className="reports-hero">
   <div className="hero-content">
     <h1>
-      Financial Intelligence Dashboard
+      {t("Financial Intelligence Dashboard")}
     </h1>
 
     <p>
-      Advanced reporting, analytics and
-      cooperative financial insights.
+      {t("Advanced reporting, analytics and cooperative financial insights.")}
     </p>
   </div>
 
   <div className="hero-stats">
     <div className="hero-stat">
-      <span>Reports</span>
-      <strong>4 Types</strong>
+      <span>{t("Reports")}</span>
+      <strong>{t("4 Types")}</strong>
     </div>
 
     <div className="hero-stat">
-      <span>Data Source</span>
+      <span>{t("Data Source")}</span>
       <strong>Mongo DB</strong>
     </div>
   </div>
@@ -232,7 +241,7 @@ doc.text(
 
         <div className="filter-grid">
           <div className="report-type-section">
-            <label className="section-title">Choose Report Type</label>
+            <label className="section-title">{t("Choose Report Type")}</label>
             <div className="report-cards">
               
 <div
@@ -247,10 +256,9 @@ doc.text(
 >
   <div className="diamond"></div>
   <div className="report-content">
-    <h3>Individual Monthly (የግለሰብ ወርሃዊ ሪፖርት ዝርዝር)</h3>
+    <h3>{t("Individual Monthly (የግለሰብ ወርሃዊ ሪፖርት ዝርዝር)")}</h3>
     <p>
-      Monthly employee savings,
-      loans & deposits (ወርሃዊ የአባሉ ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+      {t("Monthly employee savings, loans & deposits")}
     </p>
   </div>
 </div>
@@ -268,10 +276,9 @@ doc.text(
   
   <div className="diamond"></div>
   <div className="report-content">
-    <h3>Individual Annual (የግለሰቡ አመታዊ ረፖርት ዝርዝር)</h3>
+    <h3>{t("Individual Annual (የግለሰቡ አመታዊ ረፖርት ዝርዝር)")}</h3>
     <p>
-      Annual employee financial
-      summary (አመታዊ የአባሉ ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+      {t("Annual employee financial summary")}
     </p>
   </div>
 </div>
@@ -291,10 +298,9 @@ doc.text(
     >
       <div className="diamond"></div>
       <div className="report-content">
-        <h3>Total Monthly(የማህበሩ አባል ወርሃዊ ረፖርት)</h3>
+        <h3>{t("Total Monthly(የማህበሩ አባል ወርሃዊ ረፖርት)")}</h3>
         <p>
-          Overall monthly cooperative
-          transactions(ወርሃዊ የሁሉም አባል ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+          {t("Overall monthly cooperative transactions")}
         </p>
       </div>
     </div>
@@ -311,10 +317,9 @@ doc.text(
     >
       <div className="diamond"></div>
       <div className="report-content">
-        <h3>Total Annual (የማህበሩ አባል አመታዊ ረፖርት)</h3>
+        <h3>{t("Total Annual (የማህበሩ አባል አመታዊ ረፖርት)")}</h3>
         <p>
-          Annual cooperative financial
-          performance(አመታዊ የሁሉም አባል ቁጠባ፣ ብድር፣ ተቀማጭ እና የመሳሰሉትን ይይዛል)
+          {t("Annual cooperative financial performance")}
         </p>
       </div>
     </div>
@@ -368,11 +373,11 @@ doc.text(
               </h2>
 
               <p className="selected-member-id">
-                ID: {emp.memberId}
+                {t("ID:")} {emp.memberId}
               </p>
 
               <span className="change-member-text">
-                Click to change member
+                {t("Click to change member")}
               </span>
             </React.Fragment>
           ))}
@@ -390,11 +395,10 @@ doc.text(
 
   <FaUsers className="member-icon" />
 
-  <h3>Select Member</h3>
+  <h3>{t("Select Member")}</h3>
 
   <p>
-    Search and choose employee
-    for individual reports
+    {t("Search and choose employee for individual reports")}
   </p>
 
 </div>
@@ -408,7 +412,7 @@ doc.text(
   <FaSearch />
 
 <input
-  placeholder="Search member..."
+  placeholder={t("Search member...")}
   value={searchEmployee}
   onChange={(e) =>
     setSearchEmployee(e.target.value)
@@ -458,7 +462,7 @@ doc.text(
                   </h3>
 
                   <p>
-                    Member ID:{" "}
+                    {t("Member ID")}:{" "}
                     {emp.memberId}
                   </p>
                 </div>
@@ -481,7 +485,7 @@ doc.text(
   <div className="circle-glow"></div>
 
   <div className="circle-content">
-    <span className="circle-label">Month / ወር</span>
+    <span className="circle-label">{t("Month")} /</span>
 
     <select
       value={month}
@@ -489,18 +493,18 @@ doc.text(
       disabled={isAnnualReport}
       className="circle-select"
     >
-      <option value="01">January</option>
-      <option value="02">February</option>
-      <option value="03">March</option>
-      <option value="04">April</option>
-      <option value="05">May</option>
-      <option value="06">June</option>
-      <option value="07">July</option>
-      <option value="08">August</option>
-      <option value="09">September</option>
-      <option value="10">October</option>
-      <option value="11">November</option>
-      <option value="12">December</option>
+      <option value="01">{t("January")}</option>
+      <option value="02">{t("February")}</option>
+      <option value="03">{t("March")}</option>
+      <option value="04">{t("April")}</option>
+      <option value="05">{t("May")}</option>
+      <option value="06">{t("June")}</option>
+      <option value="07">{t("July")}</option>
+      <option value="08">{t("August")}</option>
+      <option value="09">{t("September")}</option>
+      <option value="10">{t("October")}</option>
+      <option value="11">{t("November")}</option>
+      <option value="12">{t("December")}</option>
     </select>
   </div>
 </div>
@@ -515,7 +519,7 @@ doc.text(
   <div className="circle-glow purple"></div>
 
   <div className="circle-content">
-    <span className="circle-label">Year / አመት</span>
+    <span className="circle-label">{t("Year")} /</span>
 
     <input
       type="number"
@@ -538,7 +542,7 @@ doc.text(
   <FaChartLine />
 
   <span>
-    Generate Financial Report
+    {t("Generate Financial Report")}
   </span>
 
 </button>
@@ -555,13 +559,13 @@ doc.text(
 
             <div>
                 <h2 className="report-main-title">
-                    {reportType.replace("-", " ").toUpperCase()}
+                    {reportTypeTitle}
                 </h2>
 
                 <p className="report-period">
                     {isMonthlyReport
-                        ? `${monthNames[month]} ${year}`
-                        : `Year ${year}`}
+                        ? `${t(monthNames[month])} ${year}`
+                        : `${t("Year")} ${year}`}
                 </p>
             </div>
         </div>
@@ -592,8 +596,8 @@ doc.text(
 
             <thead>
                 <tr>
-                    <th>Description</th>
-                    <th>Amount</th>
+                    <th>{t("Description")}</th>
+                    <th>{t("Amount")}</th>
                 </tr>
             </thead>
 
@@ -625,8 +629,8 @@ doc.text(
   <span className="value-text">
     {typeof value === "object" && value !== null ? (
   <>
-    <div>Member ID : {value.memberId}</div>
-    <div>Full Name : {value.fullName}</div>
+    <div>{t("Member ID")} : {value.memberId}</div>
+    <div>{t("Full Name")} : {value.fullName}</div>
   </>
 ) : (
   String(value)

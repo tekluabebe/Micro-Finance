@@ -13,6 +13,8 @@ import autoTable from "jspdf-autotable";
 
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 
 import {
   FaSearch,
@@ -56,6 +58,8 @@ for (let y = 2023; y <= 2035; y++) {
 =====================================================*/
 
 export default function CheckBalance() {
+  const { language } = useAppContext();
+  const t = (text) => translate(language, text);
 
   const [loading, setLoading] = useState(false);
 
@@ -344,8 +348,8 @@ const filteredData = useMemo(() => {
       <div className="cb-header">
 
         <div>
-          <h1>Check & Balance Report</h1>
-          <p>General Ledger Check and Balance Statement</p>
+          <h1>{t("Check & Balance Report")}</h1>
+          <p>{t("General Ledger Check and Balance Statement")}</p>
         </div>
 
         <button
@@ -353,7 +357,7 @@ const filteredData = useMemo(() => {
           onClick={loadData}
         >
           <FaSyncAlt />
-          Refresh
+          {t("Refresh")}
         </button>
 
       </div>
@@ -364,7 +368,7 @@ const filteredData = useMemo(() => {
 
         <div className="filter-group">
 
-          <label>Month</label>
+          <label>{t("Month")}</label>
 
           <select
             value={month}
@@ -377,7 +381,7 @@ const filteredData = useMemo(() => {
                 key={m}
                 value={m}
               >
-                {m}
+                {t(m)}
               </option>
 
             ))}
@@ -388,7 +392,7 @@ const filteredData = useMemo(() => {
 
         <div className="filter-group">
 
-          <label>Year</label>
+          <label>{t("Year")}</label>
 
           <select
             value={year}
@@ -412,7 +416,7 @@ const filteredData = useMemo(() => {
 
         <div className="filter-group search-group">
 
-          <label>Search Account</label>
+          <label>{t("Search Account")}</label>
 
           <div className="search-box">
 
@@ -420,7 +424,7 @@ const filteredData = useMemo(() => {
 
             <input
               type="text"
-              placeholder="Search account..."
+              placeholder={t("Search account...")}
               value={search}
               onChange={(e) =>
                 setSearch(e.target.value)
@@ -458,7 +462,7 @@ const filteredData = useMemo(() => {
           onClick={printReport}
         >
           <FaPrint />
-          Print
+          {t("Print")}
         </button>
 
       </div>
@@ -469,7 +473,7 @@ const filteredData = useMemo(() => {
 
         <div className="report-title">
 
-          <h2>CHECK & BALANCE</h2>
+          <h2>{t("Check & Balance Report")}</h2>
 
           <span>
             {month} {year}
@@ -481,12 +485,12 @@ const filteredData = useMemo(() => {
 
         <div className="organization-header">
 
-          <h3>YOUR ORGANIZATION NAME</h3>
+          <h3>{t("YOUR ORGANIZATION NAME")}</h3>
 
-          <p>General Ledger Check & Balance Report</p>
+          <p>{t("General Ledger Check & Balance Report")}</p>
 
           <p>
-            Period :
+            {t("Period:")}
             <strong>
               {" "}
               {month} {year}
@@ -508,7 +512,7 @@ const filteredData = useMemo(() => {
                 <th
                   style={{ width: "60%" }}
                 >
-                  Account Description
+                  {t("Account Description")}
                 </th>
 
                 <th
@@ -517,7 +521,7 @@ const filteredData = useMemo(() => {
                     textAlign: "right"
                   }}
                 >
-                  Debit
+                  {t("Debit")}
                 </th>
 
                 <th
@@ -526,7 +530,7 @@ const filteredData = useMemo(() => {
                     textAlign: "right"
                   }}
                 >
-                  Credit
+                  {t("Credit")}
                 </th>
 
               </tr>
@@ -543,7 +547,7 @@ const filteredData = useMemo(() => {
                     colSpan="3"
                     className="loading-row"
                   >
-                    Loading report...
+                    {t("Loading report...")}
                   </td>
 
                 </tr>
@@ -556,7 +560,7 @@ const filteredData = useMemo(() => {
                     colSpan="3"
                     className="loading-row"
                   >
-                    No data found.
+                    {t("No data found.")}
                   </td>
 
                 </tr>
@@ -599,7 +603,7 @@ const filteredData = useMemo(() => {
               <tr className="total-row">
 
                 <td>
-                  <strong>TOTAL</strong>
+                  <strong>{t("TOTAL")}</strong>
                 </td>
 
                 <td className="amount">
@@ -624,7 +628,7 @@ const filteredData = useMemo(() => {
 
           <div className="summary-card debit-card">
 
-            <span>Total Debit</span>
+            <span>{t("Total Debit")}</span>
 
             <h3>{money(totalDebit)}</h3>
 
@@ -632,7 +636,7 @@ const filteredData = useMemo(() => {
 
           <div className="summary-card credit-card">
 
-            <span>Total Credit</span>
+            <span>{t("Total Credit")}</span>
 
             <h3>{money(totalCredit)}</h3>
 
@@ -646,12 +650,12 @@ const filteredData = useMemo(() => {
             }`}
           >
 
-            <span>Status</span>
+            <span>{t("Status")}</span>
 
             <h3>
               {totalDebit === totalCredit
-                ? "BALANCED"
-                : "NOT BALANCED"}
+                ? t("BALANCED")
+                : t("NOT BALANCED")}
             </h3>
 
           </div>

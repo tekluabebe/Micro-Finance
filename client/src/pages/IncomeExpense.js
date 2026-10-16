@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import API from '../services/api';
+import { useAppContext } from "./context";
+import { translate } from "../utils/translations";
 import './IncomeExpense.css';
 
 import {
@@ -16,6 +18,8 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 export default function IncomeExpense() {
+const { language } = useAppContext();
+const t = (text) => translate(language, text);
 
 const isMember =
     localStorage.getItem("userRole")?.toLowerCase() === "member";
@@ -379,7 +383,7 @@ const removeOtherIncomeRow = (index) => {
     return (
         <div ref={reportRef} className="income-expense-container">
 
-            <h2 className="main-title">ገቢ እና ወጪ Dashboard</h2>
+            <h2 className="main-title">{t("Income & Expense")}</h2>
 
             {/* FILTER */}
             <div className="filter-container">
@@ -402,7 +406,7 @@ const removeOtherIncomeRow = (index) => {
       key={`cell-${index}`}
       fill={
         entry.name === "Income"
-          ? "#28a745" // Green
+          ? "#28a745"
           : entry.name === "Expense"
           ? "#dc3545" // Red
           : "#007bff" // Blue
@@ -416,9 +420,9 @@ const removeOtherIncomeRow = (index) => {
 
             {/* BUTTONS */}
 <div className="button-group">
-                  <button className="save-btn" onClick={handleSave}>💾 Save</button>
-                <button className="pdf-btn" onClick={exportPDF}>🧾 Export PDF</button>
-                <button className="excel-btn" onClick={exportExcel}>📊 Export Excel</button>
+                  <button className="save-btn" onClick={handleSave}>💾 {t("Save")}</button>
+                <button className="pdf-btn" onClick={exportPDF}>🧾 {t("Export PDF")}</button>
+                <button className="excel-btn" onClick={exportExcel}>📊 {t("Export Excel")}</button>
             </div>
 
             {/* EXISTING UI (your full income/expense UI stays same below) */}
@@ -429,32 +433,32 @@ const removeOtherIncomeRow = (index) => {
                 <div className="report-card">
 
                     <h3 className="report-title" style={{ color: '#28a745' }}>
-                        ገቢ (Income)
+                        {t("Income")}
                     </h3>
 
                     {/* FIXED INCOME ROWS (NO EDIT STRUCTURE CHANGE) */}
                     <div className="table-row">
-                        <span>Registration Fees/መመዝገቢያ</span>
+                        <span>{t("Registration Fees")}</span>
                         <span>{registrationFees.toLocaleString()}</span>
                     </div>
 
                     <div className="table-row">
-                        <span>Late Deposit Penalty/የቁጠባ ቅጣት</span>
+                        <span>{t("Late Deposit Penalty")}</span>
                         <span>{lateDepositPenalty.toLocaleString()}</span>
                     </div>
 
                    <div className="table-row">
-    <span>Loan Interest Paid/የብድር ወለድ</span>
+    <span>{t("Loan Interest Paid")}</span>
     <span>{loanInterestPaid.toLocaleString()}</span>
 </div>
 
                     <div className="table-row">
-                        <span>Late Loan Penalty/የብድር ቅጣት</span>
+                        <span>{t("Late Loan Penalty")}</span>
                         <span>{lateLoanPenalty.toLocaleString()}</span>
                     </div>
 
                     {/* ================= BANK INCOME (FIXED) ================= */}
-                    <h4 style={{ marginTop: 20 }}>Bank Income</h4>
+                    <h4 style={{ marginTop: 20 }}>{t("Bank Income")}</h4>
 
                     {bankIncomes.map((item, i) => (
                         <div key={i} className="table-row">
@@ -472,13 +476,13 @@ const removeOtherIncomeRow = (index) => {
                     ))}
 
                     {/* ================= OTHER INCOME (ONLY DYNAMIC) ================= */}
-                    <h4 style={{ marginTop: 20 }}>Other Income</h4>
+                    <h4 style={{ marginTop: 20 }}>{t("Other Income")}</h4>
 
                     {otherIncomes.map((income, index) => (
                         <div key={index} className="table-row">
 
                           <input
-                              placeholder="Income Name"
+                              placeholder={t("Income Name")}
                               value={income.name}
                               disabled={isMember}
                               onChange={(e) =>
@@ -488,7 +492,7 @@ const removeOtherIncomeRow = (index) => {
 
                           <input
                               type="number"
-                              placeholder="Amount"
+                              placeholder={t("Amount")}
                               value={income.amount}
                               disabled={isMember}
                               onChange={(e) =>
@@ -510,13 +514,13 @@ const removeOtherIncomeRow = (index) => {
                         </div>
                     ))}
 
-<button className="add-income-btn" onClick={addOtherIncomeRow}>                        + Add Other Income
+<button className="add-income-btn" onClick={addOtherIncomeRow}>                        + {t("Add Other Income")}
                     </button>
 
                     {/* TOTAL */}
                     <div className="total-row">
                       <h3  style={{ color: '#19cd31' }}>
-                        ጠቅላላ ገቢ (Total Income)
+                        {t("Total Income")}
                     </h3>
                         <span style={{ color: '#19cd31' }}>{totalIncome.toLocaleString()}</span>
                     </div>
@@ -527,7 +531,7 @@ const removeOtherIncomeRow = (index) => {
                 <div className="report-card">
 
                     <h3 className="report-title" style={{ color: '#dc3545' }}>
-                        ወጪ (Expense)
+                        {t("Expense")}
                     </h3>
 
                     {expenseData.map((item, i) => (
@@ -546,7 +550,7 @@ const removeOtherIncomeRow = (index) => {
                     ))}
 
                     <div className="total-row">
-                        <span style={{ color: '#ef6f0d' }}>ጠቅላላ ወጪ</span>
+                        <span style={{ color: '#ef6f0d' }}>{t("Total Expense")}</span>
                         <span style={{ color: '#cd6d19' }}>{totalExpense.toLocaleString()}</span>
                     </div>
 
@@ -556,17 +560,17 @@ const removeOtherIncomeRow = (index) => {
 
             <div className="kpi-container">
                 <div className="kpi-card income-bg">
-                    <h4>Total Income</h4>
+                    <h4>{t("Total Income")}</h4>
                     <p>{totalIncome.toLocaleString()} ETB</p>
                 </div>
 
                 <div className="kpi-card expense-bg">
-                    <h4>Total Expenses</h4>
+                    <h4>{t("Total Expenses")}</h4>
                     <p>{totalExpense.toLocaleString()} ETB</p>
                 </div>
 
                 <div className="kpi-card profit-bg">
-                    <h4>Net Profit</h4>
+                    <h4>{t("Net Profit")}</h4>
                     <p>{netProfit.toLocaleString()} ETB</p>
                 </div>
             </div>
