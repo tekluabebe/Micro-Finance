@@ -94,9 +94,11 @@ doc.text(`Adults : ${adults}`,70,32);
 
 doc.text(`Children : ${children}`,110,32);
 
-doc.text(`Admins : ${admins}`,160,32);
-
-doc.text(`Members : ${members}`,210,32);
+   const roleSummaryLines = doc.splitTextToSize(
+     `Roles: ${systemRoles.map((role) => `${role.label}: ${roleCounts[role.value]}`).join(" | ")}`,
+     265
+   );
+   doc.text(roleSummaryLines, 14, 38);
     doc.text(
       `Generated: ${new Date().toLocaleString()}`,
       220,
@@ -104,7 +106,7 @@ doc.text(`Members : ${members}`,210,32);
     );
 
     autoTable(doc,{
-        startY:35,
+        startY: 38 + roleSummaryLines.length * 5 + 2,
 
         head:[[
             "ID",
@@ -151,13 +153,22 @@ const children = employees.filter(
 e=>e.category==="Child"
 ).length;
 
-const admins = employees.filter(
-e=>e.role==="admin"
-).length;
+const systemRoles = [
+  { value: "admin", label: "Admin", color: "#dc2626" },
+  { value: "member", label: "Member", color: "#f59e0b" },
+  { value: "loan officer", label: "Loan Officer", color: "#7c3aed" },
+  { value: "loan manager", label: "Loan Manager", color: "#0891b2" },
+  { value: "vice loan manager", label: "Vice Loan Manager", color: "#4f46e5" },
+  { value: "accountant", label: "Accountant", color: "#16a34a" },
+  { value: "treasurer", label: "Treasurer", color: "#ea580c" },
+];
 
-const members = employees.filter(
-e=>e.role==="member"
-).length;
+const roleCounts = systemRoles.reduce((counts, role) => {
+  counts[role.value] = employees.filter(
+    (employee) => String(employee.role || "member").toLowerCase() === role.value
+  ).length;
+  return counts;
+}, {});
 
 
   const initialState = {
@@ -169,7 +180,7 @@ e=>e.role==="member"
     gender: "",
     phone: "",
     maritalStatus: "",
-    role: "Member",
+    role: "member",
     password: "",   
     wifeName: "",
     wifeFatherName: "",
@@ -216,16 +227,11 @@ const calculateAge = (birthDate) => {
   pieInstance.current = new Chart(pieChartRef.current, {
     type: "pie",
     data: {
-      labels: ["Adults", "Children", "Admins", "Members"],
+      labels: systemRoles.map((role) => t(role.label)),
       datasets: [
         {
-          data: [adults, children, admins, members],
-          backgroundColor: [
-            "#2563eb",
-            "#22c55e",
-            "#dc2626",
-            "#f59e0b",
-          ],
+          data: systemRoles.map((role) => roleCounts[role.value]),
+          backgroundColor: systemRoles.map((role) => role.color),
         },
       ],
     },
@@ -247,19 +253,22 @@ const calculateAge = (birthDate) => {
         "Total Employees",
         "Adults",
         "Children",
-        "Admins",
-        "Members",
+        ...systemRoles.map((role) => t(role.label)),
       ],
       datasets: [
         {
           label: "Employees",
-          data: [total, adults, children, admins, members],
+          data: [
+            total,
+            adults,
+            children,
+            ...systemRoles.map((role) => roleCounts[role.value]),
+          ],
           backgroundColor: [
             "#1d4ed8",
             "#2563eb",
             "#22c55e",
-            "#dc2626",
-            "#f59e0b",
+            ...systemRoles.map((role) => role.color),
           ],
         },
       ],
@@ -286,7 +295,7 @@ const calculateAge = (birthDate) => {
     if (pieInstance.current) pieInstance.current.destroy();
     if (barInstance.current) barInstance.current.destroy();
   };
-}, [total, adults, children, admins, members]);
+}, [employees, total, adults, children, language]);
 
   useEffect(() => {
     fetchEmployees();
@@ -380,7 +389,11 @@ role: (formData.role || "member").toLowerCase(),};
   };
 
   const handleEdit = (emp) => {
-    setFormData({ ...emp, password: "" }); 
+    setFormData({
+      ...emp,
+      role: String(emp.role || "member").toLowerCase(),
+      password: "",
+    });
     setEditingId(emp._id);
     setShowForm(true);
   };
@@ -713,8 +726,13 @@ const barInstance = useRef(null);
   color: theme.text,
   border: `1px solid ${theme.border}`
 }}>
-            <option value="Member">{t("Member")}</option>
-            <option value="Admin">{t("Admin")}</option>
+            <option value="member">{t("Member")}</option>
+            <option value="admin">{t("Admin")}</option>
+            <option value="loan officer">{t("Loan Officer")}</option>
+            <option value="loan manager">{t("Loan Manager")}</option>
+            <option value="vice loan manager">{t("Vice Loan Manager")}</option>
+            <option value="accountant">{t("Accountant")}</option>
+            <option value="treasurer">{t("Treasurer")}</option>
           </select>
         </div>
       </div>
@@ -888,7 +906,7 @@ const barInstance = useRef(null);
         color: theme.text,
       }}
     >
-      Member Distribution
+      Employee Distribution by Role
     </h3>
 
     <canvas ref={pieChartRef} style={{ maxHeight: "200px" }}></canvas>
@@ -928,7 +946,7 @@ const barInstance = useRef(null);
         color: theme.text,
       }}
     >
-      Member Statistics
+      Employee Statistics
     </h3>
 
    <canvas ref={barChartRef} style={{ maxHeight: "200px" }}></canvas>
@@ -1019,13 +1037,19 @@ style={{
                         padding: "4px 8px", 
                         borderRadius: 4, 
                         fontSize: 12, 
-background: emp.role === "admin"
+background: String(emp.role).toLowerCase() === "admin"
   ? "#dc2626"
   : "#2563eb",                        
 color: "#fff",
                         fontWeight: 'bold'
                     }}>
-                     {t(emp.role === "admin" ? "Admin" : "Member")}
+                     {t(
+                       emp.role === "admin"
+                         ? "Admin"
+                         : emp.role === "member"
+                           ? "Member"
+                           : emp.role || "Member"
+                     )}
                     </span>
                   </td>
                  <td

@@ -4,6 +4,30 @@ import { useAppContext } from "./context";
 import { translate } from "../utils/translations";
 import "./LoanPayments.css";
 
+const GRACE_PERIOD_MONTHS = 1;
+
+const addMonthsClamped = (date, months) => {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0
+  ).getDate();
+  result.setDate(Math.min(day, lastDay));
+  return result;
+};
+
+const getFirstPaymentDate = (loan) => {
+  const date = loan.paymentStartDate
+    ? new Date(loan.paymentStartDate)
+    : addMonthsClamped(new Date(loan.createdAt), GRACE_PERIOD_MONTHS);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 // 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
 export default function LoanPayments({ isSidebarOpen = true }) {
   const { language } = useAppContext();
@@ -34,7 +58,6 @@ const [selectedMonths, setSelectedMonths] = useState([]);
   const [monthlyPayment, setMonthlyPayment] = useState(0);
 
   const PENALTY_PER_MONTH = 50;
-  const GRACE_PERIOD = 2;
 
   // የስክሪን መጠን መለወጫ ማዳመጫ (Responsive)
   useEffect(() => {
@@ -169,19 +192,21 @@ const loadPaidMonths = async (loanId, employeeId) => {
   // ✨ የተስተካከለ የ Grace Period እና የወርሃዊ ክፍያ ስሌት ሎጂክ
   // ==========================================================================
 const calculateDueAmount = (loan) => {
-  const loanStartDate = new Date(loan.createdAt);
+  const paymentStartDate = getFirstPaymentDate(loan);
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const duration = Number(loan.durationMonths);
+  let effectiveMonths = 0;
+  let nextDueDate = paymentStartDate;
 
-  let diffInMonths =
-    (today.getFullYear() - loanStartDate.getFullYear()) * 12 +
-    (today.getMonth() - loanStartDate.getMonth());
-    const GRACE_PERIOD = 2;
-    const effectiveMonths = Math.max(diffInMonths - GRACE_PERIOD, 0);
-    
+  while (nextDueDate < today && effectiveMonths < duration) {
+    effectiveMonths += 1;
+    nextDueDate = addMonthsClamped(paymentStartDate, effectiveMonths);
+  }
+
   setMissingMonths(effectiveMonths);
 
   const principal = Number(loan.principalAmount);
-  const duration = Number(loan.durationMonths);
 
   let totalAmount = 0;
 
@@ -247,6 +272,16 @@ const calculateDueAmount = (loan) => {
 const submit = async () => {
   if (!selectedLoan) {
     alert("❌ Loan not found");
+    return;
+  }
+
+  const paymentStartDate = getFirstPaymentDate(selectedLoan);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (today < paymentStartDate) {
+    setErrorMessage(
+      `${t("Payments begin on")} ${paymentStartDate.toLocaleDateString()}`
+    );
     return;
   }
 
@@ -475,20 +510,15 @@ if (isMultiple) {
     width: isMobile ? "100%" : `calc(100% - ${currentLeftMargin})`,
   };
 
-const getAvailableMonths = (loanCreatedAt) => {
-  if (!loanCreatedAt) return [];
+const getAvailableMonths = (loan) => {
+  if (!loan?.createdAt) return [];
 
-  const startDate = new Date(loanCreatedAt);
-
-  // 👉 Skip 2 months (June → August)
-  const firstPayDate = new Date(startDate);
-  firstPayDate.setMonth(firstPayDate.getMonth() + 2);
+  const firstPayDate = getFirstPaymentDate(loan);
 
   const months = [];
 
-  let current = new Date(firstPayDate);
-
   for (let i = 0; i < 24; i++) {
+    const current = addMonthsClamped(firstPayDate, i);
     const monthName = current.toLocaleString("default", {
       month: "long",
     });
@@ -496,8 +526,6 @@ const getAvailableMonths = (loanCreatedAt) => {
     const year = current.getFullYear();
 
     months.push(`${monthName} ${year}`);
-
-    current.setMonth(current.getMonth() + 1);
   }
 
   return months;
@@ -564,12 +592,12 @@ style={{
 
 )}
               <div className="status-row">
-                <span>{t("Start Date:")}</span>
-                <strong>{new Date(selectedLoan.createdAt).toLocaleDateString()}</strong>
+                <span>{t("Payment Start Date:")}</span>
+                <strong>{getFirstPaymentDate(selectedLoan).toLocaleDateString()}</strong>
               </div>
               <div className="status-row">
                 <span>{t("Grace Period:")}</span>
-                <span className="badge-green">2 {t("Months Included")}</span>
+                <span className="badge-green">{GRACE_PERIOD_MONTHS} {t("Months Included")}</span>
               </div>
               <div className="status-row highlight-row">
                 <span>{t("Overdue Months:")}</span>
@@ -680,7 +708,7 @@ setErrorMessage("");
 
 {
   
-getAvailableMonths(selectedLoan?.createdAt || "").map(month => (
+getAvailableMonths(selectedLoan).map(month => (
 
 <option
 key={month}
@@ -725,7 +753,7 @@ gap:"10px"
 
 
 {
-getAvailableMonths(selectedLoan?.createdAt).map(month => (
+getAvailableMonths(selectedLoan).map(month => (
 
 <label key={month}>
 
@@ -818,6 +846,13 @@ m=>m!==month
           </div>
 
           {/* 4፦ ማረጋገጫ ማቅረቢያ ቁልፍ (Submit Button) */}
+          {selectedLoan &&
+            new Date().setHours(0, 0, 0, 0) <
+              getFirstPaymentDate(selectedLoan).getTime() && (
+            <div className="info-box">
+              {t("Payments begin on")} {getFirstPaymentDate(selectedLoan).toLocaleDateString()}
+            </div>
+          )}
           <button onClick={submit} className="loan-submit-btn">
             {t("Confirm Payment")}
           </button>

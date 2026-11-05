@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import API from "../services/api";
 import { useAppContext } from "./context";
@@ -10,6 +10,7 @@ export default function Dashboard() {
   const amharic = language === "Amharic";
   const tr = (text) => amharic ? ({
     "No notifications": "ምንም ማሳወቂያ የለም",
+    "Loan notifications could not be loaded.": "የብድር ማሳወቂያዎችን መጫን አልተቻለም።",
     "No password reset requests": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ የለም",
     "Password Reset Request": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ",
     "Member ID": "የአባል መለያ",
@@ -19,6 +20,8 @@ export default function Dashboard() {
     "Employee ID:": "የሰራተኛ መለያ:",
     "Borrower:": "ተበዳሪ:",
     "Guarantors (ዋሶች):": "ዋሶች:",
+    "External guarantors": "ውጭ ዋሶች",
+    "Digital ID:": "ዲጂታል መታወቂያ:",
     "No guarantors listed!": "ምንም ዋስ አልተዘረዘረም!",
     "Status:": "ሁኔታ:",
     "approved": "ጸድቋል",
@@ -68,6 +71,11 @@ export default function Dashboard() {
     "User": "ተጠቃሚ",
     "member": "አባል",
     "admin": "አስተዳዳሪ",
+    "loan officer": "የብድር ኦፊሰር",
+    "loan manager": "የብድር ማናጀር",
+    "vice loan manager": "ምክትል የብድር ማናጀር",
+    "accountant": "የሂሳብ ባለሙያ",
+    "treasurer": "ገንዘብ ያዥ",
   }[text] || text) : translate(language, text);
   const monthLabels = {
     January: "ጃንዋሪ", February: "ፌብሩዋሪ", March: "ማርች",
@@ -78,6 +86,26 @@ export default function Dashboard() {
   const displayMonth = (month) => amharic ? monthLabels[month] || month : month;
   const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
   const isMember = userRole === "member";
+  const loanNotificationRoles = [
+    "admin",
+    "loan officer",
+    "loan manager",
+    "vice loan manager",
+    "accountant",
+    "treasurer",
+  ];
+  const canReviewLoans = loanNotificationRoles.includes(userRole);
+  const canApproveOrRejectLoan = (item) => {
+    if (userRole === "loan officer") {
+      return item.loanOfficerStatus === "pending" && item.status !== "approved" && item.status !== "rejected";
+    }
+
+    if (["loan manager", "vice loan manager"].includes(userRole)) {
+      return item.loanOfficerStatus === "approved" && item.loanManagerStatus === "pending" && item.status !== "approved" && item.status !== "rejected";
+    }
+
+    return false;
+  };
   const withdrawalNotificationEnabled =
   localStorage.getItem("withdrawalNotification") !== "false";
 
@@ -91,6 +119,7 @@ export default function Dashboard() {
 
   const [withdrawals, setWithdrawals] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [loanNotificationError, setLoanNotificationError] = useState("");
   const [deposits, setDeposits] = useState([]);
 
   const [openWithdrawals, setOpenWithdrawals] = useState(false);
@@ -110,6 +139,25 @@ export default function Dashboard() {
     user.fullName ||
     user.name ||
     tr("User");
+
+  const fetchLoanNotifications = useCallback(async () => {
+    if (!canReviewLoans) return;
+
+    try {
+      const res = await API.get("/loans/notifications", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setLoans(res.data || []);
+      setLoanNotificationError("");
+    } catch (err) {
+      console.error("Loan notification fetch failed:", err);
+      setLoanNotificationError(
+        err.response?.data?.message || "Loan notifications could not be loaded."
+      );
+    }
+  }, [canReviewLoans]);
 
   // =========================
   // FILTERS
@@ -155,10 +203,6 @@ useEffect(() => {
     .then((res) => setWithdrawals(res.data || []))
     .catch(() => setWithdrawals([]));
 
-  API.get("/loans")
-    .then((res) => setLoans(res.data || []))
-    .catch(() => setLoans([]));
-
   API.get("/deposits")
     .then((res) => setDeposits(res.data || []))
     .catch(() => setDeposits([]));
@@ -167,7 +211,23 @@ useEffect(() => {
     .then((res) => setPasswordRequests(res.data || []))
     .catch(() => setPasswordRequests([]));
 
-},  []);
+},  [isMember]);
+
+useEffect(() => {
+  if (!canReviewLoans) {
+    setLoans([]);
+    return undefined;
+  }
+
+  fetchLoanNotifications();
+  const intervalId = window.setInterval(fetchLoanNotifications, 15000);
+  window.addEventListener("focus", fetchLoanNotifications);
+
+  return () => {
+    window.clearInterval(intervalId);
+    window.removeEventListener("focus", fetchLoanNotifications);
+  };
+}, [fetchLoanNotifications, canReviewLoans]);
 
 
   // =========================
@@ -275,12 +335,7 @@ const unreadWithdrawals = withdrawalNotificationEnabled
   : 0;
 
 const unreadLoans = loanNotificationEnabled
-  ? loans.filter(
-      (l) =>
-        l.isRead !== true &&
-        l.status !== "approved" &&
-        l.status !== "rejected"
-    ).length
+  ? loans.filter((l) => l.isRead !== true).length
   : 0;
 
 const unreadPasswordRequests = passwordNotificationEnabled
@@ -323,7 +378,15 @@ setPasswordRequests([]);
 
 const handleApprove = async (type, id) => {
   try {
-    await API.put(`/${type}/${id}/approve`);
+    const payload = type === "loans" ? { role: userRole } : undefined;
+    const config = type === "loans"
+      ? {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+        }
+      : undefined;
+    await API.put(`/${type}/${id}/approve`, payload, config);
 
 if (type === "withdrawals") {
 
@@ -377,7 +440,15 @@ if (type === "withdrawals") {
 
 const handleReject = async (type, id) => {
   try {
-    await API.put(`/${type}/${id}/reject`);
+    const payload = type === "loans" ? { role: userRole } : undefined;
+    const config = type === "loans"
+      ? {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          },
+        }
+      : undefined;
+    await API.put(`/${type}/${id}/reject`, payload, config);
 
     if (type === "withdrawals") {
       setWithdrawals(prev => prev.filter(w => w._id !== id));
@@ -536,7 +607,13 @@ const renderPasswordRequests = () => {
 };
 
   const renderNotifications = (items, type) => {
-    const unreadItems = items.filter((i) => i.isRead !== true && i.status !== "Rejected");
+    const unreadItems = items.filter(
+      (item) =>
+        item.isRead !== true &&
+        !["approved", "rejected"].includes(
+          String(item.status || "pending").toLowerCase()
+        )
+    );
     if (!unreadItems.length) return <p style={styles.empty}>{tr("No notifications")}</p>;
 
     return unreadItems.map((item) => (
@@ -576,9 +653,15 @@ const renderPasswordRequests = () => {
                 <ul style={{ margin: "3px 0", paddingLeft: "15px", listStyleType: "square" }}>
                   {item.guarantors && item.guarantors.length > 0 ? (
                     item.guarantors.map((g, index) => <li key={index} style={{ fontSize: "11px", color: "#333" }}>{g.firstName} {g.lastName}</li>)
-                  ) : (
+                  ) : !item.externalGuarantors?.length ? (
                     <li style={{ fontSize: "11px", color: "red" }}>{tr("No guarantors listed!")}</li>
-                  )}
+                  ) : null}
+                  {item.externalGuarantors?.map((guarantor, index) => (
+                    <li key={`external-${index}`} style={{ fontSize: "11px", color: "#333" }}>
+                      <strong>{tr("External guarantors")}:</strong>{" "}
+                      {guarantor.fullName} ({tr("Digital ID:")} {guarantor.digitalId})
+                    </li>
+                  ))}
                 </ul>
               </div>
               <p style={styles.text}>
@@ -590,13 +673,23 @@ const renderPasswordRequests = () => {
             </>
           )}
         </div>
-        <div
-  className="notification-actions"
-  style={styles.actions}
->
-          <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
-          <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
-        </div>
+        {type === "loans" && canApproveOrRejectLoan(item) ? (
+          <div
+            className="notification-actions"
+            style={styles.actions}
+          >
+            <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
+            <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
+          </div>
+        ) : type !== "loans" ? (
+          <div
+            className="notification-actions"
+            style={styles.actions}
+          >
+            <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
+            <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
+          </div>
+        ) : null}
       </div>
     ));
   };
@@ -649,18 +742,21 @@ const renderPasswordRequests = () => {
       )}
     </button>
 
-    <button
+    {canReviewLoans && <button
       type="button"
       className="notifItem"
       aria-expanded={openLoans}
       aria-controls="loan-notifications"
-      onClick={() => setOpenLoans(!openLoans)}
+      onClick={() => {
+        setOpenLoans((isOpen) => !isOpen);
+        fetchLoanNotifications();
+      }}
     >
       💰 {tr("Loans")}
       {loanNotificationEnabled && unreadLoans > 0 && (
         <span className="badge">{unreadLoans}</span>
       )}
-    </button>
+    </button>}
 
     <button
       type="button"
@@ -711,10 +807,12 @@ const renderPasswordRequests = () => {
   </div>
 )}
 
-{!isMember && openLoans && (
+{canReviewLoans && openLoans && (
   <div id="loan-notifications" className="dashboard-notif-dropdown" style={styles.dropdown}>
     {loanNotificationEnabled ? (
-      renderNotifications(loans, "loans")
+      loanNotificationError
+      ? <p style={styles.empty}>{tr(loanNotificationError)}</p>
+        : renderNotifications(loans, "loans")
     ) : (
       <p style={styles.empty}>{tr("Notifications disabled")}</p>
     )}

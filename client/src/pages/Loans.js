@@ -4,6 +4,20 @@ import { useAppContext } from "./context";
 import { translate } from "../utils/translations";
 import "./Loans.css";
 
+const addMonthsClamped = (date, months) => {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0
+  ).getDate();
+  result.setDate(Math.min(day, lastDay));
+  return result;
+};
+
 // 💡 ሳይድባሩ ሲዘጋና ሲከፈት ገጹ አብሮ እንዲለጠጥ ፕሮፕስ ተቀብለናል
 export default function Loans({ isSidebarOpen = true }) {
   const { language } = useAppContext();
@@ -29,6 +43,30 @@ export default function Loans({ isSidebarOpen = true }) {
     "Loan Maturity Date:": "የብድር ማብቂያ ቀን:",
     "Enter an amount and employee to view live calculation summary.": "የቀጥታ ስሌቱን ለማየት መጠን እና ሰራተኛ ያስገቡ።",
     "Guarantor Verification": "የዋስ ማረጋገጫ",
+    "Guarantor type": "የዋስ አይነት",
+    "Member guarantor": "አባል ዋስ",
+    "External guarantor": "ውጭ ዋስ",
+    "Member savings guarantors": "ቁጠባ የሚያረጋግጡ አባል ዋሶች",
+    "Full name": "ሙሉ ስም",
+    "Phone number": "ስልክ ቁጥር",
+    "Digital ID number": "ዲጂታል መታወቂያ ቁጥር",
+    "Enter guarantor full name": "የዋሱን ሙሉ ስም ያስገቡ",
+    "Enter guarantor phone number": "የዋሱን ስልክ ቁጥር ያስገቡ",
+    "Enter guarantor digital ID number": "የዋሱን ዲጂታል መታወቂያ ቁጥር ያስገቡ",
+    "Add External Guarantor": "ውጭ ዋስ ጨምር",
+    "Remove External Guarantor": "ውጭ ዋስ አስወግድ",
+    "External guarantors": "ውጭ ዋሶች",
+    "Please add at least one complete external guarantor.": "እባክዎ ቢያንስ አንድ ሙሉ የውጭ ዋስ መረጃ ያስገቡ።",
+    "Add External Guarantor": "ውጭ ዋስ ጨምር",
+    "Remove External Guarantor": "ውጭ ዋስ አስወግድ",
+    "Please add at least one complete external guarantor.": "እባክዎ ቢያንስ አንድ ሙሉ የውጭ ዋስ መረጃ ያስገቡ።",
+    "Please fill all external guarantor details.": "እባክዎ የውጭ ዋሱን ሁሉንም መረጃ ይሙሉ።",
+    "Please add member guarantors with sufficient savings.": "እባክዎ በቂ ቁጠባ ያላቸውን አባል ዋሶች ያክሉ።",
+    "You already have an unfinished loan of this type. Pay it off before applying for another one.": "የዚህ ዓይነት ያልተጠናቀቀ ብድር አለዎት። ሌላ ከማመልከትዎ በፊት ይህን ብድር ይጨርሱ።",
+    "External guarantor phone must be +251 followed by 9 digits starting with 9.": "የውጭ ዋሱ ስልክ +251 ተከትሎ በ9 የሚጀምሩ 9 ቁጥሮች መሆን አለበት።",
+    "External guarantor digital ID must be exactly 16 digits.": "የውጭ ዋሱ ዲጂታል መታወቂያ በትክክል 16 ቁጥሮች መሆን አለበት።",
+    "The loan server has not been updated to accept external guarantors. Please redeploy the server and try again.": "የብድር ሰርቨሩ ውጭ ዋሶችን እንዲቀበል አልተዘመነም። እባክዎ ሰርቨሩን እንደገና ያስጀምሩና ይሞክሩ።",
+    "External guarantor details complete.": "የውጭ ዋስ መረጃ ተሟልቷል።",
     "Loan exceeds employee deposits by:": "ብድሩ የሰራተኛውን ቁጠባ የሚበልጠው:",
     "Add Guarantor": "ዋስ ያክሉ",
     "-- Choose Guarantor --": "-- ዋስ ይምረጡ --",
@@ -87,6 +125,8 @@ const [historyLoans, setHistoryLoans] = useState([]);
   const [loanEndDate, setLoanEndDate] = useState("");
   const [requiredGuarantee, setRequiredGuarantee] = useState(0);
   const [guarantorSavings, setGuarantorSavings] = useState({});
+  const [guarantorType, setGuarantorType] = useState("member");
+  const [externalGuarantors, setExternalGuarantors] = useState([]);
   const [error, setError] = useState("");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -112,11 +152,7 @@ const fetchData = async () => {
     
     setEmployees(emp.data || []);
     setDeposits(dep.data || []);
-    setLoans(
-      (loanRes.data || []).filter(
-        loan => loan.status !== "pending"
-      )
-    );
+    setLoans(loanRes.data || []);
   } catch (err) {
     console.error(err);
   }
@@ -259,7 +295,70 @@ const addGuarantor = (selectedId) => {
     setGuarantorSavings(copy);
   };
 
+  const addExternalGuarantor = () => {
+    setExternalGuarantors((current) => [
+      ...current,
+      { fullName: "", phone: "+251", digitalId: "" },
+    ]);
+  };
+
+  const updateExternalGuarantor = (index, field, value) => {
+    if (field === "phone") {
+      const digits = value.replace(/\D/g, "");
+      const localNumber = digits.startsWith("251") ? digits.slice(3) : digits;
+      value = `+251${localNumber.slice(0, 9)}`;
+    } else if (field === "digitalId") {
+      value = value.replace(/\D/g, "").slice(0, 16);
+    }
+
+    setExternalGuarantors((current) =>
+      current.map((guarantor, itemIndex) =>
+        itemIndex === index ? { ...guarantor, [field]: value } : guarantor
+      )
+    );
+  };
+
+  const removeExternalGuarantor = (index) => {
+    setExternalGuarantors((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index)
+    );
+  };
+
   const totalGuarantorSavings = Object.values(guarantorSavings).reduce((a, b) => a + b, 0);
+  const hasCompleteExternalGuarantor =
+    externalGuarantors.length > 0 &&
+    externalGuarantors.every(
+      (guarantor) =>
+        guarantor.fullName.trim() &&
+        guarantor.phone.trim() &&
+        guarantor.digitalId.trim()
+    );
+  const externalGuarantorComplete =
+    externalGuarantors.length > 0 && hasCompleteExternalGuarantor;
+  const hasUnfinishedSameTypeLoan = loans.some((loanItem) => {
+    const employeeId = loanItem.employeeId?._id || loanItem.employeeId;
+    return (
+      String(employeeId) === String(loan.employeeId) &&
+      loanItem.loanType === loan.loanType &&
+      !["rejected", "completed"].includes(loanItem.status) &&
+      Number(loanItem.remainingAmount || 0) > 0
+    );
+  });
+  const guarantorRequired = requiredGuarantee > 0;
+  const requiredGuarantorSavings = requiredGuarantee;
+  const memberGuarantorComplete =
+    loan.guarantors.length > 0 &&
+    totalGuarantorSavings >= requiredGuarantorSavings;
+  const guarantorDetailsComplete =
+    !guarantorRequired ||
+    (guarantorType === "external"
+      ? externalGuarantorComplete &&
+        externalGuarantors.every(
+          (guarantor) =>
+            /^\+2519\d{8}$/.test(guarantor.phone) &&
+            /^\d{16}$/.test(guarantor.digitalId)
+        )
+      : memberGuarantorComplete);
 
   useEffect(() => {
     const amount = Number(loan.principalAmount);
@@ -294,9 +393,7 @@ setMonthlyPayment(
   Math.ceil(roundedTotalLoan / duration)
 );
 
-    const today = new Date();
-    const endDate = new Date();
-    endDate.setMonth(today.getMonth() + 1 + duration); 
+    const endDate = addMonthsClamped(new Date(), duration);
 
     setLoanEndDate(endDate.toDateString());
 
@@ -330,9 +427,38 @@ const monthlyInstallment = Math.ceil(
     const absoluteLimit = 300000;
 
     setError(""); 
+    if (hasUnfinishedSameTypeLoan) {
+      setError(tr("You already have an unfinished loan of this type. Pay it off before applying for another one."));
+      return;
+    }
 
     if (!loan.employeeId || !amount || !duration) {
       setError("እባክዎ ሁሉንም አስፈላጊ መረጃዎች ይሙሉ ❌");
+      return;
+    }
+
+    if (guarantorRequired && guarantorType === "external") {
+      if (externalGuarantors.length === 0) {
+        setError(tr("Please add at least one complete external guarantor."));
+        return;
+      }
+
+      if (!hasCompleteExternalGuarantor) {
+        setError(tr("Please fill all external guarantor details."));
+        return;
+      }
+
+      if (externalGuarantors.some((guarantor) => !/^\+2519\d{8}$/.test(guarantor.phone))) {
+        setError(tr("External guarantor phone must be +251 followed by 9 digits starting with 9."));
+        return;
+      }
+
+      if (externalGuarantors.some((guarantor) => !/^\d{16}$/.test(guarantor.digitalId))) {
+        setError(tr("External guarantor digital ID must be exactly 16 digits."));
+        return;
+      }
+    } else if (guarantorRequired && !memberGuarantorComplete) {
+      setError(tr("Please add member guarantors with sufficient savings."));
       return;
     }
 
@@ -342,14 +468,19 @@ const monthlyInstallment = Math.ceil(
     }
 
     const loanDate = new Date();
-    const firstPaymentDate = new Date();
-    firstPaymentDate.setMonth(loanDate.getMonth() + 2);
-
-    const finalEndDate = new Date();
-    finalEndDate.setMonth(loanDate.getMonth() + 1 + duration);
+    const firstPaymentDate = addMonthsClamped(loanDate, 1);
+    const finalEndDate = addMonthsClamped(loanDate, duration);
 
 const payload = {
   ...loan,
+  externalGuarantors:
+    guarantorRequired && guarantorType === "external"
+      ? externalGuarantors.map((guarantor) => ({
+          fullName: guarantor.fullName.trim(),
+          phone: guarantor.phone.trim(),
+          digitalId: guarantor.digitalId.trim(),
+        }))
+      : [],
 
   principalAmount: amount,
 
@@ -370,14 +501,24 @@ const payload = {
 };
 
     try {
-      console.log("Payload:", payload);
-console.log("Rounded Total:", roundedTotalLoan);
       await API.post("/loans", payload);
       alert(`ብድሩ ተመዝግቧል። ክፍያ የሚጀምረው ${firstPaymentDate.toDateString()} ሲሆን የሚያበቃው ${finalEndDate.toDateString()} ይሆናል። ✅`);
       setLoan({ employeeId: "", guarantors: [], principalAmount: "", loanType: "normal", durationMonths: 6 });
+      setExternalGuarantors([]);
+      setGuarantorType("member");
       fetchData();
     } catch (err) {
-      setError(err.response?.data?.message || "የብድር ምዝገባው አልተሳካም ❌");
+      const serverMessage = err.response?.data?.message || "";
+      const serverStillRequiresMemberGuarantor =
+        guarantorRequired &&
+        guarantorType === "external" &&
+        /guarantor.*required|ዋስ.*(ግዴታ|ያስፈልጋል)/i.test(serverMessage);
+
+      setError(
+        serverStillRequiresMemberGuarantor
+          ? tr("The loan server has not been updated to accept external guarantors. Please redeploy the server and try again.")
+          : serverMessage || "የብድር ምዝገባው አልተሳካም ❌"
+      );
     }
   };
 
@@ -527,17 +668,17 @@ console.log("Rounded Total:", roundedTotalLoan);
   )}
 
   {/* GUARANTOR SECTION */}
-  {requiredGuarantee > 0 && (
+  {guarantorRequired && (
     <div className="guarantor-card">
       <h3 className="section-subtitle">
         {tr("Guarantor Verification")}
       </h3>
 
       <p className="guarantor-warning-text">
-        {tr("Loan exceeds employee deposits by:")}{" "}
-        <strong>
-          {requiredGuarantee.toLocaleString()} ETB
-        </strong>
+        <>
+          {tr("Loan exceeds employee deposits by:")}{" "}
+          <strong>{requiredGuarantee.toLocaleString()} ETB</strong>
+        </>
       </p>
 
     
@@ -545,83 +686,144 @@ console.log("Rounded Total:", roundedTotalLoan);
         className="loan-input-group"
         style={{ marginTop: "15px" }}
       >
-        <label>{tr("Add Guarantor")}</label>
-
+        <label>{tr("Guarantor type")}</label>
         <select
-          value=""
-          onChange={(e) =>
-            addGuarantor(e.target.value)
-          }
+          value={guarantorType}
+          onChange={(event) => {
+            setGuarantorType(event.target.value);
+            setError("");
+          }}
         >
-          <option value="">
-            {tr("-- Choose Guarantor --")}
-          </option>
-
-          {employees
-            .filter(
-              (e) =>
-                String(e._id) !==
-                  String(loan.employeeId) &&
-                String(e._id) !==
-                  String(loggedInMemberId) &&
-                !loan.guarantors.includes(e._id)
-            )
-            .map((emp) => (
-              <option
-                key={emp._id}
-                value={emp._id}
-              >
-                {emp.memberId} -{" "}
-                {emp.firstName}{" "}
-                {emp.lastName}
-              </option>
-            ))}
+          <option value="member">{tr("Member guarantor")}</option>
+          <option value="external">{tr("External guarantor")}</option>
         </select>
-      </div>
 
-      <div className="guarantor-list">
-        {loan.guarantors.map((id) => {
-          const emp = employees.find(
-            (e) => e._id === id
-          );
+        {guarantorType === "external" && (
+          <div className="external-guarantor-fields">
+            <label>{tr("External guarantors")}</label>
+            {externalGuarantors.map((guarantor, index) => (
+              <div className="external-guarantor-item" key={index}>
+                <label>{tr("Full name")}</label>
+                <input
+                  type="text"
+                  value={guarantor.fullName}
+                  onChange={(event) =>
+                    updateExternalGuarantor(index, "fullName", event.target.value)
+                  }
+                  placeholder={tr("Enter guarantor full name")}
+                  required
+                />
 
-          return (
-            <div
-              key={id}
-              className="guarantor-item"
+                <label>{tr("Phone number")}</label>
+                <input
+                  type="tel"
+                  value={guarantor.phone}
+                  onChange={(event) =>
+                    updateExternalGuarantor(index, "phone", event.target.value)
+                  }
+                  placeholder="+2519XXXXXXXX"
+                  maxLength={13}
+                  pattern="\+2519[0-9]{8}"
+                  title={tr("External guarantor phone must be +251 followed by 9 digits starting with 9.")}
+                  required
+                />
+
+                <label>{tr("Digital ID number")}</label>
+                <input
+                  type="text"
+                  value={guarantor.digitalId}
+                  onChange={(event) =>
+                    updateExternalGuarantor(index, "digitalId", event.target.value)
+                  }
+                  placeholder={tr("Enter guarantor digital ID number")}
+                  inputMode="numeric"
+                  maxLength={16}
+                  pattern="[0-9]{16}"
+                  title={tr("External guarantor digital ID must be exactly 16 digits.")}
+                  required
+                />
+
+                <button
+                  type="button"
+                  className="remove-guarantor-btn"
+                  onClick={() => removeExternalGuarantor(index)}
+                >
+                  {tr("Remove External Guarantor")}
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="loan-btn add-external-guarantor-btn"
+              onClick={addExternalGuarantor}
             >
-              <span>
-                {emp?.firstName}{" "}
-                {emp?.lastName?.charAt(0)}. (
-                <strong>
-                  {guarantorSavings[
-                    id
-                  ].toLocaleString()}{" "}
-                  ETB
-                </strong>
+              {tr("Add External Guarantor")}
+            </button>
+          </div>
+        )}
+
+        {guarantorType === "member" && (
+          <>
+            <label>{tr("Member savings guarantors")}</label>
+
+            <select
+              value=""
+              onChange={(e) => addGuarantor(e.target.value)}
+            >
+              <option value="">
+                {tr("-- Choose Guarantor --")}
+              </option>
+
+              {employees
+                .filter(
+                  (e) =>
+                    String(e._id) !== String(loan.employeeId) &&
+                    String(e._id) !== String(loggedInMemberId) &&
+                    !loan.guarantors.includes(e._id)
                 )
-              </span>
-
-              <button
-                onClick={() =>
-                  removeGuarantor(id)
-                }
-                className="remove-guarantor-btn"
-              >
-                {tr("Remove")}
-              </button>
-            </div>
-          );
-        })}
+                .map((emp) => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.memberId} - {emp.firstName} {emp.lastName}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
       </div>
 
-      <div className="guarantor-total-footer">
-        {tr("Total Guarantor Savings:")}{" "}
-        <strong>
-          {totalGuarantorSavings.toLocaleString()}{" "}
-          ETB
-        </strong>
-      </div>
+      {guarantorType === "member" && (
+        <>
+          <div className="guarantor-list">
+            {loan.guarantors.map((id) => {
+              const emp = employees.find((e) => e._id === id);
+
+              return (
+                <div key={id} className="guarantor-item">
+                  <span>
+                    {emp?.firstName} {emp?.lastName?.charAt(0)}. (
+                    <strong>
+                      {(guarantorSavings[id] || 0).toLocaleString()} ETB
+                    </strong>
+                    )
+                  </span>
+
+                  <button
+                    onClick={() => removeGuarantor(id)}
+                    className="remove-guarantor-btn"
+                  >
+                    {tr("Remove")}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="guarantor-total-footer">
+            {tr("Total Guarantor Savings:")}{" "}
+            <strong>{totalGuarantorSavings.toLocaleString()} ETB</strong>
+          </div>
+        </>
+      )}
     </div>
   )}
 </div>
@@ -630,9 +832,12 @@ console.log("Rounded Total:", roundedTotalLoan);
 {loan.employeeId && loan.principalAmount && (
   <div
     className={
-      requiredGuarantee > 0
-        ? totalGuarantorSavings >=
-          requiredGuarantee
+      guarantorRequired
+        ? guarantorType === "external"
+          ? guarantorDetailsComplete
+            ? "badge badge-success"
+            : "badge badge-danger"
+          : memberGuarantorComplete
           ? "badge badge-success"
           : "badge badge-danger"
         : "badge badge-success"
@@ -646,9 +851,19 @@ console.log("Rounded Total:", roundedTotalLoan);
       display: "block",
     }}
   >
-    {requiredGuarantee > 0 ? (
+    {guarantorRequired && guarantorType === "external" ? (
+      guarantorDetailsComplete
+        ? tr("External guarantor details complete.")
+        : externalGuarantors.length === 0
+          ? tr("Please add at least one complete external guarantor.")
+          : externalGuarantors.some((guarantor) => !/^\+2519\d{8}$/.test(guarantor.phone))
+            ? tr("External guarantor phone must be +251 followed by 9 digits starting with 9.")
+            : externalGuarantors.some((guarantor) => !/^\d{16}$/.test(guarantor.digitalId))
+              ? tr("External guarantor digital ID must be exactly 16 digits.")
+              : tr("Please fill all external guarantor details.")
+    ) : guarantorRequired ? (
       totalGuarantorSavings >=
-      requiredGuarantee ? (
+    requiredGuarantorSavings ? (
         <>
           {tr("✅ Enough guarantor deposits selected.")}
         </>
@@ -657,7 +872,7 @@ console.log("Rounded Total:", roundedTotalLoan);
           Need at least{" "}
           <strong>
             {(
-              requiredGuarantee -
+              requiredGuarantorSavings -
               totalGuarantorSavings
             ).toLocaleString()}{" "}
             ETB
@@ -675,15 +890,22 @@ console.log("Rounded Total:", roundedTotalLoan);
 
           {/* ከታች 3: ስህተት ማሳያ እና ማስገቢያ ቁልፍ (Footer Actions) */}
        <div className="loan-footer-actions">
-  {error && <div className="info-box danger-box">{error}</div>}
+         {hasUnfinishedSameTypeLoan && (
+           <div className="info-box danger-box">
+             {tr("You already have an unfinished loan of this type. Pay it off before applying for another one.")}
+           </div>
+         )}
+         {error && <div className="info-box danger-box">{error}</div>}
 
   <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
     <button
       onClick={submit}
       className="loan-btn"
       disabled={
-        requiredGuarantee > 0 &&
-        totalGuarantorSavings < requiredGuarantee
+        !loan.employeeId ||
+        !Number(loan.principalAmount) ||
+        hasUnfinishedSameTypeLoan ||
+        !guarantorDetailsComplete
       }
     >
       {tr("Create Loan Account")}

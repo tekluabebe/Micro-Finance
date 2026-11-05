@@ -38,6 +38,16 @@ mongoose.connect(ATLAS_URI)
 // =======================
 // EMPLOYEE SCHEMA
 // =======================
+const SYSTEM_ROLES = [
+  "member",
+  "admin",
+  "loan officer",
+  "loan manager",
+  "vice loan manager",
+  "accountant",
+  "treasurer",
+];
+
 const employeeSchema = new mongoose.Schema({
   memberId: { type: String, required: true, unique: true },
   category: { type: String, required: true },
@@ -48,7 +58,11 @@ const employeeSchema = new mongoose.Schema({
   gender: String,
   phone: String,
   maritalStatus: String,
-  role: String,
+  role: {
+    type: String,
+    enum: SYSTEM_ROLES,
+    default: "member",
+  },
   password: String,
   passkeyRegistrationChallenge: String,
   passkeyAuthenticationChallenge: String,
@@ -327,10 +341,20 @@ const loanSchema = new mongoose.Schema({
 
   loanType: String,
   durationMonths: String,
+  monthlyInstallment: Number,
+  loanStartDate: Date,
+  paymentStartDate: Date,
+  loanEndDate: Date,
 
   guarantors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee"
+  }],
+
+  externalGuarantors: [{
+    fullName: String,
+    phone: String,
+    digitalId: { type: String, select: false }
   }],
 
   isRead: {
@@ -344,6 +368,24 @@ const loanSchema = new mongoose.Schema({
     default: "pending"
   },
 
+  loanOfficerStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
+
+  loanManagerStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending"
+  },
+
+  approvalStage: {
+    type: String,
+    enum: ["awaiting_loan_officer", "awaiting_loan_manager", "approved", "rejected"],
+    default: "awaiting_loan_officer"
+  },
+
   remainingAmount: {
     type: Number,
     required: true
@@ -352,6 +394,35 @@ const loanSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Loan = mongoose.model("Loan", loanSchema);
+
+const addMonthsClamped = (date, months) => {
+  const result = new Date(date);
+  const day = result.getDate();
+  result.setDate(1);
+  result.setMonth(result.getMonth() + months);
+  const lastDay = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0
+  ).getDate();
+  result.setDate(Math.min(day, lastDay));
+  return result;
+};
+
+const sanitizeLoanResponse = (loan) => {
+  if (!loan) return loan;
+  const loanData = loan.toObject();
+  loanData.externalGuarantors?.forEach((guarantor) => {
+    delete guarantor.digitalId;
+  });
+  return loanData;
+};
+
+const sanitizeLoanNotificationResponse = (loan) => {
+  if (!loan) return loan;
+  return loan.toObject();
+};
+
 // =======================
 // LOAN PAYMENT SCHEMA
 // =======================
@@ -852,6 +923,11 @@ try {
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { memberId, password, role } = req.body;
+    const requestedRole = String(role || "").trim().toLowerCase();
+
+    if (!SYSTEM_ROLES.includes(requestedRole)) {
+      return res.status(400).json({ message: "Invalid system role" });
+    }
 
     const user = await Employee.findOne({ memberId });
 
@@ -865,7 +941,7 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ message: "Incorrect password ❌" });
     }
 
-    if (user.role.toLowerCase() !== role.toLowerCase()) {
+    if (String(user.role || "member").toLowerCase() !== requestedRole) {
       return res.status(401).json({ message: "Wrong role ❌" });
     }
 
@@ -935,6 +1011,11 @@ const bcrypt = require("bcryptjs");
 app.post("/api/employees", async (req, res) => {
   try {
     const { password, birthDate, memberId } = req.body;
+    const role = String(req.body.role || "member").trim().toLowerCase();
+
+    if (!SYSTEM_ROLES.includes(role)) {
+      return res.status(400).json({ message: "Invalid system role" });
+    }
 
     // 1. Check duplicate memberId
     const exists = await Employee.findOne({ memberId });
@@ -976,7 +1057,7 @@ app.post("/api/employees", async (req, res) => {
   password: hashedPassword,
   age,
   category,
-  role: (req.body.role || "member").toLowerCase(),
+  role,
 });
 
     await newEmp.save();
@@ -989,6 +1070,14 @@ app.post("/api/employees", async (req, res) => {
 //new update
 app.put("/api/employees/:id", async (req, res) => {
   try {
+    if (req.body.role !== undefined) {
+      const role = String(req.body.role).trim().toLowerCase();
+      if (!SYSTEM_ROLES.includes(role)) {
+        return res.status(400).json({ message: "Invalid system role" });
+      }
+      req.body.role = role;
+    }
+
     if (req.body.birthDate) {
       const today = new Date();
       const birth = new Date(req.body.birthDate);
@@ -1009,6 +1098,10 @@ app.put("/api/employees/:id", async (req, res) => {
       req.body,
       { new: true }
     );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
 
     res.json(updated);
   } catch (err) {
@@ -1820,7 +1913,8 @@ app.post("/api/loans", async (req, res) => {
       principalAmount, 
       loanType, 
       durationMonths, 
-      totalSaving 
+      totalSaving,
+      externalGuarantors
     } = req.body;
 
     // 1. መሠረታዊ ፊልዶች መኖራቸውን ማረጋገጥ
@@ -1828,90 +1922,134 @@ app.post("/api/loans", async (req, res) => {
       return res.status(400).json({ message: "እባክዎ ሁሉንም አስፈላጊ መረጃዎች ይሙሉ ❌" });
     }
 
+    let normalizedExternalGuarantors = [];
+    if (externalGuarantors !== undefined) {
+      if (!Array.isArray(externalGuarantors)) {
+        return res.status(400).json({
+          message: "External guarantors must be provided as a list"
+        });
+      }
+
+      normalizedExternalGuarantors = externalGuarantors.map((guarantor) => {
+        if (!guarantor || typeof guarantor !== "object" || Array.isArray(guarantor)) {
+          return null;
+        }
+
+        return {
+          fullName: String(guarantor.fullName || "").trim(),
+          phone: String(guarantor.phone || "").trim(),
+          digitalId: String(guarantor.digitalId || "").trim()
+        };
+      });
+
+      if (
+        normalizedExternalGuarantors.some(
+          (guarantor) =>
+            !guarantor ||
+            !guarantor.fullName ||
+            !guarantor.phone ||
+            !/^\+2519\d{8}$/.test(guarantor.phone) ||
+            !/^\d{16}$/.test(guarantor.digitalId)
+        )
+      ) {
+        return res.status(400).json({
+          message: "Each external guarantor must include a full name, a +2519XXXXXXXX phone number, and a 16-digit digital ID"
+        });
+      }
+    }
+
     const amount = Number(principalAmount);
     const borrowerSaving = Number(totalSaving || 0);
 
-    // 2. ተመሣሣይ የብድር አይነት ቼክ
-    const hasActiveSameTypeLoan = await Loan.findOne({
+    // A member must finish an open loan of this type before applying again.
+    const unfinishedSameTypeLoan = await Loan.findOne({
       employeeId: employeeId,
       loanType: loanType,
-      status: "approved",
+      status: { $nin: ["rejected", "completed"] },
       remainingAmount: { $gt: 0 }
     });
-
-    if (hasActiveSameTypeLoan) {
-      return res.status(400).json({ 
-        message: `ያልተከፈለ የ${loanType} ብድር ስላለብዎት፣ ተጨማሪ ዋስ ማስገባት ግዴታ ነው! ❌` 
+    if (unfinishedSameTypeLoan) {
+      return res.status(400).json({
+        message: "You already have an unfinished loan of this type. Pay it off before applying for another one."
       });
     }
 
-    
     // 3. የዋስትና ህጎች (ስማቸውን ለይቶ ለማውጣት)
     const gap = amount - borrowerSaving;
+    const guarantorRequired = gap > 0;
+    const memberGuarantors = Array.isArray(guarantors) ? guarantors : [];
 
-    if (gap > 0) {
-      if (!guarantors || guarantors.length === 0) {
-        return res.status(400).json({ 
-          message: `ብድሩ ከቁጠባዎ በ ${gap} ብር ስለሚበልጥ ዋስ ማስገባት ግዴታ ነው! ❌` 
+    if (guarantorRequired) {
+      if (
+        normalizedExternalGuarantors.length === 0 &&
+        memberGuarantors.length === 0
+      ) {
+        return res.status(400).json({
+          message: `ብድሩ ከቁጠባዎ በ ${gap} ብር ስለሚበልጥ ዋስ ማስገባት ግዴታ ነው! ❌`
         });
       }
 
-      let overLimitNames = []; // ለ 2 ሰው ዋስ የሆኑ
-      let hasLoanNames = [];   // እራሳቸው ብድር ያለባቸው
-      let totalGuarantorsSavingSum = 0;
+      if (normalizedExternalGuarantors.length === 0) {
+        let overLimitNames = []; // ለ 2 ሰው ዋስ የሆኑ
+        let hasLoanNames = [];   // እራሳቸው ብድር ያለባቸው
+        let totalGuarantorsSavingSum = 0;
 
-      for (const gId of guarantors) {
-        // የዋሱን ስም ለማግኘት
-        const guarantorInfo = await Employee.findById(gId);
-        const fullName = guarantorInfo ? `${guarantorInfo.firstName} ${guarantorInfo.lastName}` : "ያልታወቀ ዋስ";
+        for (const gId of memberGuarantors) {
+          // የዋሱን ስም ለማግኘት
+          const guarantorInfo = await Employee.findById(gId);
+          const fullName = guarantorInfo
+            ? `${guarantorInfo.firstName} ${guarantorInfo.lastName}`
+            : "ያልታወቀ ዋስ";
 
-        // i. ዋሱ እራሱ ብድር ካለበት
-        const guarantorHasLoan = await Loan.findOne({
-          employeeId: gId,
-          status: "approved",
-          remainingAmount: { $gt: 0 }
-        });
-        if (guarantorHasLoan) {
-          hasLoanNames.push(fullName);
+          // i. ዋሱ እራሱ ብድር ካለበት
+          const guarantorHasLoan = await Loan.findOne({
+            employeeId: gId,
+            status: "approved",
+            remainingAmount: { $gt: 0 }
+          });
+          if (guarantorHasLoan) {
+            hasLoanNames.push(fullName);
+          }
+
+          // ii. ዋሱ አስቀድሞ ለ 2 ብድሮች ዋስ መሆኑን መፈተሽ
+          const activeGuaranteesCount = await Loan.countDocuments({
+            guarantors: gId,
+            status: "approved",
+            remainingAmount: { $gt: 0 }
+          });
+          if (activeGuaranteesCount >= 2) {
+            overLimitNames.push(fullName);
+          }
+
+          // iii. ቁጠባቸውን መደመር
+          const guarantorDeposits = await Deposit.find({ employeeId: gId });
+          const individualSum = guarantorDeposits.reduce((sum, d) =>
+            sum + (d.normalSaving || 0) + (d.voluntarySaving || 0), 0
+          );
+          totalGuarantorsSavingSum += individualSum;
         }
 
-        // ii. ዋሱ አስቀድሞ ለ 2 ብድሮች ዋስ መሆኑን መፈተሽ
-        const activeGuaranteesCount = await Loan.countDocuments({
-          guarantors: gId,
-          status: "approved",
-          remainingAmount: { $gt: 0 }
-        });
-        if (activeGuaranteesCount >= 2) {
-          overLimitNames.push(fullName);
+        // --- ስህተቶቹን አቀናጅቶ መላክ ---
+        if (overLimitNames.length > 0 || hasLoanNames.length > 0) {
+          let errorParts = [];
+
+          if (overLimitNames.length > 0) {
+            errorParts.push(`${overLimitNames.join(", ")} አስቀድሞ ለ 2 ብድሮች ዋስ ስለሆኑ/ስለሆኑ ተጨማሪ ዋስትና መስጠት አይችልም/አይችሉም! ❌`);
+          }
+          if (hasLoanNames.length > 0) {
+            errorParts.push(`${hasLoanNames.join(", ")} ያልተከፈለ ብድር ስላለበት/ስላለባቸው ዋስ መሆን አይችልም/አይችሉም! ❌`);
+          }
+
+          return res.status(400).json({ message: errorParts.join("\n") });
         }
 
-        // iii. ቁጠባቸውን መደመር
-        const guarantorDeposits = await Deposit.find({ employeeId: gId });
-        const individualSum = guarantorDeposits.reduce((sum, d) => 
-          sum + (d.normalSaving || 0) + (d.voluntarySaving || 0), 0
-        );
-        totalGuarantorsSavingSum += individualSum;
-      }
-
-      // --- ስህተቶቹን አቀናጅቶ መላክ ---
-      if (overLimitNames.length > 0 || hasLoanNames.length > 0) {
-        let errorParts = [];
-        
-        if (overLimitNames.length > 0) {
-          errorParts.push(`${overLimitNames.join(", ")} አስቀድሞ ለ 2 ብድሮች ዋስ ስለሆኑ/ስለሆኑ ተጨማሪ ዋስትና መስጠት አይችልም/አይችሉም! ❌`);
+        // iv. የቁጠባ ድምር ማረጋገጫ
+        const requiredGuarantorSavings = gap;
+        if (totalGuarantorsSavingSum < requiredGuarantorSavings) {
+          return res.status(400).json({
+            message: `የዋሶቹ ጠቅላላ ቁጠባ (${totalGuarantorsSavingSum} ብር) ከሚያስፈልገው ${requiredGuarantorSavings} ብር ያነሰ ነው! ❌`
+          });
         }
-        if (hasLoanNames.length > 0) {
-          errorParts.push(`${hasLoanNames.join(", ")} ያልተከፈለ ብድር ስላለበት/ስላለባቸው ዋስ መሆን አይችልም/አይችሉም! ❌`);
-        }
-
-        return res.status(400).json({ message: errorParts.join("\n") });
-      }
-
-      // iv. የቁጠባ ድምር ማረጋገጫ
-      if (totalGuarantorsSavingSum < gap) {
-        return res.status(400).json({ 
-          message: `የዋሶቹ ጠቅላላ ቁጠባ (${totalGuarantorsSavingSum} ብር) ከሚያስፈልገው ${gap} ብር ያነሰ ነው! ❌` 
-        });
       }
     }
 
@@ -1968,15 +2106,10 @@ const monthlyInstallment =
 
 // dates
 const loanDate = new Date();
-
-const paymentStartDate = new Date();
-paymentStartDate.setMonth(
-  paymentStartDate.getMonth() + 2
-);
-
-const loanEndDate = new Date();
-loanEndDate.setMonth(
-  loanEndDate.getMonth() + Number(durationMonths)
+const paymentStartDate = addMonthsClamped(loanDate, 1);
+const loanEndDate = addMonthsClamped(
+  loanDate,
+  Number(durationMonths)
 );
 
 // create loan
@@ -1984,7 +2117,9 @@ const loan = new Loan({
   employeeId,
 
   guarantors:
-    gap > 0 ? guarantors : [],
+    guarantorRequired && normalizedExternalGuarantors.length === 0 ? memberGuarantors : [],
+
+  externalGuarantors: normalizedExternalGuarantors,
 
   principalAmount: amount,
 
@@ -2005,6 +2140,9 @@ const loan = new Loan({
   loanEndDate,
 
   status: "pending",
+  loanOfficerStatus: "pending",
+  loanManagerStatus: "pending",
+  approvalStage: "awaiting_loan_officer",
 
   remainingAmount: totalAmount
 });
@@ -2020,13 +2158,10 @@ console.log({
 
 await loan.save();
 
-res.status(201).json({
+return res.status(201).json({
   message: "Loan created successfully ✅",
-  loan
+  loan: sanitizeLoanResponse(loan)
 });
-
-    await loan.save();
-    res.status(201).json(loan);
 
   } catch (err) {
     console.error(err);
@@ -2037,13 +2172,65 @@ res.status(201).json({
 
 // GET LOANS (Populate ለማድረግ)
 // በ server.js ወይም በ loans route ውስጥ እንዲህ መሆን አለበት
+app.get("/api/loans/notifications", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const loanNotificationRoles = [
+      "admin",
+      "loan officer",
+      "loan manager",
+      "vice loan manager",
+      "accountant",
+      "treasurer",
+    ];
+    if (
+      decoded.type !== "member" ||
+      !loanNotificationRoles.includes(String(decoded.role || "").toLowerCase())
+    ) {
+      return res.status(403).json({ message: "Loan staff access required" });
+    }
+
+    const role = String(decoded.role || "").toLowerCase();
+    const notificationQuery = {
+      status: { $nin: ["approved", "rejected"] }
+    };
+
+    if (["loan manager", "vice loan manager"].includes(role)) {
+      notificationQuery.loanOfficerStatus = "approved";
+      notificationQuery.loanManagerStatus = { $in: ["pending", null] };
+    } else {
+      notificationQuery.loanOfficerStatus = { $in: ["pending", null] };
+    }
+
+    const loans = await Loan.find(notificationQuery)
+      .select("+externalGuarantors.digitalId")
+      .populate("employeeId")
+      .populate("guarantors")
+      .sort({ createdAt: -1 });
+
+    return res.json(loans.map(sanitizeLoanNotificationResponse));
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Loan notification fetch failed:", err);
+    return res.status(500).json({ message: "Error fetching loan notifications" });
+  }
+});
+
 app.get("/api/loans", async (req, res) => {
   try {
     const loans = await Loan.find()
       .populate("employeeId") // ተበዳሪውን ለማምጣት
       .populate("guarantors") // ዋሶችን ለማምጣት (ይህ ወሳኝ ነው!)
       .sort({ createdAt: -1 });
-    res.json(loans);
+    res.json(loans.map(sanitizeLoanResponse));
   } catch (err) {
     res.status(500).json({ message: "Error fetching loans" });
   }
@@ -2730,42 +2917,119 @@ app.get("/api/reports/total-members", async (req, res) => {
 // APPROVE LOAN
 // =======================
 app.put("/api/loans/:id/approve", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
 
-  const loan = await Loan.findByIdAndUpdate(
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
 
-    req.params.id,
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
 
-    {
-      status: "approved",
-      isRead: true
-    },
+    if (role === "loan officer") {
+      if (loan.loanOfficerStatus !== "pending") {
+        return res.status(400).json({ message: "Loan officer approval already processed" });
+      }
 
-    { new: true }
+      loan.loanOfficerStatus = "approved";
+      loan.approvalStage = "awaiting_loan_manager";
+      loan.status = "pending";
+      loan.isRead = false;
+      await loan.save();
+      return res.json(sanitizeLoanResponse(loan));
+    }
 
-  );
+    if (["loan manager", "vice loan manager"].includes(role)) {
+      if (loan.loanOfficerStatus !== "approved") {
+        return res.status(400).json({ message: "Loan must be approved by the loan officer first" });
+      }
 
-  res.json(loan);
+      if (loan.loanManagerStatus !== "pending") {
+        return res.status(400).json({ message: "Manager approval already processed" });
+      }
+
+      loan.loanManagerStatus = "approved";
+      loan.approvalStage = "approved";
+      loan.status = "approved";
+      loan.isRead = true;
+      await loan.save();
+      return res.json(sanitizeLoanResponse(loan));
+    }
+
+    return res.status(403).json({ message: "You are not allowed to approve this loan" });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Loan approve failed:", err);
+    return res.status(500).json({ message: "Loan approval failed" });
+  }
 });
 
 // =======================
 // REJECT LOAN
 // =======================
 app.put("/api/loans/:id/reject", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
 
-  const loan = await Loan.findByIdAndUpdate(
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
 
-    req.params.id,
+    const loan = await Loan.findById(req.params.id);
+    if (!loan) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
 
-    {
-      status: "rejected",
-      isRead: true
-    },
+    if (role === "loan officer") {
+      if (loan.loanOfficerStatus !== "pending") {
+        return res.status(400).json({ message: "Loan officer decision already recorded" });
+      }
 
-    { new: true }
+      loan.loanOfficerStatus = "rejected";
+      loan.loanManagerStatus = "rejected";
+      loan.approvalStage = "rejected";
+      loan.status = "rejected";
+      loan.isRead = true;
+      await loan.save();
+      return res.json(sanitizeLoanResponse(loan));
+    }
 
-  );
+    if (["loan manager", "vice loan manager"].includes(role)) {
+      if (loan.loanOfficerStatus !== "approved") {
+        return res.status(400).json({ message: "Loan must be approved by the loan officer first" });
+      }
 
-  res.json(loan);
+      if (loan.loanManagerStatus !== "pending") {
+        return res.status(400).json({ message: "Manager decision already recorded" });
+      }
+
+      loan.loanManagerStatus = "rejected";
+      loan.approvalStage = "rejected";
+      loan.status = "rejected";
+      loan.isRead = true;
+      await loan.save();
+      return res.json(sanitizeLoanResponse(loan));
+    }
+
+    return res.status(403).json({ message: "You are not allowed to reject this loan" });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Loan reject failed:", err);
+    return res.status(500).json({ message: "Loan rejection failed" });
+  }
 });
 
 // =======================
@@ -2787,6 +3051,18 @@ app.post("/api/loan-payments", async (req, res) => {
     if (!loan) {
       return res.status(404).json({
         message: "Loan not found"
+      });
+    }
+
+    const paymentStartDate =
+      loan.paymentStartDate || addMonthsClamped(loan.createdAt, 1);
+    const firstPaymentDay = new Date(paymentStartDate);
+    firstPaymentDay.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (today < firstPaymentDay) {
+      return res.status(400).json({
+        message: `Loan payments start on ${paymentStartDate.toLocaleDateString()}`
       });
     }
 
@@ -3164,7 +3440,7 @@ app.put("/api/loans/:id/status", async (req, res) => {
 
     res.json({
       success: true,
-      loan
+      loan: sanitizeLoanResponse(loan)
     });
 
   } catch (err) {

@@ -49,11 +49,30 @@
 
 .role-selector {
   display: flex;
+  flex-direction: column;
   background: #f1f5f9;
   padding: 5px;
   color: #1e293b;
   border-radius: 14px;
   margin-bottom: 25px;
+}
+
+.role-selector label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 6px 6px;
+}
+
+.role-selector select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: #1e293b;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
 }
 
 .role-selector button {

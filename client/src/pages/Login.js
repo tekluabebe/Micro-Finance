@@ -11,6 +11,15 @@ export default function Login() {
   const [memberId, setMemberId] = useState(""); 
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("member");
+  const systemRoles = [
+    "member",
+    "admin",
+    "loan officer",
+    "loan manager",
+    "vice loan manager",
+    "accountant",
+    "treasurer",
+  ];
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const navigate = useNavigate();
@@ -38,7 +47,7 @@ const handleLogin = async (e) => {
 
   
 );
-    if (res.data.user.role.toLowerCase() === "admin") {
+    if (res.data.user.role.toLowerCase() !== "member") {
       window.location.href = "/";
     } else {
       window.location.href = "/member-profile";
@@ -54,7 +63,7 @@ const saveLogin = (data) => {
   localStorage.setItem("userRole", data.user.role);
   localStorage.setItem("memberId", data.user.memberId);
   localStorage.setItem("user", JSON.stringify(data.user));
-  window.location.href = data.user.role.toLowerCase() === "admin" ? "/" : "/member-profile";
+  window.location.href = data.user.role.toLowerCase() !== "member" ? "/" : "/member-profile";
 };
 
 const enableFingerprint = async () => {
@@ -120,16 +129,18 @@ if (res.data.isAdmin) {
         <h2>Micro-Finance Login</h2>
         <form onSubmit={handleLogin}>
           <div className="role-selector">
-            <button 
-              type="button" 
-              className={role === "member" ? "active" : ""} 
-              onClick={() => setRole("member")}
-            >Member</button>
-            <button 
-              type="button" 
-              className={role === "admin" ? "active" : ""} 
-              onClick={() => setRole("admin")}
-            >Admin</button>
+            <label htmlFor="login-role">Login as</label>
+            <select
+              id="login-role"
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+            >
+              {systemRoles.map((systemRole) => (
+                <option key={systemRole} value={systemRole}>
+                  {systemRole.replace(/\b\w/g, (letter) => letter.toUpperCase())}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="input-group">

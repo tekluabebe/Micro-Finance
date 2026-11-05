@@ -210,6 +210,28 @@
   text-align: right;
 }
 
+.external-guarantor-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.external-guarantor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.add-external-guarantor-btn {
+  padding: 10px;
+  font-size: 14px;
+}
+
 /* ==========================================================================
    Submit Controls (ታችኛው ሙሉ ስፋት)
    ========================================================================== */
