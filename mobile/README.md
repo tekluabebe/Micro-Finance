@@ -1,9 +1,21 @@
 # Micro-Finance Mobile
 
 Cross-platform Android and iPhone starter app built with Expo and React Native.
-It currently includes role-selectable sign-in, secure session storage, and
-role-specific member or staff dashboards with mobile views for members, savings,
-loans, payments, withdrawals, reports, and profiles.
+It includes role-selectable sign-in, secure session storage, role-aware member
+and staff navigation, a fixed header and bottom navigation bar, and a slide-out
+menu for the full set of web-app sections.
+
+The mobile screens cover the dashboard, member directory, savings/deposits,
+loans and approvals, loan payments, withdrawals and approvals, financial
+reports, dividends, profit, income and expenses, balance sheets, cash flow,
+check and balance, terminated-member restoration, profiles, password-reset
+requests, help, and local preferences. Staff can create members, record savings
+and loan payments, and submit loan and withdrawal decisions. Members can submit
+loan and withdrawal requests and view their own account data.
+
+Report and financial screens use the existing server API where available.
+Balance sheets and app preferences are stored securely on the device, matching
+the web app's local-only balance-sheet storage behavior.
 
 ## Run the app
 

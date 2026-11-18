@@ -24,6 +24,7 @@ export type MemberProfile = {
 export type SavingsRecord = {
   _id: string;
   employeeId?: MemberSummary | string;
+  memberId?: string;
   month?: string;
   year?: string;
   normalSaving?: number | string;
@@ -43,6 +44,9 @@ export type MemberLoan = {
   remainingAmount?: number | string;
   loanType?: string;
   status?: string;
+  loanOfficerStatus?: string;
+  loanManagerStatus?: string;
+  approvalStage?: string;
   monthlyInstallment?: number | string;
   durationMonths?: number | string;
   loanStartDate?: string;

@@ -991,7 +991,7 @@ app.get("/api/mobile/dashboard", async (req, res) => {
         .select("memberId firstName lastName phone role totalSaving normalSaving voluntarySaving createdAt")
         .sort({ firstName: 1, lastName: 1 }),
       Deposit.find(depositQuery)
-        .select("month year normalSaving voluntarySaving sharedPurchase registrationFee latePenalty depositForPurchase createdAt")
+        .select("employeeId memberId month year normalSaving voluntarySaving sharedPurchase registrationFee latePenalty depositForPurchase createdAt")
         .populate("employeeId", "memberId firstName lastName")
         .sort({ createdAt: -1 }),
       Loan.find(loanQuery)
@@ -999,7 +999,7 @@ app.get("/api/mobile/dashboard", async (req, res) => {
         .populate("employeeId", "memberId firstName lastName")
         .sort({ createdAt: -1 }),
       LoanPayment.find(paymentQuery)
-        .select("loanId monthYear amountPaid interestPaid penalty totalPaid createdAt")
+        .select("employeeId loanId monthYear amountPaid interestPaid penalty totalPaid createdAt")
         .populate("employeeId", "memberId firstName lastName")
         .sort({ createdAt: -1 }),
       Withdrawal.find(withdrawalQuery)

@@ -3,6 +3,7 @@
     "name": "Micro-Finance",
     "slug": "micro-finance-mobile",
     "version": "1.0.0",
+    "scheme": "microfinance",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +25,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-router",
+      "expo-status-bar"
     ]
   }
 }
