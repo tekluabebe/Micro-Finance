@@ -201,6 +201,10 @@ useEffect(() => {
 };
 
 const updateLoanStatus = async (loanId, status) => {
+  if (!window.confirm(`Update this loan status to "${status}"?\n\nOK: Update\nCancel: Cancel`)) {
+    return;
+  }
+
   try {
     console.log("Updating:", `/loans/${loanId}/status`);
 
@@ -500,13 +504,17 @@ const payload = {
   remainingAmount: roundedTotalLoan,
 };
 
-    try {
-      await API.post("/loans", payload);
-      alert(`ብድሩ ተመዝግቧል። ክፍያ የሚጀምረው ${firstPaymentDate.toDateString()} ሲሆን የሚያበቃው ${finalEndDate.toDateString()} ይሆናል። ✅`);
-      setLoan({ employeeId: "", guarantors: [], principalAmount: "", loanType: "normal", durationMonths: 6 });
-      setExternalGuarantors([]);
-      setGuarantorType("member");
-      fetchData();
+  if (!window.confirm("ብድሩን ማስቀመጥ ይፈልጋሉ?\n\nOK: ብድሩን ያስቀምጡ\nCancel: ወደ ቅጹ ተመልሰው መረጃውን ያስተካክሉ")) {
+    return;
+  }
+
+  try {
+    await API.post("/loans", payload);
+    alert(`ብድሩ ተመዝግቧል። ክፍያ የሚጀምረው ${firstPaymentDate.toDateString()} ሲሆን የሚያበቃው ${finalEndDate.toDateString()} ይሆናል። ✅`);
+    setLoan({ employeeId: "", guarantors: [], principalAmount: "", loanType: "normal", durationMonths: 6 });
+    setExternalGuarantors([]);
+    setGuarantorType("member");
+    fetchData();
     } catch (err) {
       const serverMessage = err.response?.data?.message || "";
       const serverStillRequiresMemberGuarantor =

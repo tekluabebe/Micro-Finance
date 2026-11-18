@@ -186,6 +186,10 @@ const submit = async () => {
     return;
   }
 
+  if (!window.confirm("Save these deposit records?\n\nOK: Save\nCancel: Return to the form")) {
+    return;
+  }
+
   try {
     const selectedEmp = employees.find(emp => emp._id === data.employeeId);
     

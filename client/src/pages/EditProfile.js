@@ -25,6 +25,10 @@ export default function EditProfile() {
 
   // 2. መረጃውን ማስቀመጥ (phone እና password ብቻ)
 const handleSave = async () => {
+  if (!window.confirm("Save your profile changes?\n\nOK: Save\nCancel: Return to the form")) {
+    return;
+  }
+
   try {
     const memberId = localStorage.getItem("memberId");
 

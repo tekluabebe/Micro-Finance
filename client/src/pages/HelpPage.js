@@ -90,6 +90,13 @@ const handleSupportChange = (e) => {
 const handleSupportAuth = async (e) => {
   e.preventDefault();
 
+  if (
+    supportMode === "register" &&
+    !window.confirm("Create this support account?\n\nOK: Create account\nCancel: Return to the form")
+  ) {
+    return;
+  }
+
   try {
     const endpoint =
       supportMode === "login"
@@ -131,6 +138,10 @@ const handleSendSupportRequest = async (e) => {
 
   if (!supportForm.recipientEmail || !supportForm.question.trim()) {
     alert(t("Please enter the recipient email and your question."));
+    return;
+  }
+
+  if (!window.confirm("Send this support request?\n\nOK: Send\nCancel: Return to the form")) {
     return;
   }
 
@@ -253,6 +264,10 @@ useEffect(() => {
 const handleSendResponse = async (requestId) => {
   if (!responseText.trim()) {
     alert(t("Please enter a response message"));
+    return;
+  }
+
+  if (!window.confirm("Send this response?\n\nOK: Send\nCancel: Return to the form")) {
     return;
   }
 

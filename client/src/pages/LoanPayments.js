@@ -425,7 +425,11 @@ const currentMonthYear = paymentMonth;
   return;
 }
 
-setErrorMessage("");
+  if (!window.confirm("Save this loan payment?\n\nOK: Save\nCancel: Return to the form")) {
+    return;
+  }
+
+  setErrorMessage("");
 
 for(const month of monthsToPay){
 

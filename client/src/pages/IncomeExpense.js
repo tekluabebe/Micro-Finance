@@ -154,6 +154,9 @@ const lateLoanPenalty = filteredLoanPayments.reduce((s, lp) => s + Number(lp.pen
   netProfit
 };
 
+        if (!window.confirm("Save this financial report?\n\nOK: Save\nCancel: Return to the form")) {
+          return;
+        }
 
         await API.post("/financial-reports", payload);
         alert("Report Saved Successfully");

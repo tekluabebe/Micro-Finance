@@ -957,6 +957,94 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.get("/api/mobile/dashboard", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").toLowerCase();
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
+      return res.status(403).json({ message: "Account access required" });
+    }
+
+    const employee = await Employee.findById(decoded.id)
+      .select("memberId firstName lastName phone gender birthDate maritalStatus totalSaving normalSaving voluntarySaving role createdAt");
+    if (!employee) {
+      return res.status(404).json({ message: "Member not found" });
+    }
+
+    const isMember = role === "member";
+    const employeeQuery = isMember
+      ? { _id: employee._id }
+      : { role: "member" };
+    const depositQuery = isMember
+      ? { $or: [{ employeeId: employee._id }, { memberId: employee.memberId }] }
+      : {};
+    const loanQuery = isMember ? { employeeId: employee._id } : {};
+    const paymentQuery = isMember ? { employeeId: employee._id } : {};
+    const withdrawalQuery = isMember ? { employeeId: employee._id } : {};
+    const [employees, deposits, loans, payments, withdrawals, passwordRequests] = await Promise.all([
+      Employee.find(employeeQuery)
+        .select("memberId firstName lastName phone role totalSaving normalSaving voluntarySaving createdAt")
+        .sort({ firstName: 1, lastName: 1 }),
+      Deposit.find(depositQuery)
+        .select("month year normalSaving voluntarySaving sharedPurchase registrationFee latePenalty depositForPurchase createdAt")
+        .populate("employeeId", "memberId firstName lastName")
+        .sort({ createdAt: -1 }),
+      Loan.find(loanQuery)
+        .select("principalAmount totalAmount remainingAmount loanType status monthlyInstallment durationMonths loanStartDate paymentStartDate loanEndDate createdAt")
+        .populate("employeeId", "memberId firstName lastName")
+        .sort({ createdAt: -1 }),
+      LoanPayment.find(paymentQuery)
+        .select("loanId monthYear amountPaid interestPaid penalty totalPaid createdAt")
+        .populate("employeeId", "memberId firstName lastName")
+        .sort({ createdAt: -1 }),
+      Withdrawal.find(withdrawalQuery)
+        .select("employeeId fullName totalSaving reason status isRead createdAt")
+        .populate("employeeId", "memberId firstName lastName")
+        .sort({ createdAt: -1 }),
+      isMember
+        ? Promise.resolve([])
+        : PasswordResetRequest.find({ status: "pending" })
+            .select("memberId fullName status isRead requestedAt")
+            .sort({ requestedAt: -1 }),
+    ]);
+
+    return res.json({
+      profile: {
+        memberId: employee.memberId,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        phone: employee.phone,
+        gender: employee.gender,
+        birthDate: employee.birthDate,
+        maritalStatus: employee.maritalStatus,
+        totalSaving: employee.totalSaving,
+        normalSaving: employee.normalSaving,
+        voluntarySaving: employee.voluntarySaving,
+        role: employee.role,
+        createdAt: employee.createdAt,
+      },
+      members: employees,
+      savings: deposits,
+      loans,
+      payments,
+      withdrawals,
+      passwordRequests,
+    });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Member dashboard fetch failed:", err);
+    return res.status(500).json({ message: "Could not load member dashboard" });
+  }
+});
+
 
 // =======================
 // EMPLOYEE ROUTES
@@ -2221,6 +2309,47 @@ app.get("/api/loans/notifications", async (req, res) => {
 
     console.error("Loan notification fetch failed:", err);
     return res.status(500).json({ message: "Error fetching loan notifications" });
+  }
+});
+
+app.put("/api/loans/:id/read", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const loanNotificationRoles = [
+      "admin",
+      "loan officer",
+      "loan manager",
+      "vice loan manager",
+      "accountant",
+      "treasurer",
+    ];
+    const role = String(decoded.role || "").toLowerCase();
+    if (decoded.type !== "member" || !loanNotificationRoles.includes(role)) {
+      return res.status(403).json({ message: "Loan staff access required" });
+    }
+
+    const loan = await Loan.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true, projection: { _id: 1, isRead: 1 } }
+    );
+    if (!loan) {
+      return res.status(404).json({ message: "Loan not found" });
+    }
+
+    return res.json({ _id: loan._id, isRead: loan.isRead });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Loan notification read update failed:", err);
+    return res.status(500).json({ message: "Could not mark loan notification as read" });
   }
 });
 
@@ -4172,6 +4301,10 @@ const path = require("path");
 
 // ሰርቨሩ ካለበት ፎልደር አንድ እርምጃ ወደ ኋላ ወጥቶ ወደ client/build እንዲገባ ያደርጋል
 const buildPath = path.join(__dirname, "..", "client", "build");
+
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "API route not found" });
+});
 
 app.use(express.static(buildPath));
 

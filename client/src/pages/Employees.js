@@ -365,6 +365,10 @@ const calculateAge = (birthDate) => {
   age: calculateAge(formData.birthDate),
 role: (formData.role || "member").toLowerCase(),};
 
+      if (!window.confirm("መረጃውን ማስቀመጥ ይፈልጋሉ?\n\nOK: መረጃውን ያስቀምጡ\nCancel: ወደ ቅጹ ተመልሰው መረጃውን ያስተካክሉ")) {
+        return;
+      }
+
       if (editingId) {
         await API.put(`/employees/${editingId}`, submissionData);
         alert("መረጃው በትክክል ተስተካክሏል!");

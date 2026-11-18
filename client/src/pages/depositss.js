@@ -136,6 +136,10 @@ export default function Deposits() {
       return;
     }
 
+    if (!window.confirm("Save this deposit?\n\nOK: Save\nCancel: Return to the form")) {
+      return;
+    }
+
     try {
 
       const payload = {

@@ -152,6 +152,10 @@ const calculateSaving = (employeeId, employee = null) => {
       return;
     }
 
+    if (!window.confirm("Submit this withdrawal request?\n\nOK: Submit\nCancel: Return to the form")) {
+      return;
+    }
+
     try {
       const emp = employees.find((e) => e._id === data.employeeId);
 

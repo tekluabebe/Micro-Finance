@@ -24,6 +24,10 @@ export default function ChangePassword() {
       return;
     }
 
+    if (!window.confirm("Update your password?\n\nOK: Continue\nCancel: Return to the form")) {
+      return;
+    }
+
     console.log(form);
     alert("Password updated successfully");
   };

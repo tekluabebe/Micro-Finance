@@ -6,10 +6,11 @@ import { translate } from "../utils/translations";
 import "./Dashboard.css"
 
 export default function Dashboard() {
-  const { language } = useAppContext();
+  const { language, darkMode, setDarkMode } = useAppContext();
   const amharic = language === "Amharic";
   const tr = (text) => amharic ? ({
     "No notifications": "ምንም ማሳወቂያ የለም",
+    "Mark as read": "እንደተነበበ ምልክት አድርግ",
     "Loan notifications could not be loaded.": "የብድር ማሳወቂያዎችን መጫን አልተቻለም።",
     "No password reset requests": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ የለም",
     "Password Reset Request": "የይለፍ ቃል ዳግም ማስጀመር ጥያቄ",
@@ -41,7 +42,9 @@ export default function Dashboard() {
     "Notifications disabled": "ማሳወቂያዎች ተሰናክለዋል",
     "Notifications": "ማሳወቂያዎች",
     "Mark all as read": "ሁሉንም እንደተነበቡ ምልክት አድርግ",
+    "Some notifications could not be marked as read. Please try again.": "አንዳንድ ማሳወቂያዎችን እንደተነበቡ ምልክት ማድረግ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "All": "ሁሉም",
+    "Read": "የተነበቡ",
     "Unread": "ያልተነበቡ",
     "Seen": "የታዩ",
     "Password reset notifications are disabled": "የይለፍ ቃል ዳግም ማስጀመር ማሳወቂያዎች ተሰናክለዋል",
@@ -78,10 +81,10 @@ export default function Dashboard() {
     "treasurer": "ገንዘብ ያዥ",
   }[text] || text) : translate(language, text);
   const monthLabels = {
-    January: "ጃንዋሪ", February: "ፌብሩዋሪ", March: "ማርች",
-    April: "ኤፕሪል", May: "ሜይ", June: "ጁን",
-    July: "ጁላይ", August: "ኦገስት", September: "ሴፕቴምበር",
-    October: "ኦክቶበር", November: "ኖቬምበር", December: "ዲሴምበር",
+    January: "ጥር", February: "የካቲት", March: "መጋቢት",
+    April: "ሚያዚያ", May: "ግንቦት", June: "ሰኔ",
+    July: "ሀምሌ", August: "ነሃሴ", September: "መስከረም",
+    October: "ጥቅምት", November: "ህዳር", December: "ታህሳስ",
   };
   const displayMonth = (month) => amharic ? monthLabels[month] || month : month;
   const userRole = localStorage.getItem("userRole")?.toLowerCase() || "member";
@@ -125,7 +128,6 @@ export default function Dashboard() {
   const [openWithdrawals, setOpenWithdrawals] = useState(false);
   const [openLoans, setOpenLoans] = useState(false);
   const [notifFilter, setNotifFilter] = useState("all"); 
-  const [darkMode, setDarkMode] = useState(true);
   const user = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "{}");
@@ -348,33 +350,26 @@ const unreadPasswordRequests = passwordNotificationEnabled
   : 0;
 
   const markAsRead = async (type, id) => {
-    await API.put(`/${type}/${id}/read`);
-    if (type === "withdrawals") {
-      setWithdrawals((prev) => prev.map((w) => w._id === id ? { ...w, isRead: true } : w));
-    } else {
-      setLoans((prev) => prev.map((l) => l._id === id ? { ...l, isRead: true } : l));
+    try {
+      const config = type === "loans"
+        ? {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            },
+          }
+        : undefined;
+      await API.put(`/${type}/${id}/read`, undefined, config);
+      if (type === "withdrawals") {
+        setWithdrawals((prev) => prev.map((w) => w._id === id ? { ...w, isRead: true } : w));
+      } else {
+        setLoans((prev) => prev.map((l) => l._id === id ? { ...l, isRead: true } : l));
+      }
+      return true;
+    } catch (err) {
+      console.error(`Mark ${type} notification as read failed:`, err);
+      return false;
     }
   };
-
-  const markAllPasswordRequestsRead = async () => {
-  try {
-
-    await Promise.all(
-      passwordRequests
-        .filter((p) => !p.isRead)
-        .map((p) =>
-          API.put(
-            `/password-reset-request/${p._id}/read`
-          )
-        )
-    );
-
-setPasswordRequests([]);
-
-  } catch (err) {
-    console.error(err);
-  }
-};
 
 const handleApprove = async (type, id) => {
   try {
@@ -469,16 +464,86 @@ const handleReject = async (type, id) => {
       `/password-reset-request/${id}/read`
     );
 
-    setPasswordRequests(prev =>
-  prev.filter(
-    p => p._id !== id
-  )
-);
+      setPasswordRequests((prev) =>
+        prev.map((p) => p._id === id ? { ...p, isRead: true } : p)
+      );
+      return true;
 
   } catch (err) {
-    console.error(err);
+      console.error("Mark password reset notification as read failed:", err);
+      return false;
   }
 };
+
+const markAllNotificationsRead = async () => {
+  const unreadNotifications = [
+    ...(!isMember && withdrawalNotificationEnabled
+      ? withdrawals
+          .filter((item) =>
+            item.isRead !== true &&
+            !["approved", "rejected"].includes(String(item.status || "pending").toLowerCase())
+          )
+          .map((item) => ({ type: "withdrawals", id: item._id }))
+      : []),
+    ...(canReviewLoans && loanNotificationEnabled
+      ? loans
+          .filter((item) => item.isRead !== true)
+          .map((item) => ({ type: "loans", id: item._id }))
+      : []),
+    ...(!isMember && passwordNotificationEnabled
+      ? passwordRequests
+          .filter((item) =>
+            item.isRead !== true &&
+            !["approved", "rejected"].includes(String(item.status || "pending").toLowerCase())
+          )
+          .map((item) => ({ type: "password-reset-request", id: item._id }))
+      : []),
+  ];
+
+  const results = await Promise.all(
+    unreadNotifications.map(({ type, id }) =>
+      type === "password-reset-request"
+        ? markPasswordResetRead(id)
+        : markAsRead(type, id)
+    )
+  );
+
+  if (results.some((succeeded) => !succeeded)) {
+    window.alert(tr("Some notifications could not be marked as read. Please try again."));
+  }
+};
+
+const renderNotificationFilters = () => (
+  <div className="notification-tabs" style={styles.notificationTabs}>
+    {[
+      ["all", "All"],
+      ["read", "Read"],
+      ["unread", "Unread"],
+    ].map(([filter, label]) => (
+      <button
+        key={filter}
+        type="button"
+        onClick={() => setNotifFilter(filter)}
+        style={notifFilter === filter ? styles.activeTab : styles.tab}
+      >
+        {tr(label)}
+      </button>
+    ))}
+  </div>
+);
+
+const renderNotificationHeader = () => (
+  <div className="notification-header" style={styles.notificationHeader}>
+    <h4 style={{ margin: 0 }}>{tr("Notifications")}</h4>
+    <button
+      type="button"
+      style={styles.markAll}
+      onClick={markAllNotificationsRead}
+    >
+      {tr("Mark all as read")}
+    </button>
+  </div>
+);
 
 const approvePasswordReset = async (id) => {
   const newPassword = prompt(
@@ -486,6 +551,10 @@ const approvePasswordReset = async (id) => {
   );
 
   if (!newPassword) return;
+
+  if (!window.confirm("Approve this password reset?\n\nOK: Continue\nCancel: Cancel reset")) {
+    return;
+  }
 
   try {
     await API.put(
@@ -526,7 +595,6 @@ const rejectPasswordReset = async (id) => {
 };
 
 const renderPasswordRequests = () => {
-
   const pending = passwordRequests.filter(
     p =>
       p.status !== "approved" &&
@@ -541,9 +609,20 @@ const renderPasswordRequests = () => {
     );
   }
 
-  return pending.map(item => (
+  const filteredRequests = pending.filter((item) => {
+    if (notifFilter === "read") return item.isRead === true;
+    if (notifFilter === "unread") return item.isRead !== true;
+    return true;
+  });
+
+  if (!filteredRequests.length) {
+    return <p style={styles.empty}>{tr("No notifications")}</p>;
+  }
+
+  return filteredRequests.map(item => (
 
   <div
+  key={item._id}
   className="notification-card"
   style={styles.notificationCard}
 >
@@ -574,14 +653,17 @@ const renderPasswordRequests = () => {
   style={styles.actions}
 >
 
-        <button
-          style={styles.readBtn}
-          onClick={() =>
-            markPasswordResetRead(item._id)
-          }
-        >
-          👁
-        </button>
+        {item.isRead !== true && (
+          <button
+            type="button"
+            style={styles.readBtn}
+            aria-label={tr("Mark as read")}
+            title={tr("Mark as read")}
+            onClick={() => markPasswordResetRead(item._id)}
+          >
+            👁
+          </button>
+        )}
 
         <button
           style={styles.approve}
@@ -607,16 +689,20 @@ const renderPasswordRequests = () => {
 };
 
   const renderNotifications = (items, type) => {
-    const unreadItems = items.filter(
-      (item) =>
-        item.isRead !== true &&
-        !["approved", "rejected"].includes(
-          String(item.status || "pending").toLowerCase()
-        )
-    );
-    if (!unreadItems.length) return <p style={styles.empty}>{tr("No notifications")}</p>;
+      const activeItems = items.filter(
+        (item) =>
+          !["approved", "rejected"].includes(
+            String(item.status || "pending").toLowerCase()
+          )
+      );
+      const filteredItems = activeItems.filter((item) => {
+        if (notifFilter === "read") return item.isRead === true;
+        if (notifFilter === "unread") return item.isRead !== true;
+        return true;
+      });
+      if (!filteredItems.length) return <p style={styles.empty}>{tr("No notifications")}</p>;
 
-    return unreadItems.map((item) => (
+      return filteredItems.map((item) => (
       <div key={item._id} style={{ ...styles.item, background: "#eaf7ff" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
          {type === "withdrawals" && (
@@ -673,23 +759,31 @@ const renderPasswordRequests = () => {
             </>
           )}
         </div>
-        {type === "loans" && canApproveOrRejectLoan(item) ? (
-          <div
-            className="notification-actions"
-            style={styles.actions}
-          >
-            <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
-            <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
-          </div>
-        ) : type !== "loans" ? (
-          <div
-            className="notification-actions"
-            style={styles.actions}
-          >
-            <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
-            <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
-          </div>
-        ) : null}
+        <div className="notification-actions" style={styles.actions}>
+          {item.isRead !== true && (
+            <button
+              type="button"
+              style={styles.readBtn}
+              aria-label={tr("Mark as read")}
+              title={tr("Mark as read")}
+              onClick={() => markAsRead(type, item._id)}
+            >
+              👁
+            </button>
+          )}
+          {type === "loans" && canApproveOrRejectLoan(item) && (
+            <>
+              <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
+              <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
+            </>
+          )}
+          {type !== "loans" && (
+            <>
+              <button onClick={() => handleApprove(type, item._id)} style={styles.approve}>✔</button>
+              <button onClick={() => handleReject(type, item._id)} style={styles.reject}>✖</button>
+            </>
+          )}
+        </div>
       </div>
     ));
   };
@@ -783,15 +877,14 @@ const renderPasswordRequests = () => {
                 return <option key={y}>{y}</option>;
               })}
             </select>
-             <div className={darkMode ? "dark-dashboard" : "light-dashboard"}>
             <button
   type="button"
   aria-label={tr(darkMode ? "Switch to light theme" : "Switch to dark theme")}
-  onClick={() => setDarkMode(!darkMode)}
+  onClick={() => setDarkMode((isDark) => !isDark)}
   className="theme-toggle"
 >
   {darkMode ? `☀️ ${tr("Light")}` : `🌙 ${tr("Dark")}`}
-</button> </div>
+</button>
           </div>
         </div>
       </div>
@@ -800,7 +893,11 @@ const renderPasswordRequests = () => {
 {!isMember && openWithdrawals && (
   <div id="withdrawal-notifications" className="dashboard-notif-dropdown" style={styles.dropdown}>
     {withdrawalNotificationEnabled ? (
-      renderNotifications(withdrawals, "withdrawals")
+      <>
+        {renderNotificationHeader()}
+        {renderNotificationFilters()}
+        {renderNotifications(withdrawals, "withdrawals")}
+      </>
     ) : (
       <p style={styles.empty}>{tr("Notifications disabled")}</p>
     )}
@@ -810,9 +907,13 @@ const renderPasswordRequests = () => {
 {canReviewLoans && openLoans && (
   <div id="loan-notifications" className="dashboard-notif-dropdown" style={styles.dropdown}>
     {loanNotificationEnabled ? (
-      loanNotificationError
-      ? <p style={styles.empty}>{tr(loanNotificationError)}</p>
-        : renderNotifications(loans, "loans")
+      <>
+        {renderNotificationHeader()}
+        {renderNotificationFilters()}
+        {loanNotificationError
+          ? <p style={styles.empty}>{tr(loanNotificationError)}</p>
+          : renderNotifications(loans, "loans")}
+      </>
     ) : (
       <p style={styles.empty}>{tr("Notifications disabled")}</p>
     )}
@@ -823,57 +924,8 @@ const renderPasswordRequests = () => {
   <div id="password-reset-notifications" className="notification-panel" style={styles.notificationPanel}>
     {passwordNotificationEnabled ? (
       <>
-        <div
-          className="notification-header"
-          style={styles.notificationHeader}
-        >
-          <h4 style={{ margin: 0 }}>{tr("Notifications")}</h4>
-
-          <span
-            style={styles.markAll}
-            onClick={markAllPasswordRequestsRead}
-          >
-            {tr("Mark all as read")}
-          </span>
-        </div>
-
-        <div
-          className="notification-tabs"
-          style={styles.notificationTabs}
-        >
-          <button
-            onClick={() => setNotifFilter("all")}
-            style={
-              notifFilter === "all"
-                ? styles.activeTab
-                : styles.tab
-            }
-          >
-            {tr("All")}
-          </button>
-
-          <button
-            onClick={() => setNotifFilter("unread")}
-            style={
-              notifFilter === "unread"
-                ? styles.activeTab
-                : styles.tab
-            }
-          >
-            {tr("Unread")}
-          </button>
-
-          <button
-            onClick={() => setNotifFilter("seen")}
-            style={
-              notifFilter === "seen"
-                ? styles.activeTab
-                : styles.tab
-            }
-          >
-            {tr("Seen")}
-          </button>
-        </div>
+        {renderNotificationHeader()}
+        {renderNotificationFilters()}
 
         <div style={styles.notificationList}>
           {renderPasswordRequests()}
@@ -1132,7 +1184,11 @@ const styles = {
     color: "#4f46e5",
     cursor: "pointer",
     fontSize: "14px",
-    fontWeight: 600
+    fontWeight: 600,
+    fontFamily: "inherit",
+    background: "transparent",
+    border: "none",
+    padding: 0
   },
 
   notificationTabs: {

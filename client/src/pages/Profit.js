@@ -208,6 +208,10 @@ export default function ProfitDistribution() {
       return;
     }
 
+    if (!window.confirm("Save this dividend distribution?\n\nOK: Save\nCancel: Return to the form")) {
+      return;
+    }
+
     try {
       await API.post("/profit-distributions", {
         employeeId: selectedMember._id,

@@ -133,6 +133,10 @@ const saveData = () => {
     savedAt: new Date().toISOString(),
   };
 
+  if (!window.confirm(`Save the balance sheet for ${year}?\n\nOK: Save\nCancel: Return to the form`)) {
+    return;
+  }
+
   localStorage.setItem(
     `balanceSheet-${year}`,
     JSON.stringify(savedData)
