@@ -14,6 +14,7 @@ import Loans from "./pages/Loans";
 import LoanPayments from "./pages/LoanPayments";
 import Withdrawals from "./pages/Withdrawals";
 import Reports from "./pages/Reports";
+import ActivityHistory from "./pages/ActivityHistory";
 import Login from "./pages/Login";
 import HelpPage from "./pages/HelpPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -193,6 +194,13 @@ function App() {
                 path="/reports"
                 element={
                   isAuthenticated ? <Reports /> : <Navigate to="/login" />
+                }
+              />
+
+              <Route
+                path="/activity-history"
+                element={
+                  isAuthenticated ? <ActivityHistory /> : <Navigate to="/login" />
                 }
               />
                  

@@ -9,13 +9,13 @@ The mobile screens cover the dashboard, member directory, savings/deposits,
 loans and approvals, loan payments, withdrawals and approvals, financial
 reports, dividends, profit, income and expenses, balance sheets, cash flow,
 check and balance, terminated-member restoration, profiles, password-reset
-requests, help, and local preferences. Staff can create members, record savings
+requests, shared activity history, help, and local preferences. Staff can create members, record savings
 and loan payments, and submit loan and withdrawal decisions. Members can submit
 loan and withdrawal requests and view their own account data.
 
 Report and financial screens use the existing server API where available.
-Balance sheets and app preferences are stored securely on the device, matching
-the web app's local-only balance-sheet storage behavior.
+Balance sheets are stored in the shared backend and synchronized between web
+and mobile. App-specific preferences remain stored securely on the device.
 
 ## Run the app
 
@@ -46,3 +46,22 @@ updated server before using the hosted API, or run the updated local server.
 
 Expo Go is suitable for development previews. Store-ready Android and iOS
 installers require signing credentials and an Expo Application Services build.
+
+## Create an Android APK to share
+
+The app's Android display name is `Micro-Finance` and its application ID is
+`com.microfinance.mobile` in `app.json`. To change the label shown under the
+icon, change `expo.name` there before building.
+
+1. Install the EAS command-line tool with `npm install -g eas-cli` and sign in
+   with `eas login`.
+2. From this directory, run `eas build --platform android --profile preview`.
+   If prompted, configure the project and let EAS create the Android signing
+   key. EAS will provide a link to download the APK when the build completes.
+3. Send that `.apk` file to the Android phone using Bluetooth, Xender, or USB.
+   On the receiving phone, open the APK and allow installation from that
+   file-transfer app if Android asks. Only install APKs from a source you trust.
+
+EAS Build uploads the app source to Expo's build service. To keep the source
+and signing process entirely local, use a local Android build setup instead.
+Phones need internet access to use the app's hosted API and database.

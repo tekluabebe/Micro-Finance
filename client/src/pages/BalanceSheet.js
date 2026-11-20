@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "./Balancesheet.css";
+import API from "../services/api";
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -47,6 +48,60 @@ const BalanceSheet = () => {
     reserve: "",
     retainedEarnings: ""
   });
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    setLoadError("");
+    API.get(`/balance-sheets/${year}`)
+      .then(async ({ data }) => {
+        if (!active) return;
+        let savedReport = data;
+        if (!savedReport && !isMember) {
+          const legacy = localStorage.getItem(`balanceSheet-${year}`);
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            if (parsed?.formData) {
+              const { data: migrated } = await API.put(`/balance-sheets/${year}`, {
+                previousYear: Number(parsed.previousYear || year - 1),
+                formData: parsed.formData,
+              });
+              savedReport = migrated.report;
+            }
+          }
+        }
+        if (!active) return;
+        if (savedReport?.formData) {
+          setFormData((current) => ({ ...current, ...savedReport.formData }));
+          if (savedReport.previousYear) setPreviousYear(Number(savedReport.previousYear));
+        } else {
+          setFormData({
+            cashOnHand: "",
+            cashAtBank: "",
+            accountsReceivable: "",
+            otherReceivable: "",
+            officeEquipment: "",
+            furniture: "",
+            vehicle: "",
+            building: "",
+            accountsPayable: "",
+            taxPayable: "",
+            otherLiability: "",
+            capital: "",
+            reserve: "",
+            retainedEarnings: ""
+          });
+        }
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error("Could not load balance sheet:", error);
+        setLoadError(error.response?.data?.message || "Could not load balance sheet.");
+      });
+    return () => {
+      active = false;
+    };
+  }, [year]);
 
   const numberValue = (value) => Number(value || 0);
 
@@ -113,7 +168,7 @@ const isBalanced = Math.abs(difference) < 0.01;
 
   };
 
-const saveData = () => {
+const saveData = async () => {
      if (isMember) {
       alert("Members cannot save balance sheet data.");
       return;
@@ -125,24 +180,20 @@ const saveData = () => {
     return;
   }
 
-  const savedData = {
-    year: Number(year),
-    previousYear: Number(previousYear),
-    formData,
-    totals,
-    savedAt: new Date().toISOString(),
-  };
-
   if (!window.confirm(`Save the balance sheet for ${year}?\n\nOK: Save\nCancel: Return to the form`)) {
     return;
   }
 
-  localStorage.setItem(
-    `balanceSheet-${year}`,
-    JSON.stringify(savedData)
-  );
-
-  alert(`Balance sheet for ${year} saved successfully.`);
+  try {
+    await API.put(`/balance-sheets/${year}`, {
+      previousYear: Number(previousYear),
+      formData
+    });
+    alert(`Balance sheet for ${year} saved successfully.`);
+  } catch (error) {
+    console.error("Could not save balance sheet:", error);
+    alert(error.response?.data?.message || "Could not save balance sheet.");
+  }
 };
 
   const downloadExcel = () => {
@@ -293,6 +344,7 @@ const saveData = () => {
     <div className="balance-sheet-container">
 
       <h1>{t("Balance Sheet")}</h1>
+      {loadError && <p role="alert">{loadError}</p>}
 
       <div className="top-bar">
 

@@ -61,9 +61,11 @@ export default function CheckBalance() {
   const { language } = useAppContext();
   const t = (text) => translate(language, text);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [records, setRecords] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isAvailable, setIsAvailable] = useState(false);
 
   const [month, setMonth] = useState(
     months[new Date().getMonth()]
@@ -84,6 +86,9 @@ export default function CheckBalance() {
     try {
 
       setLoading(true);
+      setErrorMessage("");
+      setRecords([]);
+      setIsAvailable(false);
 
 
         const res = await API.get("/reports/check-balance", {
@@ -95,15 +100,19 @@ export default function CheckBalance() {
 
         console.log(res.data);
 
-      setRecords(res.data || []);
+      setRecords(Array.isArray(res.data) ? res.data : []);
+      setIsAvailable(true);
 
     }
 
     catch (err) {
 
-      console.error(err);
-
-      alert("Unable to load report.");
+      console.error("Check Balance Error:", err);
+      setRecords([]);
+      setErrorMessage(
+        err.response?.data?.message ||
+          t("Check Balance is unavailable until a general ledger and debit/credit mappings are defined.")
+      );
 
     }
 
@@ -444,6 +453,7 @@ const filteredData = useMemo(() => {
         <button
           className="pdf-btn"
           onClick={exportPDF}
+          disabled={!isAvailable || loading}
         >
           <FaFilePdf />
           PDF
@@ -452,6 +462,7 @@ const filteredData = useMemo(() => {
         <button
           className="excel-btn"
           onClick={exportExcel}
+          disabled={!isAvailable || loading}
         >
           <FaFileExcel />
           Excel
@@ -460,6 +471,7 @@ const filteredData = useMemo(() => {
         <button
           className="print-btn"
           onClick={printReport}
+          disabled={!isAvailable || loading}
         >
           <FaPrint />
           {t("Print")}
@@ -481,9 +493,19 @@ const filteredData = useMemo(() => {
 
         </div>
 
+        {loading && (
+          <div className="loading-row">{t("Loading report...")}</div>
+        )}
+        {!loading && errorMessage && (
+          <div role="alert" className="loading-row">{errorMessage}</div>
+        )}
+
         {/* ================= ORGANIZATION HEADER ================= */}
 
-        <div className="organization-header">
+        <div
+          className="organization-header"
+          style={{ display: isAvailable ? undefined : "none" }}
+        >
 
           <h3>{t("YOUR ORGANIZATION NAME")}</h3>
 
@@ -501,7 +523,10 @@ const filteredData = useMemo(() => {
 
         {/* ================= TABLE START ================= */}
 
-        <div className="table-wrapper">
+        <div
+          className="table-wrapper"
+          style={{ display: isAvailable ? undefined : "none" }}
+        >
 
           <table className="checkbalance-table">
 
@@ -624,7 +649,10 @@ const filteredData = useMemo(() => {
 
         {/* ================= REPORT SUMMARY ================= */}
 
-        <div className="summary-section">
+        <div
+          className="summary-section"
+          style={{ display: isAvailable ? undefined : "none" }}
+        >
 
           <div className="summary-card debit-card">
 

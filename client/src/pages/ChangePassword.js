@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Sidebar from "../components/Sidebar";
+import API from "../services/api";
 import "./ChangePassword.css";
 
 export default function ChangePassword() {
@@ -18,7 +19,17 @@ export default function ChangePassword() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    if (!form.current) {
+      alert("Enter your current password.");
+      return;
+    }
+
+    if (form.newPass.length < 6) {
+      alert("New password must contain at least 6 characters.");
+      return;
+    }
+
     if (form.newPass !== form.confirm) {
       alert("Passwords do not match!");
       return;
@@ -28,8 +39,17 @@ export default function ChangePassword() {
       return;
     }
 
-    console.log(form);
-    alert("Password updated successfully");
+    try {
+      const { data } = await API.put("/auth/change-password", {
+        currentPassword: form.current,
+        newPassword: form.newPass,
+      });
+      setForm({ current: "", newPass: "", confirm: "" });
+      alert(data.message || "Password updated successfully");
+    } catch (error) {
+      console.error("Password update failed:", error);
+      alert(error.response?.data?.message || "Could not update password.");
+    }
   };
 
   return (

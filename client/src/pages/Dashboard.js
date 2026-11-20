@@ -104,7 +104,11 @@ export default function Dashboard() {
     }
 
     if (["loan manager", "vice loan manager"].includes(userRole)) {
-      return item.loanOfficerStatus === "approved" && item.loanManagerStatus === "pending" && item.status !== "approved" && item.status !== "rejected";
+      const officerApproved =
+        item.loanOfficerStatus === "approved" ||
+        item.approvalStage === "awaiting_loan_manager";
+      const managerPending = item.loanManagerStatus == null || item.loanManagerStatus === "pending";
+      return officerApproved && managerPending && item.status !== "approved" && item.status !== "rejected";
     }
 
     return false;

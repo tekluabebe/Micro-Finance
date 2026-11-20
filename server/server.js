@@ -47,6 +47,7 @@ const SYSTEM_ROLES = [
   "accountant",
   "treasurer",
 ];
+const SYSTEM_STAFF_ROLES = SYSTEM_ROLES.filter((role) => role !== "member");
 
 const employeeSchema = new mongoose.Schema({
   memberId: { type: String, required: true, unique: true },
@@ -101,6 +102,45 @@ const Employee = mongoose.model(
   employeeSchema
 );
 
+const userPreferenceSchema = new mongoose.Schema({
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    required: true,
+    unique: true,
+  },
+  language: {
+    type: String,
+    enum: ["English", "Amharic", "Oromiffa", "Tigrigna"],
+    default: "English",
+  },
+  darkMode: { type: Boolean, default: false },
+  emailNotification: { type: Boolean, default: true },
+  loanNotification: { type: Boolean, default: true },
+  passwordNotification: { type: Boolean, default: true },
+  withdrawalNotification: { type: Boolean, default: true },
+}, { timestamps: true });
+
+const UserPreference = mongoose.model("UserPreference", userPreferenceSchema);
+
+const systemSettingSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  monthlyLatePenalty: { type: Number, min: 0, default: 50 },
+}, { timestamps: true });
+
+const SystemSetting = mongoose.model("SystemSetting", systemSettingSchema);
+
+const auditLogSchema = new mongoose.Schema({
+  actorId: { type: String, default: null, index: true },
+  actorMemberId: { type: String, default: null },
+  actorRole: { type: String, default: "anonymous" },
+  method: { type: String, required: true },
+  path: { type: String, required: true },
+  statusCode: { type: Number, required: true },
+}, { timestamps: true });
+
+const AuditLog = mongoose.model("AuditLog", auditLogSchema);
+
 const webAuthnRpID = process.env.WEBAUTHN_RP_ID || "localhost";
 const webAuthnOrigin = process.env.CLIENT_URL || "http://localhost:3000";
 const createMemberToken = (user) => jwt.sign({
@@ -115,6 +155,101 @@ const memberResponse = (user) => ({
   fullName: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
   role: user.role,
   userRole: user.role,
+});
+
+const requireSystemAccount = (allowedRoles = SYSTEM_ROLES) => (req, res, next) => {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+    console.error("System authentication failed:", err);
+    return res.status(500).json({ message: "Authentication failed" });
+  }
+
+  const role = String(decoded.role || "").trim().toLowerCase();
+  if (decoded.type !== "member" || !allowedRoles.includes(role)) {
+    return res.status(403).json({ message: "Account access required" });
+  }
+
+  req.systemAccount = { ...decoded, role };
+  return next();
+};
+
+app.use((req, res, next) => {
+  if (
+    req.method === "GET" ||
+    req.method === "HEAD" ||
+    req.method === "OPTIONS" ||
+    !req.path.startsWith("/api/") ||
+    req.path === "/api/auth/login" ||
+    req.path.startsWith("/api/auth/passkey/") ||
+    req.path.startsWith("/api/support/")
+  ) {
+    return next();
+  }
+
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  let actor = null;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.type === "member") {
+        actor = {
+          actorId: String(decoded.id || ""),
+          actorMemberId: String(decoded.memberId || ""),
+          actorRole: String(decoded.role || "unknown").trim().toLowerCase(),
+        };
+      }
+    } catch (err) {
+      if (err.name !== "JsonWebTokenError" && err.name !== "TokenExpiredError") {
+        console.error("Audit actor resolution failed:", err);
+      }
+    }
+  }
+
+  res.on("finish", () => {
+    if (res.statusCode < 200 || res.statusCode >= 400) return;
+    const path = req.originalUrl.split("?")[0];
+    AuditLog.create({
+      ...(actor || {}),
+      method: req.method,
+      path,
+      statusCode: res.statusCode,
+    }).catch((err) => console.error("Activity audit write failed:", err));
+  });
+
+  return next();
+});
+
+app.get("/api/audit-logs", requireSystemAccount(), async (req, res) => {
+  try {
+    const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 50));
+    const query = req.systemAccount.role === "admin"
+      ? {}
+      : { actorId: String(req.systemAccount.id) };
+    const [logs, total] = await Promise.all([
+      AuditLog.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      AuditLog.countDocuments(query),
+    ]);
+
+    return res.json({ logs, page, limit, total });
+  } catch (err) {
+    console.error("Activity history fetch failed:", err);
+    return res.status(500).json({ message: "Could not load activity history" });
+  }
 });
 
 
@@ -422,6 +557,13 @@ const sanitizeLoanNotificationResponse = (loan) => {
   if (!loan) return loan;
   return loan.toObject();
 };
+
+const loanManagerVisibleQuery = () => ({
+  $or: [
+    { loanOfficerStatus: "approved" },
+    { approvalStage: "awaiting_loan_manager" },
+  ],
+});
 
 // =======================
 // LOAN PAYMENT SCHEMA
@@ -957,6 +1099,133 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
+app.get("/api/settings", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
+      return res.status(403).json({ message: "Account access required" });
+    }
+
+    const [preferences, systemSettings] = await Promise.all([
+      UserPreference.findOne({ employeeId: decoded.id }).lean(),
+      SystemSetting.findOne({ key: "microfinance" }).lean(),
+    ]);
+
+    return res.json({
+      preferences: preferences || null,
+      system: {
+        monthlyLatePenalty: systemSettings?.monthlyLatePenalty ?? 50,
+      },
+    });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+    console.error("Settings fetch failed:", err);
+    return res.status(500).json({ message: "Could not load settings" });
+  }
+});
+
+app.put("/api/settings/preferences", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
+      return res.status(403).json({ message: "Account access required" });
+    }
+
+    const updates = {};
+    const booleanPreferences = [
+      "darkMode",
+      "emailNotification",
+      "loanNotification",
+      "passwordNotification",
+      "withdrawalNotification",
+    ];
+    for (const key of booleanPreferences) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+        if (typeof req.body[key] !== "boolean") {
+          return res.status(400).json({ message: `${key} must be a boolean` });
+        }
+        updates[key] = req.body[key];
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(req.body, "language")) {
+      const supportedLanguages = ["English", "Amharic", "Oromiffa", "Tigrigna"];
+      if (!supportedLanguages.includes(req.body.language)) {
+        return res.status(400).json({ message: "Unsupported language" });
+      }
+      updates.language = req.body.language;
+    }
+
+    if (!Object.keys(updates).length) {
+      return res.status(400).json({ message: "No supported preferences were provided" });
+    }
+
+    const preferences = await UserPreference.findOneAndUpdate(
+      { employeeId: decoded.id },
+      { $set: updates },
+      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+    ).lean();
+    return res.json({ preferences });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+    console.error("Settings update failed:", err);
+    return res.status(500).json({ message: "Could not update preferences" });
+  }
+});
+
+app.put("/api/settings/system", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
+    if (decoded.type !== "member" || role !== "admin") {
+      return res.status(403).json({ message: "Administrator access required" });
+    }
+
+    const monthlyLatePenalty = Number(req.body?.monthlyLatePenalty);
+    if (
+      req.body?.monthlyLatePenalty === undefined ||
+      !Number.isFinite(monthlyLatePenalty) ||
+      monthlyLatePenalty < 0
+    ) {
+      return res.status(400).json({ message: "Monthly late penalty must be a non-negative number" });
+    }
+
+    const systemSettings = await SystemSetting.findOneAndUpdate(
+      { key: "microfinance" },
+      { $set: { monthlyLatePenalty } },
+      { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true },
+    ).lean();
+    return res.json({ system: { monthlyLatePenalty: systemSettings.monthlyLatePenalty } });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+    console.error("System settings update failed:", err);
+    return res.status(500).json({ message: "Could not update system settings" });
+  }
+});
+
 app.get("/api/mobile/dashboard", async (req, res) => {
   try {
     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
@@ -965,7 +1234,7 @@ app.get("/api/mobile/dashboard", async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const role = String(decoded.role || "").toLowerCase();
+    const role = String(decoded.role || "").trim().toLowerCase();
     if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
       return res.status(403).json({ message: "Account access required" });
     }
@@ -979,23 +1248,27 @@ app.get("/api/mobile/dashboard", async (req, res) => {
     const isMember = role === "member";
     const employeeQuery = isMember
       ? { _id: employee._id }
-      : { role: "member" };
+      : {};
     const depositQuery = isMember
       ? { $or: [{ employeeId: employee._id }, { memberId: employee.memberId }] }
       : {};
-    const loanQuery = isMember ? { employeeId: employee._id } : {};
+    const loanQuery = isMember
+      ? { employeeId: employee._id }
+      : ["loan manager", "vice loan manager"].includes(role)
+        ? loanManagerVisibleQuery()
+        : {};
     const paymentQuery = isMember ? { employeeId: employee._id } : {};
     const withdrawalQuery = isMember ? { employeeId: employee._id } : {};
     const [employees, deposits, loans, payments, withdrawals, passwordRequests] = await Promise.all([
       Employee.find(employeeQuery)
-        .select("memberId firstName lastName phone role totalSaving normalSaving voluntarySaving createdAt")
+        .select("memberId firstName lastName phone gender birthDate maritalStatus category age role totalSaving normalSaving voluntarySaving fatherName motherName wifeName wifeFatherName wifeMotherName husbandName husbandFatherName husbandMotherName brothers sisters children createdAt")
         .sort({ firstName: 1, lastName: 1 }),
       Deposit.find(depositQuery)
         .select("employeeId memberId month year normalSaving voluntarySaving sharedPurchase registrationFee latePenalty depositForPurchase createdAt")
         .populate("employeeId", "memberId firstName lastName")
         .sort({ createdAt: -1 }),
       Loan.find(loanQuery)
-        .select("principalAmount totalAmount remainingAmount loanType status monthlyInstallment durationMonths loanStartDate paymentStartDate loanEndDate createdAt")
+        .select("principalAmount totalAmount remainingAmount loanType status loanOfficerStatus loanManagerStatus approvalStage isRead guarantors monthlyInstallment durationMonths loanStartDate paymentStartDate loanEndDate createdAt")
         .populate("employeeId", "memberId firstName lastName")
         .sort({ createdAt: -1 }),
       LoanPayment.find(paymentQuery)
@@ -1008,10 +1281,58 @@ app.get("/api/mobile/dashboard", async (req, res) => {
         .sort({ createdAt: -1 }),
       isMember
         ? Promise.resolve([])
-        : PasswordResetRequest.find({ status: "pending" })
+        : PasswordResetRequest.find()
             .select("memberId fullName status isRead requestedAt")
             .sort({ requestedAt: -1 }),
     ]);
+
+    let guarantorCandidates = [];
+    if (isMember) {
+      const candidates = await Employee.find({
+        role: "member",
+        _id: { $ne: employee._id }
+      }).select("_id memberId firstName lastName role");
+      const candidateIds = candidates.map((candidate) => candidate._id);
+      if (candidateIds.length > 0) {
+        const [candidateDeposits, activeLoans, activeGuarantees] = await Promise.all([
+          Deposit.find({ employeeId: { $in: candidateIds } })
+            .select("employeeId normalSaving voluntarySaving"),
+          Loan.find({
+            employeeId: { $in: candidateIds },
+            status: "approved",
+            remainingAmount: { $gt: 0 }
+          }).select("employeeId"),
+          Loan.find({
+            guarantors: { $in: candidateIds },
+            status: "approved",
+            remainingAmount: { $gt: 0 }
+          }).select("guarantors")
+        ]);
+        const savingsByMember = new Map();
+        const activeGuaranteesByMember = new Map();
+        for (const deposit of candidateDeposits) {
+          const id = String(deposit.employeeId);
+          savingsByMember.set(
+            id,
+            (savingsByMember.get(id) || 0) +
+              (Number(deposit.normalSaving) || 0) +
+              (Number(deposit.voluntarySaving) || 0)
+          );
+        }
+        for (const loan of activeGuarantees) {
+          for (const guarantorId of new Set(loan.guarantors.map(String))) {
+            activeGuaranteesByMember.set(guarantorId, (activeGuaranteesByMember.get(guarantorId) || 0) + 1);
+          }
+        }
+        const membersWithActiveLoans = new Set(activeLoans.map((loan) => String(loan.employeeId)));
+        guarantorCandidates = candidates.map((candidate) => ({
+          ...candidate.toObject(),
+          totalSaving: savingsByMember.get(String(candidate._id)) || 0,
+          hasActiveLoan: membersWithActiveLoans.has(String(candidate._id)),
+          activeGuarantees: activeGuaranteesByMember.get(String(candidate._id)) || 0
+        }));
+      }
+    }
 
     return res.json({
       profile: {
@@ -1029,6 +1350,7 @@ app.get("/api/mobile/dashboard", async (req, res) => {
         createdAt: employee.createdAt,
       },
       members: employees,
+      guarantorCandidates,
       savings: deposits,
       loans,
       payments,
@@ -1993,7 +2315,7 @@ app.put("/api/withdrawals/:id/reject", async (req, res) => {
 // ==========================================
 // CREATE LOAN (BACKEND WITH DETAILED NAMES)
 // ==========================================
-app.post("/api/loans", async (req, res) => {
+app.post("/api/loans", requireSystemAccount(), async (req, res) => {
   try {
     const { 
       employeeId, 
@@ -2001,13 +2323,49 @@ app.post("/api/loans", async (req, res) => {
       principalAmount, 
       loanType, 
       durationMonths, 
-      totalSaving,
       externalGuarantors
     } = req.body;
 
     // 1. መሠረታዊ ፊልዶች መኖራቸውን ማረጋገጥ
     if (!employeeId || !principalAmount || !loanType || !durationMonths) {
       return res.status(400).json({ message: "እባክዎ ሁሉንም አስፈላጊ መረጃዎች ይሙሉ ❌" });
+    }
+    if (
+      req.systemAccount.role === "member" &&
+      String(employeeId) !== String(req.systemAccount.id)
+    ) {
+      return res.status(403).json({ message: "Members can only apply for their own loans" });
+    }
+
+    const amount = Number(principalAmount);
+    const duration = Number(durationMonths);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ message: "Loan amount must be greater than zero" });
+    }
+    if (!Number.isInteger(duration) || duration < 1 || duration > 12) {
+      return res.status(400).json({ message: "Loan duration must be between 1 and 12 months" });
+    }
+    if (!["normal", "holiday"].includes(loanType)) {
+      return res.status(400).json({ message: "Invalid loan type ❌" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ message: "Invalid loan applicant" });
+    }
+    const borrower = await Employee.findById(employeeId).select("_id");
+    if (!borrower) {
+      return res.status(404).json({ message: "Loan applicant not found" });
+    }
+    const borrowerDeposits = await Deposit.find({ employeeId }).select("normalSaving voluntarySaving");
+    const borrowerSaving = borrowerDeposits.reduce(
+      (sum, deposit) => sum + (Number(deposit.normalSaving) || 0) + (Number(deposit.voluntarySaving) || 0),
+      0
+    );
+    const maximumLoan = Math.min(borrowerSaving * 3, 300000);
+    if (amount > maximumLoan) {
+      return res.status(400).json({
+        message: `Loan amount exceeds the member's borrowing limit of ${maximumLoan} ETB`
+      });
     }
 
     let normalizedExternalGuarantors = [];
@@ -2046,9 +2404,6 @@ app.post("/api/loans", async (req, res) => {
       }
     }
 
-    const amount = Number(principalAmount);
-    const borrowerSaving = Number(totalSaving || 0);
-
     // A member must finish an open loan of this type before applying again.
     const unfinishedSameTypeLoan = await Loan.findOne({
       employeeId: employeeId,
@@ -2065,7 +2420,12 @@ app.post("/api/loans", async (req, res) => {
     // 3. የዋስትና ህጎች (ስማቸውን ለይቶ ለማውጣት)
     const gap = amount - borrowerSaving;
     const guarantorRequired = gap > 0;
-    const memberGuarantors = Array.isArray(guarantors) ? guarantors : [];
+    const memberGuarantors = Array.isArray(guarantors)
+      ? [...new Set(guarantors.map(String))]
+      : [];
+    if (memberGuarantors.some((gId) => !mongoose.Types.ObjectId.isValid(gId))) {
+      return res.status(400).json({ message: "One or more selected guarantors are invalid" });
+    }
 
     if (guarantorRequired) {
       if (
@@ -2085,6 +2445,9 @@ app.post("/api/loans", async (req, res) => {
         for (const gId of memberGuarantors) {
           // የዋሱን ስም ለማግኘት
           const guarantorInfo = await Employee.findById(gId);
+          if (!guarantorInfo || guarantorInfo.role !== "member" || gId === String(employeeId)) {
+            return res.status(400).json({ message: "Only another active member can be selected as a guarantor" });
+          }
           const fullName = guarantorInfo
             ? `${guarantorInfo.firstName} ${guarantorInfo.lastName}`
             : "ያልታወቀ ዋስ";
@@ -2159,7 +2522,7 @@ if (loanType === "normal") {
     amount *
     Math.pow(
       1 + monthlyRate,
-      Number(durationMonths)
+      duration
     );
 }
 
@@ -2189,7 +2552,7 @@ totalAmount = Math.ceil(totalAmount);
 // Monthly installment
 const monthlyInstallment =
   Math.ceil(
-    totalAmount / Number(durationMonths)
+    totalAmount / duration
   );
 
 // dates
@@ -2197,7 +2560,7 @@ const loanDate = new Date();
 const paymentStartDate = addMonthsClamped(loanDate, 1);
 const loanEndDate = addMonthsClamped(
   loanDate,
-  Number(durationMonths)
+  duration
 );
 
 // create loan
@@ -2217,7 +2580,7 @@ const loan = new Loan({
 
   loanType,
 
-  durationMonths: String(durationMonths),
+  durationMonths: String(duration),
 
   monthlyInstallment,
 
@@ -2283,16 +2646,27 @@ app.get("/api/loans/notifications", async (req, res) => {
       return res.status(403).json({ message: "Loan staff access required" });
     }
 
-    const role = String(decoded.role || "").toLowerCase();
+    const role = String(decoded.role || "").trim().toLowerCase();
     const notificationQuery = {
-      status: { $nin: ["approved", "rejected"] }
+      status: { $nin: ["approved", "rejected"] },
     };
 
     if (["loan manager", "vice loan manager"].includes(role)) {
-      notificationQuery.loanOfficerStatus = "approved";
-      notificationQuery.loanManagerStatus = { $in: ["pending", null] };
+      notificationQuery.$or = [
+        {
+          loanOfficerStatus: "approved",
+          loanManagerStatus: { $in: ["pending", null] },
+        },
+        {
+          approvalStage: "awaiting_loan_manager",
+          loanManagerStatus: { $in: ["pending", null] },
+        },
+      ];
     } else {
-      notificationQuery.loanOfficerStatus = { $in: ["pending", null] };
+      notificationQuery.$or = [
+        { loanOfficerStatus: { $in: ["pending", null] } },
+        { approvalStage: "awaiting_loan_officer" },
+      ];
     }
 
     const loans = await Loan.find(notificationQuery)
@@ -2355,12 +2729,33 @@ app.put("/api/loans/:id/read", async (req, res) => {
 
 app.get("/api/loans", async (req, res) => {
   try {
-    const loans = await Loan.find()
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").trim().toLowerCase();
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
+      return res.status(403).json({ message: "Account access required" });
+    }
+
+    const loanQuery = role === "member"
+      ? { employeeId: decoded.id }
+      : ["loan manager", "vice loan manager"].includes(role)
+        ? loanManagerVisibleQuery()
+        : {};
+    const loans = await Loan.find(loanQuery)
       .populate("employeeId") // ተበዳሪውን ለማምጣት
       .populate("guarantors") // ዋሶችን ለማምጣት (ይህ ወሳኝ ነው!)
       .sort({ createdAt: -1 });
     res.json(loans.map(sanitizeLoanResponse));
   } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+
+    console.error("Loan fetch failed:", err);
     res.status(500).json({ message: "Error fetching loans" });
   }
 });
@@ -3074,11 +3469,14 @@ app.put("/api/loans/:id/approve", async (req, res) => {
     }
 
     if (["loan manager", "vice loan manager"].includes(role)) {
-      if (loan.loanOfficerStatus !== "approved") {
+      const officerApproved =
+        loan.loanOfficerStatus === "approved" ||
+        loan.approvalStage === "awaiting_loan_manager";
+      if (!officerApproved) {
         return res.status(400).json({ message: "Loan must be approved by the loan officer first" });
       }
 
-      if (loan.loanManagerStatus !== "pending") {
+      if (loan.loanManagerStatus != null && loan.loanManagerStatus !== "pending") {
         return res.status(400).json({ message: "Manager approval already processed" });
       }
 
@@ -3134,11 +3532,14 @@ app.put("/api/loans/:id/reject", async (req, res) => {
     }
 
     if (["loan manager", "vice loan manager"].includes(role)) {
-      if (loan.loanOfficerStatus !== "approved") {
+      const officerApproved =
+        loan.loanOfficerStatus === "approved" ||
+        loan.approvalStage === "awaiting_loan_manager";
+      if (!officerApproved) {
         return res.status(400).json({ message: "Loan must be approved by the loan officer first" });
       }
 
-      if (loan.loanManagerStatus !== "pending") {
+      if (loan.loanManagerStatus != null && loan.loanManagerStatus !== "pending") {
         return res.status(400).json({ message: "Manager decision already recorded" });
       }
 
@@ -3164,7 +3565,7 @@ app.put("/api/loans/:id/reject", async (req, res) => {
 // =======================
 // LOAN PAYMENTS
 // =======================
-app.post("/api/loan-payments", async (req, res) => {
+app.post("/api/loan-payments", requireSystemAccount(SYSTEM_STAFF_ROLES), async (req, res) => {
   try {
     const {
       loanId,
@@ -3175,12 +3576,30 @@ app.post("/api/loan-payments", async (req, res) => {
       monthYear
     } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(loanId) || !mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ message: "Invalid loan or member" });
+    }
+
     const loan = await Loan.findById(loanId);
 
     if (!loan) {
       return res.status(404).json({
         message: "Loan not found"
       });
+    }
+    if (String(loan.employeeId) !== String(employeeId)) {
+      return res.status(400).json({ message: "Payment member does not match the selected loan" });
+    }
+    if (loan.status !== "approved") {
+      return res.status(400).json({ message: "Only approved loans can receive payments" });
+    }
+    if (typeof monthYear !== "string" || !monthYear.trim()) {
+      return res.status(400).json({ message: "Payment month is required" });
+    }
+
+    const existingPayment = await LoanPayment.findOne({ loanId, monthYear: monthYear.trim() });
+    if (existingPayment) {
+      return res.status(409).json({ message: `A payment is already recorded for ${monthYear.trim()}` });
     }
 
     const paymentStartDate =
@@ -3195,9 +3614,20 @@ app.post("/api/loan-payments", async (req, res) => {
       });
     }
 
-    const principalPaid = Number(amountPaid || 0);
-    const monthlyInterest = Number(interestPaid || 0);
-    const monthlyPenalty = Number(penalty || 0);
+    const principalPaid = Number(amountPaid ?? 0);
+    const monthlyInterest = Number(interestPaid ?? 0);
+    const monthlyPenalty = Number(penalty ?? 0);
+    if (
+      !Number.isFinite(principalPaid) ||
+      !Number.isFinite(monthlyInterest) ||
+      !Number.isFinite(monthlyPenalty) ||
+      principalPaid < 0 ||
+      monthlyInterest < 0 ||
+      monthlyPenalty < 0 ||
+      principalPaid + monthlyInterest + monthlyPenalty <= 0
+    ) {
+      return res.status(400).json({ message: "Payment amounts must be non-negative and the total must be greater than zero" });
+    }
 
     const totalMonthlyPaid =
       principalPaid +
@@ -3223,7 +3653,7 @@ app.post("/api/loan-payments", async (req, res) => {
     const payment = new LoanPayment({
       loanId,
       employeeId,
-      monthYear,
+      monthYear: monthYear.trim(),
       amountPaid: principalPaid,
       interestPaid: monthlyInterest,
       penalty: monthlyPenalty,
@@ -3267,6 +3697,126 @@ app.post("/api/loan-payments", async (req, res) => {
       success: false,
       message: err.message
     });
+  }
+});
+
+app.post("/api/loan-payments/batch", requireSystemAccount(SYSTEM_STAFF_ROLES), async (req, res) => {
+  const { loanId, employeeId, payments } = req.body;
+  if (
+    !mongoose.Types.ObjectId.isValid(loanId) ||
+    !mongoose.Types.ObjectId.isValid(employeeId) ||
+    !Array.isArray(payments) ||
+    payments.length < 2 ||
+    payments.length > 12
+  ) {
+    return res.status(400).json({ message: "Provide a valid loan, member, and 2 to 12 monthly payments" });
+  }
+
+  let session;
+  try {
+    session = await mongoose.startSession();
+    let response;
+    await session.withTransaction(async () => {
+      const loan = await Loan.findById(loanId).session(session);
+      if (!loan) {
+        throw Object.assign(new Error("Loan not found"), { statusCode: 404 });
+      }
+      if (String(loan.employeeId) !== String(employeeId)) {
+        throw Object.assign(new Error("Payment member does not match the selected loan"), { statusCode: 400 });
+      }
+      if (loan.status !== "approved") {
+        throw Object.assign(new Error("Only approved loans can receive payments"), { statusCode: 400 });
+      }
+
+      const paymentStartDate = loan.paymentStartDate || addMonthsClamped(loan.createdAt, 1);
+      const firstPaymentDay = new Date(paymentStartDate);
+      firstPaymentDay.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (today < firstPaymentDay) {
+        throw Object.assign(
+          new Error(`Loan payments start on ${paymentStartDate.toLocaleDateString()}`),
+          { statusCode: 400 },
+        );
+      }
+
+      const months = new Set();
+      const normalizedPayments = payments.map((payment) => {
+        const monthYear = typeof payment?.monthYear === "string" ? payment.monthYear.trim() : "";
+        const amountPaid = Number(payment?.amountPaid ?? 0);
+        const interestPaid = Number(payment?.interestPaid ?? 0);
+        const penalty = Number(payment?.penalty ?? 0);
+        if (
+          !monthYear ||
+          months.has(monthYear) ||
+          !Number.isFinite(amountPaid) ||
+          !Number.isFinite(interestPaid) ||
+          !Number.isFinite(penalty) ||
+          amountPaid < 0 ||
+          interestPaid < 0 ||
+          penalty < 0 ||
+          amountPaid + interestPaid + penalty <= 0
+        ) {
+          throw Object.assign(new Error("Each month must be unique and have valid, positive payment amounts"), {
+            statusCode: 400,
+          });
+        }
+        months.add(monthYear);
+        return {
+          loanId: loan._id,
+          employeeId: loan.employeeId,
+          monthYear,
+          amountPaid,
+          interestPaid,
+          penalty,
+          totalPaid: amountPaid + interestPaid + penalty,
+        };
+      });
+
+      const existingPayment = await LoanPayment.findOne({
+        loanId: loan._id,
+        monthYear: { $in: [...months] },
+      }).session(session);
+      if (existingPayment) {
+        throw Object.assign(
+          new Error(`A payment is already recorded for ${existingPayment.monthYear}`),
+          { statusCode: 409 },
+        );
+      }
+
+      const totalPaid = normalizedPayments.reduce((sum, payment) => sum + payment.totalPaid, 0);
+      if (totalPaid > Number(loan.remainingAmount)) {
+        throw Object.assign(
+          new Error(`Cannot pay more than the remaining balance (${loan.remainingAmount})`),
+          { statusCode: 400 },
+        );
+      }
+
+      await LoanPayment.insertMany(normalizedPayments, { session });
+      loan.remainingAmount = Math.max(0, Number(loan.remainingAmount) - totalPaid);
+      if (loan.remainingAmount === 0) {
+        loan.status = "completed";
+      }
+      await loan.save({ session });
+      response = {
+        success: true,
+        message: "Payments recorded successfully",
+        remainingAmount: loan.remainingAmount,
+        loanStatus: loan.status,
+      };
+    });
+
+    return res.status(200).json(response);
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ message: err.message });
+    }
+    console.error("Loan payment batch failed:", err);
+    return res.status(500).json({ message: "Could not record monthly payments" });
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
   }
 });
 
@@ -3355,6 +3905,131 @@ const FinancialReport = mongoose.model(
   "FinancialReport",
   financialReportSchema
 );
+
+const balanceSheetSchema = new mongoose.Schema({
+  year: { type: Number, required: true, unique: true },
+  previousYear: { type: Number, required: true },
+  formData: { type: mongoose.Schema.Types.Mixed, required: true },
+  totals: { type: mongoose.Schema.Types.Mixed, required: true },
+  savedAt: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+const BalanceSheet = mongoose.model("BalanceSheet", balanceSheetSchema);
+
+const balanceSheetFields = [
+  "cashOnHand",
+  "cashAtBank",
+  "accountsReceivable",
+  "otherReceivable",
+  "officeEquipment",
+  "furniture",
+  "vehicle",
+  "building",
+  "accountsPayable",
+  "taxPayable",
+  "otherLiability",
+  "capital",
+  "reserve",
+  "retainedEarnings",
+];
+
+const verifyBalanceSheetAccess = (req, res, allowMemberRead = true) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      res.status(401).json({ message: "Authentication required" });
+      return null;
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const role = String(decoded.role || "").toLowerCase();
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(role)) {
+      res.status(403).json({ message: "Account access required" });
+      return null;
+    }
+    if (!allowMemberRead && role === "member") {
+      res.status(403).json({ message: "Staff access required to save balance sheets" });
+      return null;
+    }
+    return decoded;
+  } catch (err) {
+    const status = err.name === "JsonWebTokenError" || err.name === "TokenExpiredError"
+      ? 401
+      : 500;
+    res.status(status).json({
+      message: status === 401 ? "Invalid or expired login" : "Could not verify account access",
+    });
+    return null;
+  }
+};
+
+app.get("/api/balance-sheets/:year", async (req, res) => {
+  if (!verifyBalanceSheetAccess(req, res)) return;
+  const year = Number(req.params.year);
+  if (!Number.isInteger(year)) {
+    return res.status(400).json({ message: "A valid year is required" });
+  }
+  try {
+    const report = await BalanceSheet.findOne({ year });
+    return res.json(report);
+  } catch (err) {
+    console.error("Balance sheet load failed:", err);
+    return res.status(500).json({ message: "Could not load balance sheet" });
+  }
+});
+
+app.put("/api/balance-sheets/:year", async (req, res) => {
+  if (!verifyBalanceSheetAccess(req, res, false)) return;
+  const year = Number(req.params.year);
+  const previousYear = Number(req.body.previousYear);
+  const source = req.body.formData;
+  if (!Number.isInteger(year) || !Number.isInteger(previousYear) ||
+      !source || typeof source !== "object" || Array.isArray(source)) {
+    return res.status(400).json({ message: "Valid year, previous year, and balance sheet values are required" });
+  }
+
+  const formData = {};
+  for (const field of balanceSheetFields) {
+    const value = Number(source[field] || 0);
+    if (!Number.isFinite(value)) {
+      return res.status(400).json({ message: `Invalid amount for ${field}` });
+    }
+    formData[field] = value;
+  }
+
+  const currentAssets =
+    formData.cashOnHand + formData.cashAtBank + formData.accountsReceivable +
+    formData.otherReceivable;
+  const fixedAssets =
+    formData.officeEquipment + formData.furniture + formData.vehicle + formData.building;
+  const liabilities =
+    formData.accountsPayable + formData.taxPayable + formData.otherLiability;
+  const equity = formData.capital + formData.reserve + formData.retainedEarnings;
+  const totals = {
+    currentAssets,
+    fixedAssets,
+    totalAssets: currentAssets + fixedAssets,
+    liabilities,
+    equity,
+    totalLiabilitiesEquity: liabilities + equity,
+  };
+
+  if (Math.abs(totals.totalAssets - totals.totalLiabilitiesEquity) >= 0.01) {
+    return res.status(400).json({ message: "Balance sheet is not balanced" });
+  }
+
+  try {
+    const report = await BalanceSheet.findOneAndUpdate(
+      { year },
+      { $set: { year, previousYear, formData, totals, savedAt: new Date() } },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true },
+    );
+    return res.json({ message: "Balance sheet saved successfully", report });
+  } catch (err) {
+    console.error("Balance sheet save failed:", err);
+    return res.status(500).json({ message: "Could not save balance sheet" });
+  }
+});
 
 const profitDistributionSchema = new mongoose.Schema(
   {
@@ -3550,6 +4225,18 @@ app.get("/api/financial-reports", async (req, res) => {
   }
 });
 
+app.get("/api/reports/cash-flow", (req, res) => {
+  return res.status(501).json({
+    message: "Cash Flow is unavailable until a general ledger and account mappings are defined.",
+  });
+});
+
+app.get("/api/reports/check-balance", (req, res) => {
+  return res.status(501).json({
+    message: "Check Balance is unavailable until a general ledger and debit/credit mappings are defined.",
+  });
+});
+
 
 app.put("/api/loans/:id/status", async (req, res) => {
   try {
@@ -3637,7 +4324,7 @@ app.delete("/api/loans/:id", async (req, res) => {
 // =======================
 // GET ALL LOAN PAYMENTS FOR FINANCIAL REPORT
 // =======================
-app.get("/api/loan-payments/all", async (req, res) => {
+app.get("/api/loan-payments/all", requireSystemAccount(SYSTEM_STAFF_ROLES), async (req, res) => {
 
   try {
 
@@ -3953,9 +4640,12 @@ app.put("/api/financial-reports/:id", async (req, res) => {
 // GET LOAN PAYMENTS
 
 
-app.get("/api/loan-payments/check", async (req, res) => {
+app.get("/api/loan-payments/check", requireSystemAccount(SYSTEM_STAFF_ROLES), async (req, res) => {
   const { loanId, month } = req.query;
-  const existing = await LoanPayment.findOne({ loanId, monthYear: month });
+  if (!mongoose.Types.ObjectId.isValid(loanId) || typeof month !== "string" || !month.trim()) {
+    return res.status(400).json({ message: "A valid loan and payment month are required" });
+  }
+  const existing = await LoanPayment.findOne({ loanId, monthYear: month.trim() });
   
   if (existing) {
     res.json({ 
@@ -3973,11 +4663,24 @@ app.get("/api/loan-payments/check", async (req, res) => {
 // =======================
 // GET ALL LOAN PAYMENTS
 // =======================
-app.get("/api/loan-payments", async (req, res) => {
+app.get("/api/loan-payments", requireSystemAccount(), async (req, res) => {
 
   try {
 
     const { loanId, employeeId } = req.query;
+    if (!mongoose.Types.ObjectId.isValid(loanId) || !mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ message: "A valid loan and member are required" });
+    }
+    if (
+      req.systemAccount.role === "member" &&
+      String(employeeId) !== String(req.systemAccount.id)
+    ) {
+      return res.status(403).json({ message: "Members can only view their own payment history" });
+    }
+    const loan = await Loan.findById(loanId).select("_id employeeId");
+    if (!loan || String(loan.employeeId) !== String(employeeId)) {
+      return res.status(404).json({ message: "Loan payment history not found" });
+    }
 
 
     const payments = await LoanPayment.find({
@@ -4013,6 +4716,44 @@ app.get("/api/employees/:memberId", async (req, res) => {
     res.json(employee);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+app.put("/api/auth/change-password", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.type !== "member" || !SYSTEM_ROLES.includes(String(decoded.role || "").toLowerCase())) {
+      return res.status(403).json({ message: "Account access required" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    if (typeof currentPassword !== "string" || typeof newPassword !== "string" || newPassword.length < 6) {
+      return res.status(400).json({ message: "Current password and a new password of at least 6 characters are required" });
+    }
+
+    const employee = await Employee.findById(decoded.id);
+    if (!employee) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+    if (!await bcrypt.compare(currentPassword, employee.password)) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    employee.password = await bcrypt.hash(newPassword, salt);
+    await employee.save();
+    return res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Invalid or expired login" });
+    }
+    console.error("Password update failed:", err);
+    return res.status(500).json({ message: "Could not update password" });
   }
 });
 
@@ -4055,14 +4796,25 @@ app.put("/api/employees/profile/:memberId", async (req, res) => {
 
 
 // UPDATE EXISTING MONTHLY PAYMENT
-app.put("/api/loan-payments/:id", async (req, res) => {
+app.put("/api/loan-payments/:id", requireSystemAccount(SYSTEM_STAFF_ROLES), async (req, res) => {
   try {
     const { amountPaid, interestPaid, penalty } = req.body;
 
     // safe numbers
-    const pPaid = Number(amountPaid) || 0;
-    const iPaid = Number(interestPaid) || 0;
-    const pen = Number(penalty) || 0;
+    const pPaid = Number(amountPaid ?? 0);
+    const iPaid = Number(interestPaid ?? 0);
+    const pen = Number(penalty ?? 0);
+    if (
+      !Number.isFinite(pPaid) ||
+      !Number.isFinite(iPaid) ||
+      !Number.isFinite(pen) ||
+      pPaid < 0 ||
+      iPaid < 0 ||
+      pen < 0 ||
+      pPaid + iPaid + pen <= 0
+    ) {
+      return res.status(400).json({ message: "Payment amounts must be non-negative and the total must be greater than zero" });
+    }
 
     const existingPayment = await LoanPayment.findById(req.params.id);
     if (!existingPayment)
@@ -4088,13 +4840,16 @@ app.put("/api/loan-payments/:id", async (req, res) => {
     // ====================================
     // STEP 3: RESTORE THEN APPLY
     // ====================================
-    loan.remainingAmount = loan.remainingAmount + oldTotal;
-    loan.remainingAmount = loan.remainingAmount - newTotal;
-
-    loan.remainingAmount = Math.max(0, loan.remainingAmount);
+    const restoredBalance = Number(loan.remainingAmount) + oldTotal;
+    if (newTotal > restoredBalance) {
+      return res.status(400).json({ message: "Updated payment cannot exceed the remaining loan balance" });
+    }
+    loan.remainingAmount = restoredBalance - newTotal;
 
     if (loan.remainingAmount <= 0) {
       loan.status = "completed";
+    } else if (loan.status === "completed") {
+      loan.status = "approved";
     }
 
     await loan.save();

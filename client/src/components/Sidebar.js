@@ -24,6 +24,7 @@ import {
   FaFileAlt,
   FaExchangeAlt,
   FaUser,
+  FaHistory,
 } from "react-icons/fa";
 
 
@@ -55,6 +56,7 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
       loanPayments: "የብድር ክፍያ",
       withdrawals: "ከማህበሩ መውጣት",
       reports: "ሪፖርቶች",
+      activityHistory: "የእንቅስቃሴ ታሪክ",
       profile: "መገለጫ",
       profitProduct: "ትርፍ እና ዲቪደንድ",
       dividend: "ዲቪደንድ",
@@ -77,6 +79,7 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
       loanPayments: "Loan Payments",
       withdrawals: "Leave-from-association ",
       reports: "Reports",
+      activityHistory: "Activity History",
       profile: "Profile",
       profitProduct: "Profit Product",
       dividend: "Dividend",
@@ -99,6 +102,7 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
       loanPayments: "Kaffaltii Liqii",
       withdrawals: "Baasiin Maallaqaa",
       reports: "Gabaasota",
+      activityHistory: "Seenaa Sochii",
       profile: "Piroofaayilii",
       profitProduct: "Bu'aa fi Dividandii",
       dividend: "Dividandii",
@@ -121,6 +125,7 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
       loanPayments: "ክፍሊት ልቓሕ",
       withdrawals: "ገንዘብ ምውጻእ",
       reports: "ጸብጻባት",
+      activityHistory: "ናይ ንጥፈታት ታሪኽ",
       profile: "ፕሮፋይል",
       profitProduct: "መኽሰብን ዲቪደንድን",
       dividend: "ዲቪደንድ",
@@ -302,6 +307,16 @@ export default function Sidebar({ isOpen, setIsSidebarOpen }) {
               </div>
             </li>
           ))}
+
+          <li style={styles.listItem}>
+            <div
+              onClick={() => handleNavigation("/activity-history")}
+              style={getLinkStyle(currentPath === "/activity-history")}
+            >
+              <span style={styles.icon}><FaHistory /></span>
+              {(isOpen || isMobile) && <span>{t.activityHistory}</span>}
+            </div>
+          </li>
 
           <li style={styles.listItem}>
             <div

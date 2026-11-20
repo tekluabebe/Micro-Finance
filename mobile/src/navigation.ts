@@ -6,6 +6,7 @@ export const sectionRoutes = {
   Payments: 'payments',
   Withdrawals: 'withdrawals',
   Reports: 'reports',
+  'Activity History': 'activity-history',
   Profile: 'profile',
   'Edit Profile': 'profile-edit',
   'Change Password': 'change-password',

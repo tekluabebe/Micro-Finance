@@ -57,7 +57,7 @@ const [selectedMonths, setSelectedMonths] = useState([]);
   const [monthlyPrincipal, setMonthlyPrincipal] = useState(0);
   const [monthlyPayment, setMonthlyPayment] = useState(0);
 
-  const PENALTY_PER_MONTH = 50;
+  const [penaltyPerMonth, setPenaltyPerMonth] = useState(50);
 
   // የስክሪን መጠን መለወጫ ማዳመጫ (Responsive)
   useEffect(() => {
@@ -72,14 +72,17 @@ const [selectedMonths, setSelectedMonths] = useState([]);
 
   const fetchData = async () => {
     try {
-      const [emp, loanRes] = await Promise.all([
+      const [emp, loanRes, settingsRes] = await Promise.all([
         API.get("/employees"),
-        API.get("/loans")
+        API.get("/loans"),
+        API.get("/settings")
       ]);
       setEmployees(emp.data || []);
       setLoans(loanRes.data || []);
+      setPenaltyPerMonth(Number(settingsRes.data?.system?.monthlyLatePenalty ?? 50));
     } catch (err) {
       console.error("Load error", err);
+      setErrorMessage(err.response?.data?.message || "Could not load loan payment settings.");
     }
   };
 const loadPaidMonths = async (loanId, employeeId) => {
@@ -249,7 +252,7 @@ const calculateDueAmount = (loan) => {
   );
 
   const currentPenalty =
-    effectiveMonths * PENALTY_PER_MONTH;
+    effectiveMonths * penaltyPerMonth;
 
   setPayment((prev) => ({
     ...prev,
@@ -381,114 +384,38 @@ monthsToPay=[paymentMonth];
 }
 
 
-const currentMonthYear = paymentMonth;
-
-
-  // 3. Payload
-  const payload = {
-    employeeId: payment.employeeId,
-    loanId: payment.loanId,
-    monthYear: currentMonthYear,
-
-    // Example:
-    // Principal 300
-    // Interest 23
-    // Total 323
-    amountPaid: Math.round(principalPaid),
-
-    interestPaid: Math.round(interestPaid),
-
-    penalty: Math.round(penalty),
-
-    totalPaid: Math.round(totalPaid)
-  };
-
-
-  console.log("Payment Payload:", payload);
-
   try {
-    // 4. መላክ
-    let existingPayment = null;
-    try {
-      const checkRes = await API.get(`/loan-payments/check?loanId=${payment.loanId}&month=${currentMonthYear}`);
-      existingPayment = checkRes.data;
-    } catch (checkErr) {
-      existingPayment = { exists: false };
-    }
-
-  if (existingPayment.exists) {
-
-  setErrorMessage(
-    `❌ You already paid for ${currentMonthYear}.`
-  );
-
-  return;
-}
-
   if (!window.confirm("Save this loan payment?\n\nOK: Save\nCancel: Return to the form")) {
     return;
   }
 
   setErrorMessage("");
 
-for(const month of monthsToPay){
-
-
-const checkRes =
-await API.get(
-`/loan-payments/check?loanId=${payment.loanId}&month=${month}`
-);
-
-
-if(checkRes.data.exists){
-
-
-setErrorMessage(
-`❌ You already paid for ${month}`
-);
-
-
-return;
-
-
-}
-
-
-const payload={
-
-employeeId: payment.employeeId,
-
-loanId: payment.loanId,
-
-monthYear: month,
-
-
-amountPaid:
-Math.round(principalPaid),
-
-interestPaid:
-Math.round(interestPaid),
-
-penalty:
-Math.round(penalty),
-
-totalPaid:
-Math.round(totalPaid)
-
+const paymentAmounts = {
+amountPaid: Math.round(principalPaid),
+interestPaid: Math.round(interestPaid),
+penalty: Math.round(penalty),
 };
+const paymentPayload = monthsToPay.map((monthYear) => ({
+...paymentAmounts,
+monthYear,
+}));
+const isMultiple = paymentPayload.length > 1;
 
-
-
-await API.post(
-"/loan-payments",
-payload
-);
-
-
+if (isMultiple) {
+await API.post("/loan-payments/batch", {
+  loanId: payment.loanId,
+  employeeId: payment.employeeId,
+  payments: paymentPayload,
+});
+} else {
+await API.post("/loan-payments", {
+  ...paymentPayload[0],
+  employeeId: payment.employeeId,
+  loanId: payment.loanId,
+  totalPaid: Math.round(totalPaid),
+});
 }
-
-
-const isMultiple = monthsToPay.length > 1;
 
 if (isMultiple) {
   alert(t("Multiple month payment saved successfully ✅"));

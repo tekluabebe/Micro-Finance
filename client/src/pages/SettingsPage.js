@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./SettingsPage.css";
 
 import {
@@ -19,10 +20,11 @@ import {
 } from "react-icons/fa";
 
 import { useAppContext } from "../pages/context";
+import API from "../services/api";
 
 
 export default function SettingsPage() {
-
+  const navigate = useNavigate();
 
   const { 
     darkMode, 
@@ -31,41 +33,80 @@ export default function SettingsPage() {
     setLanguage 
   } = useAppContext();
 
-const getNotificationPreference = (key, defaultValue = true) =>
-  localStorage.getItem(key) === null
-    ? defaultValue
-    : localStorage.getItem(key) === "true";
-
-  const [penalty,setPenalty] = useState(50);
-
-
- const [emailNotification, setEmailNotification] = useState(() =>
-    getNotificationPreference("emailNotification")
-  );
-
-  const [loanNotification, setLoanNotification] = useState(() =>
-    getNotificationPreference("loanNotification")
-  );
-
-  const [passwordNotification, setPasswordNotification] = useState(() =>
-    getNotificationPreference("passwordNotification")
-  );
-
-  const [withdrawalNotification, setWithdrawalNotification] = useState(() =>
-    getNotificationPreference("withdrawalNotification")
-  );
+  const [penalty, setPenalty] = useState("50");
+  const [emailNotification, setEmailNotification] = useState(true);
+  const [loanNotification, setLoanNotification] = useState(true);
+  const [passwordNotification, setPasswordNotification] = useState(true);
+  const [withdrawalNotification, setWithdrawalNotification] = useState(true);
+  const [settingsError, setSettingsError] = useState("");
+  const [settingsStatus, setSettingsStatus] = useState("");
+  const isAdmin = localStorage.getItem("userRole")?.toLowerCase() === "admin";
 
   useEffect(() => {
-    localStorage.setItem("emailNotification", emailNotification);
-    localStorage.setItem("loanNotification", loanNotification);
-    localStorage.setItem("passwordNotification", passwordNotification);
-    localStorage.setItem("withdrawalNotification", withdrawalNotification);
-  }, [
-      emailNotification,
-    loanNotification,
-    passwordNotification,
-    withdrawalNotification,
-  ]);
+    let active = true;
+    API.get("/settings")
+      .then(async ({ data }) => {
+        if (!active) return;
+        let preferences = data.preferences;
+        if (!preferences) {
+          preferences = {
+            language: localStorage.getItem("language") || "Amharic",
+            darkMode: localStorage.getItem("darkMode") === "true",
+            emailNotification: localStorage.getItem("emailNotification") !== "false",
+            loanNotification: localStorage.getItem("loanNotification") !== "false",
+            passwordNotification: localStorage.getItem("passwordNotification") !== "false",
+            withdrawalNotification: localStorage.getItem("withdrawalNotification") !== "false",
+          };
+          await API.put("/settings/preferences", preferences);
+        }
+        if (!active) return;
+        if (preferences.language) setLanguage(preferences.language);
+        if (typeof preferences.darkMode === "boolean") setDarkMode(preferences.darkMode);
+        if (typeof preferences.emailNotification === "boolean") setEmailNotification(preferences.emailNotification);
+        if (typeof preferences.loanNotification === "boolean") setLoanNotification(preferences.loanNotification);
+        if (typeof preferences.passwordNotification === "boolean") setPasswordNotification(preferences.passwordNotification);
+        if (typeof preferences.withdrawalNotification === "boolean") setWithdrawalNotification(preferences.withdrawalNotification);
+        setPenalty(String(data.system?.monthlyLatePenalty ?? 50));
+      })
+      .catch((err) => {
+        if (active) {
+          setSettingsError(err.response?.data?.message || "Could not load shared settings.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [setDarkMode, setLanguage]);
+
+  const updatePreference = async (key, value, onSuccess) => {
+    setSettingsError("");
+    setSettingsStatus("");
+    try {
+      await API.put("/settings/preferences", { [key]: value });
+      onSuccess();
+      setSettingsStatus("Preference saved and synchronized.");
+    } catch (err) {
+      setSettingsError(err.response?.data?.message || "Could not save this preference.");
+    }
+  };
+
+  const saveMonthlyPenalty = async () => {
+    const value = Number(penalty);
+    if (!Number.isFinite(value) || value < 0) {
+      setSettingsError("Monthly late penalty must be a non-negative number.");
+      return;
+    }
+
+    setSettingsError("");
+    setSettingsStatus("");
+    try {
+      await API.put("/settings/system", { monthlyLatePenalty: value });
+      setSettingsStatus("System setting saved and synchronized.");
+    } catch (err) {
+      setSettingsError(err.response?.data?.message || "Could not save system settings.");
+    }
+  };
 
 
   const texts = {
@@ -367,7 +408,8 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
       </div>
 
-
+      {settingsError && <p role="alert">{settingsError}</p>}
+      {settingsStatus && <p role="status">{settingsStatus}</p>}
 
       <div className="settings-grid">
 
@@ -409,24 +451,21 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
             <input
-
               type="number"
-
               value={penalty}
-
-              onChange={
-                (e)=>
-                setPenalty(e.target.value)
-              }
-
+              min="0"
+              disabled={!isAdmin}
+              onChange={(e) => setPenalty(e.target.value)}
             />
 
-
             <span className="settings-hint">
-
               {t.penaltyHint}
-
             </span>
+            {isAdmin && (
+              <button type="button" className="settings-primary-btn" onClick={saveMonthlyPenalty}>
+                Save system setting
+              </button>
+            )}
 
 
           </div>
@@ -448,14 +487,10 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
             <select
-
               value={language}
-
-              onChange={
-                (e)=>
-                setLanguage(e.target.value)
+              onChange={(e) =>
+                updatePreference("language", e.target.value, () => setLanguage(e.target.value))
               }
-
             >
 
               <option value="English">
@@ -533,17 +568,13 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <input
-
                 type="checkbox"
-
                 checked={emailNotification}
-
                 onChange={() =>
-                  setEmailNotification(
-                    !emailNotification
+                  updatePreference("emailNotification", !emailNotification, () =>
+                    setEmailNotification(!emailNotification)
                   )
                 }
-
               />
 
 
@@ -583,14 +614,11 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <input
-
                 type="checkbox"
-
                 checked={loanNotification}
-
                 onChange={() =>
-                  setLoanNotification(
-                    !loanNotification
+                  updatePreference("loanNotification", !loanNotification, () =>
+                    setLoanNotification(!loanNotification)
                   )
                 }
 
@@ -616,7 +644,9 @@ const getNotificationPreference = (key, defaultValue = true) =>
       type="checkbox"
       checked={withdrawalNotification}
       onChange={() =>
-        setWithdrawalNotification((current) => !current)
+        updatePreference("withdrawalNotification", !withdrawalNotification, () =>
+          setWithdrawalNotification(!withdrawalNotification)
+        )
       }
     />
     <span className="settings-slider"></span>
@@ -649,17 +679,13 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <input
-
                 type="checkbox"
-
                 checked={passwordNotification}
-
                 onChange={() =>
-                  setPasswordNotification(
-                    !passwordNotification
+                  updatePreference("passwordNotification", !passwordNotification, () =>
+                    setPasswordNotification(!passwordNotification)
                   )
                 }
-
               />
 
 
@@ -753,15 +779,11 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
               <input
-
                 type="checkbox"
-
                 checked={darkMode}
-
                 onChange={() =>
-                  setDarkMode(!darkMode)
+                  updatePreference("darkMode", !darkMode, () => setDarkMode(!darkMode))
                 }
-
               />
 
 
@@ -834,7 +856,10 @@ const getNotificationPreference = (key, defaultValue = true) =>
 
 
 
-          <button className="settings-primary-btn">
+          <button
+            className="settings-primary-btn"
+            onClick={() => navigate("/profile/change-password")}
+          >
 
 
             <FaUserShield/>

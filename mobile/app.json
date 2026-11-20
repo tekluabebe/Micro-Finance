@@ -14,10 +14,8 @@
     "android": {
       "package": "com.microfinance.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
@@ -28,6 +26,16 @@
       "expo-secure-store",
       "expo-router",
       "expo-status-bar"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "52c5bac5-b160-4dc4-90ba-6f71bb588a18"
+      }
+    }
   }
 }

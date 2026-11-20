@@ -69,9 +69,11 @@ export default function CashFlow() {
 
   const [year, setYear] = useState(new Date().getFullYear());
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [cashFlow, setCashFlow] = useState(defaultCashFlow);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isAvailable, setIsAvailable] = useState(false);
 
   /*=========================================================
         LOAD CASH FLOW
@@ -80,6 +82,8 @@ export default function CashFlow() {
   const loadCashFlow = async () => {
     try {
       setLoading(true);
+      setErrorMessage("");
+      setIsAvailable(false);
 
       const res = await API.get(`/reports/cash-flow?year=${year}`);
 
@@ -106,10 +110,14 @@ export default function CashFlow() {
           ...(data.financing || {}),
         },
       });
+      setIsAvailable(true);
     } catch (err) {
       console.error("Cash Flow Error:", err);
-
-      setCashFlow(defaultCashFlow);
+      setCashFlow(null);
+      setErrorMessage(
+        err.response?.data?.message ||
+          t("Cash Flow is unavailable until a general ledger and account mappings are defined.")
+      );
     } finally {
       setLoading(false);
     }
@@ -129,7 +137,7 @@ const amount = (value) => {
 };
 
 const operatingTotal = useMemo(() => {
-  const op = cashFlow.operating || {};
+  const op = cashFlow?.operating || {};
 
   return (
     amount(op.profit) +
@@ -139,10 +147,10 @@ const operatingTotal = useMemo(() => {
     amount(op.inventoryDecrease) +
     amount(op.otherAdjustment)
   );
-}, [cashFlow.operating]);
+}, [cashFlow?.operating]);
 
 const investingTotal = useMemo(() => {
-  const inv = cashFlow.investing || {};
+  const inv = cashFlow?.investing || {};
 
   return (
     amount(inv.saleAsset) +
@@ -150,10 +158,10 @@ const investingTotal = useMemo(() => {
     amount(inv.purchaseAsset) -
     amount(inv.investmentPurchase)
   );
-}, [cashFlow.investing]);
+}, [cashFlow?.investing]);
 
 const financingTotal = useMemo(() => {
-  const fin = cashFlow.financing || {};
+  const fin = cashFlow?.financing || {};
 
   return (
     amount(fin.shareCapital) +
@@ -161,12 +169,12 @@ const financingTotal = useMemo(() => {
     amount(fin.loanRepayment) -
     amount(fin.dividendPaid)
   );
-}, [cashFlow.financing]);
+}, [cashFlow?.financing]);
 
 const netCashIncrease =
   operatingTotal + investingTotal + financingTotal;
 
-const openingCash = amount(cashFlow.openingCash);
+const openingCash = amount(cashFlow?.openingCash);
 const closingCash = openingCash + netCashIncrease;
 
   /*=========================================================
@@ -417,6 +425,7 @@ return (
                 <button
                     className="pdf-btn"
                     onClick={exportPDF}
+                    disabled={!isAvailable || loading}
                 >
                     <FaFilePdf />
                     PDF
@@ -425,6 +434,7 @@ return (
                 <button
                     className="excel-btn"
                     onClick={exportExcel}
+                    disabled={!isAvailable || loading}
                 >
                     <FaFileExcel />
                     Excel
@@ -433,6 +443,7 @@ return (
                 <button
                     className="print-btn"
                     onClick={printReport}
+                    disabled={!isAvailable || loading}
                 >
                     <FaPrint />
                     {t("Print")}
@@ -487,7 +498,17 @@ return (
 
             </div>
 
-            <table className="cashflow-table">
+            {loading && (
+                <div className="loading-box">{t("Loading Cash Flow...")}</div>
+            )}
+            {!loading && errorMessage && (
+                <div role="alert" className="loading-box">{errorMessage}</div>
+            )}
+
+            <table
+                className="cashflow-table"
+                style={{ display: isAvailable ? undefined : "none" }}
+            >
 
                 <thead>
 
@@ -661,16 +682,6 @@ return (
                 </tbody>
 
             </table>
-
-            {loading && (
-
-                <div className="loading-box">
-
-                    {t("Loading Cash Flow...")}
-
-                </div>
-
-            )}
 
         </div>
 

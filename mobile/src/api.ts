@@ -47,6 +47,8 @@ export type MemberLoan = {
   loanOfficerStatus?: string;
   loanManagerStatus?: string;
   approvalStage?: string;
+  isRead?: boolean;
+  guarantors?: (MemberSummary | string)[];
   monthlyInstallment?: number | string;
   durationMonths?: number | string;
   loanStartDate?: string;
@@ -73,10 +75,30 @@ export type MemberSummary = {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  gender?: string;
+  birthDate?: string;
+  maritalStatus?: string;
+  category?: string;
+  age?: number;
   role?: string;
   totalSaving?: number | string;
+  fatherName?: string;
+  motherName?: string;
+  wifeName?: string;
+  wifeFatherName?: string;
+  wifeMotherName?: string;
+  husbandName?: string;
+  husbandFatherName?: string;
+  husbandMotherName?: string;
+  brothers?: string[];
+  sisters?: string[];
+  children?: string[];
+  hasActiveLoan?: boolean;
+  activeGuarantees?: number;
   createdAt?: string;
 };
+
+export type GuarantorCandidate = MemberSummary;
 
 export type WithdrawalRecord = {
   _id: string;
@@ -101,6 +123,7 @@ export type PasswordResetNotification = {
 export type MobileDashboard = {
   profile: MemberProfile;
   members: MemberSummary[];
+  guarantorCandidates?: GuarantorCandidate[];
   savings: SavingsRecord[];
   loans: MemberLoan[];
   payments: MemberPayment[];
